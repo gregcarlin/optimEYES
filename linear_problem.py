@@ -49,7 +49,7 @@ class PulpProblem():
         for index, constraint_fn in enumerate(self.constraint_fns):
             self.lp_problem += constraint_fn, f"Constraint_{index}"
 
-        self.lp_problem.solve()
+        self.lp_problem.solve(COIN(msg=0))
         self.solved = True
         return PulpSolution(self.lp_problem)
 

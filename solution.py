@@ -1,6 +1,8 @@
 from typing import Dict, List
 from datetime import date
 
+from dateutil import days_until_next_weekday
+
 def key_for_day(day: int, resident: str) -> str:
     return f"Day_{day}_{resident}"
 
@@ -47,7 +49,7 @@ class Solution:
     def _get_count_of_weekday(self, weekday) -> Dict[str, int]:
         assignments = self.get_assignments()
         result = {resident: 0 for resident in self.residents}
-        next_day = (7 + weekday - self.start_date.weekday()) % 7
+        next_day = days_until_next_weekday(self.start_date, weekday)
         while next_day < self.num_days:
             result[assignments[next_day]] += 1
             next_day += 7

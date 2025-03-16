@@ -1,8 +1,10 @@
-from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
 from functools import reduce
 from solution import Solution, key_for_day
 from datetime import date, timedelta
 import math
+
+from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
+from dateutil import days_until_next_weekday, num_weekdays_in_time_period
 
 START_DATE = date.fromisoformat("2025-06-01")
 RESIDENT_AVAILABILITY = {
@@ -29,7 +31,8 @@ RESIDENT_AVAILABILITY = {
 # TODO: validate input
 
 NUM_DAYS = len(next(iter(RESIDENT_AVAILABILITY.values())))
-MAX_DAYS_PER_RESIDENT = math.ceil(NUM_DAYS / float(len(RESIDENT_AVAILABILITY.keys())))
+NUM_RESIDENTS = len(RESIDENT_AVAILABILITY.keys())
+MAX_DAYS_PER_RESIDENT = math.ceil(NUM_DAYS / float(NUM_RESIDENTS))
 
 problem = PulpProblem("optimEYES", minimize=True)
 
@@ -47,16 +50,33 @@ for resident, availability in RESIDENT_AVAILABILITY.items():
     problem.add_constraint(sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
     problem.add_constraint(sum(day_vars[resident]) >= MAX_DAYS_PER_RESIDENT - 1)
 
+# Ensure exactly one resident is assigned to each day
 for day in range(NUM_DAYS):
     all_residents_for_day = [days_for_resident[day] for days_for_resident in day_vars.values()]
-    # Ensure exactly one resident is assigned to each day
     problem.add_constraint(sum(all_residents_for_day) == 1)
 
 # Ensure a resident doesn't work two days in a row
 for days_for_resident in day_vars.values():
     for i in range(len(days_for_resident) - 1):
         problem.add_constraint(days_for_resident[i] + days_for_resident[i + 1] <= 1)
+
+
+def evenly_distribute(weekday: int) -> None:
+    num_weekdays = num_weekdays_in_time_period(START_DATE, NUM_DAYS, weekday)
+    max_weekdays_per_resident = math.ceil(num_weekdays / float(NUM_RESIDENTS))
+    for day_for_resident in day_vars.values():
+        day_of_week_vars = []
+        next_day = days_until_next_weekday(START_DATE, weekday)
+        while next_day < NUM_DAYS:
+            day_of_week_vars.append(days_for_resident[next_day])
+            next_day += 7
+        problem.add_constraint(sum(day_of_week_vars) <= max_weekdays_per_resident)
+        problem.add_constraint(sum(day_of_week_vars) >= max_weekdays_per_resident - 1)
         
+# Ensure even distribution of Saturdays and Sundays
+evenly_distribute(5)
+evenly_distribute(6)
+
 
 # Minimize Q2 calls
 q2s = []
@@ -88,7 +108,7 @@ saturdays = results.get_saturdays()
 sundays = results.get_sundays()
 for resident in RESIDENT_AVAILABILITY.keys():
     print(f"\t{resident}")
-    print(f"\t\tTalls = {calls[resident]}")
+    print(f"\t\tCalls = {calls[resident]}")
     print(f"\t\tQ2s = {q2s[resident]}")
     print(f"\t\tSaturdays = {saturdays[resident]}")
     print(f"\t\tSundays = {sundays[resident]}")
