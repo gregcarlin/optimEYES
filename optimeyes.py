@@ -15,7 +15,7 @@ RESIDENT_AVAILABILITY = {
         1, 1, 1, 1, 1, 1, 1,
     ],
     "Paris": [
-        1, 1, 1, 1, 1, 1, 1,
+        0, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
@@ -64,7 +64,7 @@ for days_for_resident in day_vars.values():
 def evenly_distribute(weekday: int) -> None:
     num_weekdays = num_weekdays_in_time_period(START_DATE, NUM_DAYS, weekday)
     max_weekdays_per_resident = math.ceil(num_weekdays / float(NUM_RESIDENTS))
-    for day_for_resident in day_vars.values():
+    for days_for_resident in day_vars.values():
         day_of_week_vars = []
         next_day = days_until_next_weekday(START_DATE, weekday)
         while next_day < NUM_DAYS:
@@ -103,13 +103,13 @@ print("Total Q2 calls = ", solution.get_objective_value())
 
 print("Per resident stats:")
 calls = results.get_calls_per_resident()
-q2s = results.get_q2s_per_resident()
 saturdays = results.get_saturdays()
 sundays = results.get_sundays()
+q2s = results.get_q2s_per_resident()
 for resident in RESIDENT_AVAILABILITY.keys():
     print(f"\t{resident}")
     print(f"\t\tCalls = {calls[resident]}")
-    print(f"\t\tQ2s = {q2s[resident]}")
     print(f"\t\tSaturdays = {saturdays[resident]}")
     print(f"\t\tSundays = {sundays[resident]}")
+    print(f"\t\tQ2s = {q2s[resident]}")
 
