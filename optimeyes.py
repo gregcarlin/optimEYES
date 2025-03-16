@@ -29,10 +29,7 @@ RESIDENT_AVAILABILITY = {
 # TODO: validate input
 
 NUM_DAYS = len(next(iter(RESIDENT_AVAILABILITY.values())))
-
 MAX_DAYS_PER_RESIDENT = math.ceil(NUM_DAYS / float(len(RESIDENT_AVAILABILITY.keys())))
-
-DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 problem = PulpProblem("optimEYES", minimize=True)
 
@@ -76,7 +73,7 @@ solution = problem.solve()
 # Overall status, were we able to find a solution?
 print("Status:", solution.get_status())
 
-results = Solution(solution.get_variables(), NUM_DAYS, RESIDENT_AVAILABILITY.keys())
+results = Solution(solution.get_variables(), START_DATE, NUM_DAYS, RESIDENT_AVAILABILITY.keys())
 
 for day, resident in enumerate(results.get_assignments()):
     date = START_DATE + timedelta(days=day)
@@ -87,8 +84,12 @@ print("Total Q2 calls = ", solution.get_objective_value())
 print("Per resident stats:")
 calls = results.get_calls_per_resident()
 q2s = results.get_q2s_per_resident()
+saturdays = results.get_saturdays()
+sundays = results.get_sundays()
 for resident in RESIDENT_AVAILABILITY.keys():
     print(f"\t{resident}")
-    print(f"\t\tTotal calls = {calls[resident]}")
-    print(f"\t\tTotal Q2s = {q2s[resident]}")
+    print(f"\t\tTalls = {calls[resident]}")
+    print(f"\t\tQ2s = {q2s[resident]}")
+    print(f"\t\tSaturdays = {saturdays[resident]}")
+    print(f"\t\tSundays = {sundays[resident]}")
 

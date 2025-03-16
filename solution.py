@@ -1,11 +1,13 @@
 from typing import Dict, List
+from datetime import date
 
 def key_for_day(day: int, resident: str) -> str:
     return f"Day_{day}_{resident}"
 
 class Solution:
-    def __init__(self, values: Dict[str, float], num_days: int, residents: List[str]) -> None:
+    def __init__(self, values: Dict[str, float], start_date: date, num_days: int, residents: List[str]) -> None:
         self.values = values
+        self.start_date = start_date
         self.num_days = num_days
         self.residents = residents
         self.assignments = None
@@ -41,3 +43,18 @@ class Solution:
             if assignments[day] == assignments[day + 2]:
                 result[assignments[day]] += 1
         return result
+
+    def _get_count_of_weekday(self, weekday) -> Dict[str, int]:
+        assignments = self.get_assignments()
+        result = {resident: 0 for resident in self.residents}
+        next_day = (7 + weekday - self.start_date.weekday()) % 7
+        while next_day < self.num_days:
+            result[assignments[next_day]] += 1
+            next_day += 7
+        return result
+
+    def get_saturdays(self) -> Dict[str, int]:
+        return self._get_count_of_weekday(5)
+
+    def get_sundays(self) -> Dict[str, int]:
+        return self._get_count_of_weekday(6)
