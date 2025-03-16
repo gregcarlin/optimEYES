@@ -1,8 +1,10 @@
 from linear_problem import PulpProblem, new_integer_variable, new_binary_variable, new_continuous_variable
 from functools import reduce
 from solution import Solution, key_for_day
+from datetime import date, timedelta
 import math
 
+START_DATE = date.fromisoformat("2025-06-01")
 RESIDENT_AVAILABILITY = {
     "Sophia": [
         0, 0, 0, 0, 1, 1, 1,
@@ -80,13 +82,8 @@ print("Status:", solution.get_status())
 results = Solution(solution.get_variables(), NUM_DAYS, RESIDENT_AVAILABILITY.keys())
 
 for day, resident in enumerate(results.get_assignments()):
-    print(f"\t{day}: {resident}")
-
-"""
-for name, val in results.items():
-    if name.startswith("q2_"):
-        print(f"{name} = {val}")
-"""
+    date = START_DATE + timedelta(days=day)
+    print(f"\t{date:%a %m-%d}: {resident}")
 
 print("Total Q2 calls = ", solution.get_objective_value())
 
