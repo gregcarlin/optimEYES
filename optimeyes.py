@@ -48,8 +48,8 @@ for resident, availability in RESIDENT_AVAILABILITY.items():
             problem.add_constraint(day_var == 0)
 
     # Ensure even distribution
-    # TODO: check diff between min and max instead (or in addition)
     problem.add_constraint(var_sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
+    problem.add_constraint(var_sum(day_vars[resident]) >= MAX_DAYS_PER_RESIDENT - 1)
 
 for day in range(NUM_DAYS):
     all_residents_for_day = [days_for_resident[day] for days_for_resident in day_vars.values()]
