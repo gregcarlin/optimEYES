@@ -16,7 +16,11 @@ def new_continuous_variable(name: str, lower_bound: Optional[int] = None, upper_
 
 class PulpSolution():
     def __init__(self, solved_problem: LpProblem) -> None:
+        assert solved_problem.status != const.LpStatusNotSolved
         self.problem = solved_problem
+
+    def was_successful(self) -> bool:
+        return self.problem.status == const.LpStatusOptimal
 
     def get_status(self) -> str:
         return LpStatus[self.problem.status]

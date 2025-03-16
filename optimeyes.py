@@ -1,7 +1,9 @@
+import math
+import os
+
 from functools import reduce
 from solution import Solution, key_for_day
 from datetime import date, timedelta
-import math
 
 from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period
@@ -91,7 +93,13 @@ problem.set_objective(sum(q2s))
 solution = problem.solve()
 
 # Overall status, were we able to find a solution?
-print("Status:", solution.get_status())
+if solution.was_successful():
+    print("Optimal solution found!")
+else:
+    width = os.get_terminal_size().columns
+    print("=" * width)
+    print(f"WARNING: Unable to find optimal solution with status: {solution.get_status()}")
+    print("=" * width)
 
 results = Solution(solution.get_variables(), START_DATE, NUM_DAYS, RESIDENT_AVAILABILITY.keys())
 
