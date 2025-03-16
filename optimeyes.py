@@ -1,5 +1,6 @@
-from problem import Problem, new_integer_variable, new_binary_variable, new_continuous_variable
+from linear_problem import PulpProblem, new_integer_variable, new_binary_variable, new_continuous_variable
 from functools import reduce
+from solution import Solution, key_for_day
 import math
 
 RESIDENT_AVAILABILITY = {
@@ -34,10 +35,7 @@ DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 def var_sum(vs):
     return reduce(lambda x, y: x + y, vs)
 
-def key_for_day(day: int, resident: str) -> str:
-    return f"Day_{day}_{resident}"
-
-problem = Problem("optimEYES", minimize=True)
+problem = PulpProblem("optimEYES", minimize=True)
 
 # For each resident, create a variable representing every day
 day_vars = {resident: [] for resident in RESIDENT_AVAILABILITY.keys()}
@@ -50,6 +48,7 @@ for resident, availability in RESIDENT_AVAILABILITY.items():
             problem.add_constraint(day_var == 0)
 
     # Ensure even distribution
+    # TODO: check diff between min and max instead (or in addition)
     problem.add_constraint(var_sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
 
 for day in range(NUM_DAYS):
@@ -78,15 +77,10 @@ solution = problem.solve()
 # Overall status, were we able to find a solution?
 print("Status:", solution.get_status())
 
-results = solution.get_variables()
-for day in range(NUM_DAYS):
-    assigned_resident = None
-    for resident in RESIDENT_AVAILABILITY.keys():
-        if results[key_for_day(day, resident)] != 0.0:
-            assert assigned_resident is None, "Two residents assigned to the same day"
-            assigned_resident = resident
-    assert assigned_resident is not None, "No residents assigned to a day"
-    print(f"\t{day}: {assigned_resident}")
+results = Solution(solution.get_variables(), NUM_DAYS, RESIDENT_AVAILABILITY.keys())
+
+for day, resident in enumerate(results.get_assignments()):
+    print(f"\t{day}: {resident}")
 
 """
 for name, val in results.items():
@@ -95,4 +89,12 @@ for name, val in results.items():
 """
 
 print("Total Q2 calls = ", solution.get_objective_value())
+
+print("Per resident stats:")
+calls = results.get_calls_per_resident()
+q2s = results.get_q2s_per_resident()
+for resident in RESIDENT_AVAILABILITY.keys():
+    print(f"\t{resident}")
+    print(f"\t\tTotal calls = {calls[resident]}")
+    print(f"\t\tTotal Q2s = {q2s[resident]}")
 
