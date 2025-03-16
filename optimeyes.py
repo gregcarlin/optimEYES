@@ -1,4 +1,4 @@
-from linear_problem import PulpProblem, new_integer_variable, new_binary_variable, new_continuous_variable
+from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
 from functools import reduce
 from solution import Solution, key_for_day
 from datetime import date, timedelta
@@ -34,9 +34,6 @@ MAX_DAYS_PER_RESIDENT = math.ceil(NUM_DAYS / float(len(RESIDENT_AVAILABILITY.key
 
 DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-def var_sum(vs):
-    return reduce(lambda x, y: x + y, vs)
-
 problem = PulpProblem("optimEYES", minimize=True)
 
 # For each resident, create a variable representing every day
@@ -50,13 +47,13 @@ for resident, availability in RESIDENT_AVAILABILITY.items():
             problem.add_constraint(day_var == 0)
 
     # Ensure even distribution
-    problem.add_constraint(var_sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
-    problem.add_constraint(var_sum(day_vars[resident]) >= MAX_DAYS_PER_RESIDENT - 1)
+    problem.add_constraint(sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
+    problem.add_constraint(sum(day_vars[resident]) >= MAX_DAYS_PER_RESIDENT - 1)
 
 for day in range(NUM_DAYS):
     all_residents_for_day = [days_for_resident[day] for days_for_resident in day_vars.values()]
     # Ensure exactly one resident is assigned to each day
-    problem.add_constraint(var_sum(all_residents_for_day) == 1)
+    problem.add_constraint(sum(all_residents_for_day) == 1)
 
 # Ensure a resident doesn't work two days in a row
 for days_for_resident in day_vars.values():
@@ -72,7 +69,7 @@ for resident, days_for_resident in day_vars.items():
         var_slack = new_continuous_variable(f"q2_{resident}_{i}_cont", 0, 0.9)
         problem.add_constraint(0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + 2] == var + var_slack)
         q2s.append(var)
-problem.set_objective(var_sum(q2s))
+problem.set_objective(sum(q2s))
 
 solution = problem.solve()
 
