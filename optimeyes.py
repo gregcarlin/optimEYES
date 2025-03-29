@@ -34,6 +34,7 @@ RESIDENT_AVAILABILITY = {
 
 NUM_DAYS = len(next(iter(RESIDENT_AVAILABILITY.values())))
 NUM_RESIDENTS = len(RESIDENT_AVAILABILITY.keys())
+MIN_DAYS_PER_RESIDENT = math.floor(NUM_DAYS / float(NUM_RESIDENTS))
 MAX_DAYS_PER_RESIDENT = math.ceil(NUM_DAYS / float(NUM_RESIDENTS))
 
 problem = PulpProblem("optimEYES", minimize=True)
@@ -49,8 +50,8 @@ for resident, availability in RESIDENT_AVAILABILITY.items():
             problem.add_constraint(day_var == 0)
 
     # Ensure even distribution
+    problem.add_constraint(sum(day_vars[resident]) >= MIN_DAYS_PER_RESIDENT)
     problem.add_constraint(sum(day_vars[resident]) <= MAX_DAYS_PER_RESIDENT)
-    problem.add_constraint(sum(day_vars[resident]) >= MAX_DAYS_PER_RESIDENT - 1)
 
 # Ensure exactly one resident is assigned to each day
 for day in range(NUM_DAYS):
@@ -65,6 +66,7 @@ for days_for_resident in day_vars.values():
 
 def evenly_distribute(weekday: int) -> None:
     num_weekdays = num_weekdays_in_time_period(START_DATE, NUM_DAYS, weekday)
+    min_weekdays_per_resident = math.floor(num_weekdays / float(NUM_RESIDENTS))
     max_weekdays_per_resident = math.ceil(num_weekdays / float(NUM_RESIDENTS))
     for days_for_resident in day_vars.values():
         day_of_week_vars = []
@@ -72,8 +74,8 @@ def evenly_distribute(weekday: int) -> None:
         while next_day < NUM_DAYS:
             day_of_week_vars.append(days_for_resident[next_day])
             next_day += 7
+        problem.add_constraint(sum(day_of_week_vars) >= min_weekdays_per_resident)
         problem.add_constraint(sum(day_of_week_vars) <= max_weekdays_per_resident)
-        problem.add_constraint(sum(day_of_week_vars) >= max_weekdays_per_resident - 1)
         
 # Ensure even distribution of Saturdays and Sundays
 evenly_distribute(5)
