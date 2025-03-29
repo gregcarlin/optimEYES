@@ -3,11 +3,20 @@ from datetime import date
 
 from dateutil import days_until_next_weekday
 
+
 def key_for_day(day: int, resident: str) -> str:
     return f"Day_{day}_{resident}"
 
+
 class Solution:
-    def __init__(self, objective_value: float, values: Dict[str, float], start_date: date, num_days: int, residents: List[str]) -> None:
+    def __init__(
+        self,
+        objective_value: float,
+        values: Dict[str, float],
+        start_date: date,
+        num_days: int,
+        residents: List[str],
+    ) -> None:
         self.objective_value = objective_value
         self.values = values
         self.start_date = start_date
@@ -31,7 +40,9 @@ class Solution:
             assigned_resident = None
             for resident in self.residents:
                 if self.values[key_for_day(day, resident)] != 0.0:
-                    assert assigned_resident is None, "Two residents assigned to the same day"
+                    assert (
+                        assigned_resident is None
+                    ), "Two residents assigned to the same day"
                     assigned_resident = resident
             assert assigned_resident is not None, "No residents assigned to a day"
             self.assignments.append(assigned_resident)

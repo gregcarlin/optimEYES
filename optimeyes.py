@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from call_problem import CallProblemBuilder
 
 START_DATE = date.fromisoformat("2025-06-01")
+# fmt: off
 RESIDENT_AVAILABILITY = {
     "Sophia": [
         0, 0, 0, 0, 1, 1, 1,
@@ -25,8 +26,10 @@ RESIDENT_AVAILABILITY = {
         1, 1, 1, 1, 1, 1, 1,
     ],
 }
+# fmt: on
 
 # TODO: validate input
+
 
 def main() -> None:
     problem = CallProblemBuilder(START_DATE, RESIDENT_AVAILABILITY)
@@ -67,6 +70,7 @@ def main() -> None:
         print(f"\t\tSaturdays = {saturdays[resident]}")
         print(f"\t\tSundays = {sundays[resident]}")
         print(f"\t\tQ2s = {q2s[resident]}")
+
 
 if __name__ == "__main__":
     main()

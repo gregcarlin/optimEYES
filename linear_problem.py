@@ -5,14 +5,22 @@ from typing import Optional
 This file provides a simple wrapper around the pulp API
 """
 
+
 def new_binary_variable(name: str):
     return LpVariable(name, cat=LpBinary)
 
-def new_integer_variable(name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None):
+
+def new_integer_variable(
+    name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None
+):
     return LpVariable(name, lower_bound, upper_bound, LpInteger)
 
-def new_continuous_variable(name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None):
+
+def new_continuous_variable(
+    name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None
+):
     return LpVariable(name, lower_bound, upper_bound, LpContinuous)
+
 
 class PulpSolution:
     def __init__(self, solved_problem: LpProblem) -> None:
@@ -30,6 +38,7 @@ class PulpSolution:
 
     def get_objective_value(self):
         return value(self.problem.objective)
+
 
 class PulpProblem:
     def __init__(self, name: str, minimize: bool = True) -> None:
@@ -56,4 +65,3 @@ class PulpProblem:
         self.lp_problem.solve(COIN(msg=0))
         self.solved = True
         return PulpSolution(self.lp_problem)
-
