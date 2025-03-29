@@ -34,7 +34,7 @@ class PulpSolution:
         return pulp.LpStatus[self.problem.status]
 
     def get_variables(self) -> Mapping[str, float]:
-        return {v.name: v.varValue for v in self.problem.variables()} # pyright: ignore
+        return {v.name: v.varValue for v in self.problem.variables()}  # pyright: ignore
 
     def get_objective_value(self):
         return pulp.value(self.problem.objective)
@@ -42,7 +42,9 @@ class PulpSolution:
 
 class PulpProblem:
     def __init__(self, name: str, minimize: bool = True) -> None:
-        self.lp_problem = pulp.LpProblem(name, pulp.LpMinimize if minimize else pulp.LpMaximize)
+        self.lp_problem = pulp.LpProblem(
+            name, pulp.LpMinimize if minimize else pulp.LpMaximize
+        )
         self.objective_fn = None
         self.constraint_fns = []
         self.solved = False
