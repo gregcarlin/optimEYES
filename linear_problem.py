@@ -14,7 +14,7 @@ def new_integer_variable(name: str, lower_bound: Optional[int] = None, upper_bou
 def new_continuous_variable(name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None):
     return LpVariable(name, lower_bound, upper_bound, LpContinuous)
 
-class PulpSolution():
+class PulpSolution:
     def __init__(self, solved_problem: LpProblem) -> None:
         assert solved_problem.status != const.LpStatusNotSolved
         self.problem = solved_problem
@@ -31,7 +31,7 @@ class PulpSolution():
     def get_objective_value(self):
         return value(self.problem.objective)
 
-class PulpProblem():
+class PulpProblem:
     def __init__(self, name: str, minimize: bool = True) -> None:
         self.lp_problem = LpProblem(name, LpMinimize if minimize else LpMaximize)
         self.objective_fn = None

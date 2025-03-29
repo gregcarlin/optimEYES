@@ -7,7 +7,8 @@ def key_for_day(day: int, resident: str) -> str:
     return f"Day_{day}_{resident}"
 
 class Solution:
-    def __init__(self, values: Dict[str, float], start_date: date, num_days: int, residents: List[str]) -> None:
+    def __init__(self, objective_value: float, values: Dict[str, float], start_date: date, num_days: int, residents: List[str]) -> None:
+        self.objective_value = objective_value
         self.values = values
         self.start_date = start_date
         self.num_days = num_days
@@ -16,6 +17,9 @@ class Solution:
 
     def __getitem__(self, key: str) -> float:
         return self.values[key]
+
+    def get_objective_value(self) -> float:
+        return self.objective_value
 
     def get_assignments(self) -> List[str]:
         if self.assignments is not None:
