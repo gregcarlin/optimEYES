@@ -1,12 +1,7 @@
-import math
 import os
 
-from functools import reduce
-from solution import Solution, key_for_day
 from datetime import date, timedelta
 
-from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
-from dateutil import days_until_next_weekday, num_weekdays_in_time_period
 from call_problem import CallProblemBuilder
 
 START_DATE = date.fromisoformat("2025-06-01")
