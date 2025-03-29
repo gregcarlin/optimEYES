@@ -38,10 +38,11 @@ def main() -> None:
     problem.evenly_distribute_weekday(5)
     problem.evenly_distribute_weekday(6)
 
+    # TODO if first solution fails, relax tolerance here
+    problem.evenly_distribute_q2s()
+
     # Minimize Q2 calls
     problem.minimize_q2s()
-    # TODO this isn't working
-    # problem.evenly_distribute_q2s()
 
     solution = problem.solve()
 

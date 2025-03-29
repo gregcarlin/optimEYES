@@ -60,6 +60,8 @@ class CallProblemBuilder:
                     days_for_resident[i] + days_for_resident[i + 1] <= 1
                 )
 
+        self.q2s: Mapping[str, List[Variable]] | None = None
+
     def evenly_distribute_weekday(self, weekday: int) -> None:
         num_weekdays = num_weekdays_in_time_period(
             self.start_date, self.num_days, weekday
@@ -80,9 +82,11 @@ class CallProblemBuilder:
             )
 
     def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
-        q2s = {}
+        if self.q2s is not None:
+            return self.q2s
+        self.q2s = {}
         for resident, days_for_resident in self.day_vars.items():
-            q2s[resident] = []
+            self.q2s[resident] = []
             for i in range(len(days_for_resident) - 2):
                 var = new_binary_variable(f"q2_{resident}_{i}")
                 var_slack = new_continuous_variable(f"q2_{resident}_{i}_cont", 0, 0.9)
@@ -90,8 +94,8 @@ class CallProblemBuilder:
                     0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + 2]
                     == var + var_slack
                 )
-                q2s[resident].append(var)
-        return q2s
+                self.q2s[resident].append(var)
+        return self.q2s
 
     def minimize_q2s(self) -> None:
         q2s_dict = self._get_q2_vars()
