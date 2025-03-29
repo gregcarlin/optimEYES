@@ -1,11 +1,16 @@
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, List
 
 import math
 from datetime import date, timedelta
 
 from solution import Solution, key_for_day
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period
-from linear_problem import PulpProblem, new_binary_variable, new_continuous_variable
+from linear_problem import (
+    PulpProblem,
+    new_binary_variable,
+    new_continuous_variable,
+    Variable,
+)
 
 
 class CallProblemBuilder:
@@ -74,9 +79,10 @@ class CallProblemBuilder:
                 sum(day_of_week_vars) <= max_weekdays_per_resident
             )
 
-    def minimize_q2s(self) -> None:
-        q2s = []
+    def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
+        q2s = {}
         for resident, days_for_resident in self.day_vars.items():
+            q2s[resident] = []
             for i in range(len(days_for_resident) - 2):
                 var = new_binary_variable(f"q2_{resident}_{i}")
                 var_slack = new_continuous_variable(f"q2_{resident}_{i}_cont", 0, 0.9)
@@ -84,8 +90,20 @@ class CallProblemBuilder:
                     0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + 2]
                     == var + var_slack
                 )
-                q2s.append(var)
+                q2s[resident].append(var)
+        return q2s
+
+    def minimize_q2s(self) -> None:
+        q2s_dict = self._get_q2_vars()
+        q2s = [v for vs in q2s_dict.values() for v in vs]
         self.problem.set_objective(sum(q2s))
+
+    def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
+        q2s_dict = self._get_q2_vars()
+        q2s_per_resident = [sum(q2_vars) for q2_vars in q2s_dict.values()]
+        max_q2s = self.problem.max_of(q2s_per_resident, self.num_days, "max_q2s")
+        min_q2s = self.problem.min_of(q2s_per_resident, self.num_days, "min_q2s")
+        self.problem.add_constraint(max_q2s - min_q2s <= tolerance)
 
     def solve(self) -> Solution | str:
         solution = self.problem.solve()

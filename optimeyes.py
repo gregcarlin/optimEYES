@@ -40,6 +40,8 @@ def main() -> None:
 
     # Minimize Q2 calls
     problem.minimize_q2s()
+    # TODO this isn't working
+    # problem.evenly_distribute_q2s()
 
     solution = problem.solve()
 

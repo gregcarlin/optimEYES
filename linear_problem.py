@@ -1,24 +1,27 @@
-from typing import Optional, Mapping
+from typing import Optional, Mapping, Sequence
+
 import pulp as pulp
 
 """
 This file provides a simple wrapper around the pulp API
 """
 
+Variable = pulp.LpVariable
 
-def new_binary_variable(name: str):
+
+def new_binary_variable(name: str) -> Variable:
     return pulp.LpVariable(name, cat=pulp.LpBinary)
 
 
 def new_integer_variable(
     name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None
-):
+) -> Variable:
     return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpInteger)
 
 
 def new_continuous_variable(
     name: str, lower_bound: Optional[float] = None, upper_bound: Optional[float] = None
-):
+) -> Variable:
     return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpContinuous)
 
 
@@ -36,8 +39,8 @@ class PulpSolution:
     def get_variables(self) -> Mapping[str, float]:
         return {v.name: v.varValue for v in self.problem.variables()}  # pyright: ignore
 
-    def get_objective_value(self):
-        return pulp.value(self.problem.objective)
+    def get_objective_value(self) -> float:
+        return float(pulp.value(self.problem.objective))
 
 
 class PulpProblem:
@@ -56,6 +59,45 @@ class PulpProblem:
     def add_constraint(self, constraint) -> None:
         assert not self.solved
         self.constraint_fns.append(constraint)
+
+    def _get_decision_vars(self, var_name: str, count: int) -> Sequence[Variable]:
+        """
+        Returns a given number of binary decision variables, where exactly one will be set.
+        """
+        decision_vars = [
+            new_binary_variable(f"{var_name}_decision_{i}") for i in range(count)
+        ]
+        self.add_constraint(sum(decision_vars) == 1)
+        return decision_vars
+
+    def max_of(
+        self, variables: Sequence[Variable | int], max_possible_val: int, var_name: str
+    ) -> Variable:
+        """
+        Returns a new variable that will be set to the maximum or minimum of all the given variables
+        See https://math.stackexchange.com/a/3568461
+        """
+        max_var = new_continuous_variable(var_name)
+        decision_vars = self._get_decision_vars(var_name, len(variables))
+        for var, decision_var in zip(variables, decision_vars):
+            self.add_constraint(max_var >= var)
+            self.add_constraint(max_var <= var + (1 - decision_var) * max_possible_val)
+        return max_var
+
+    def min_of(
+        self, variables: Sequence[Variable | int], max_possible_val: int, var_name: str
+    ) -> Variable:
+        """
+        Same as above, but for min.
+        """
+        min_var = new_continuous_variable(var_name)
+        decision_vars = self._get_decision_vars(var_name, len(variables))
+        for var, decision_var in zip(variables, decision_vars):
+            self.add_constraint(min_var <= var)
+            self.add_constraint(
+                min_var >= var - (1 - decision_var) * (max_possible_val + 1)
+            )
+        return min_var
 
     def solve(self) -> PulpSolution:
         assert self.objective_fn is not None, "No objective function specified"
