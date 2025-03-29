@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, Sequence, Iterable, Mapping
 from datetime import date
 
 from dateutil import days_until_next_weekday
@@ -12,10 +12,10 @@ class Solution:
     def __init__(
         self,
         objective_value: float,
-        values: Dict[str, float],
+        values: Mapping[str, float],
         start_date: date,
         num_days: int,
-        residents: List[str],
+        residents: Iterable[str],
     ) -> None:
         self.objective_value = objective_value
         self.values = values
@@ -30,7 +30,7 @@ class Solution:
     def get_objective_value(self) -> float:
         return self.objective_value
 
-    def get_assignments(self) -> List[str]:
+    def get_assignments(self) -> Sequence[str]:
         if self.assignments is not None:
             return self.assignments
 
