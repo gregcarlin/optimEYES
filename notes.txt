@@ -1,0 +1,8 @@
+Run type checker:
+`pyright`
+
+Run autoformatter:
+`black .`
+
+Run code:
+`python3 optimeyes.py`
