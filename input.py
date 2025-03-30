@@ -21,8 +21,15 @@ class InputBuilder:
         return (day - self.start_date).days
 
     def _validate(self) -> None:
+        self._validate_num_days_are_equal()
         self._validate_no_days_without_availability()
-        # TODO maybe add other validations like same number of days per resident
+        # TODO maybe add other validations
+
+    def _validate_num_days_are_equal(self) -> None:
+        for resident, days in self.availability.items():
+            assert (
+                len(days) == self.num_days
+            ), f"Number of days for {resident} is {len(days)}, expected {self.num_days}"
 
     def _validate_no_days_without_availability(self) -> None:
         for i in range(self.num_days):
