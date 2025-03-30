@@ -17,6 +17,9 @@ class InputBuilder:
     def _get_day(self, index: int) -> date:
         return self.start_date + timedelta(days=index)
 
+    def _get_index(self, day: date) -> int:
+        return (day - self.start_date).days
+
     def _validate(self) -> None:
         self._validate_no_days_without_availability()
         # TODO maybe add other validations
@@ -31,17 +34,26 @@ class InputBuilder:
                     False
                 ), f"No residents are available on {self._get_day(i)} (day {i})"
 
-    # TODO add start and end
-    def assign_to_day_of_week(self, resident: str, weekday: Weekday) -> None:
-        index = days_until_next_weekday(self.start_date, weekday)
-        while index < self.num_days:
+    def assign_to_day_of_week(
+        self, resident: str, weekday: Weekday, start: str, end: str
+    ) -> None:
+        """
+        Assigns the given resident to be on call every given weekday between the two dates.
+        """
+        start_date = date.fromisoformat(start)
+        end_date = date.fromisoformat(end)
+
+        start_index = self._get_index(start_date) + days_until_next_weekday(
+            start_date, weekday
+        )
+        end_index = min(self._get_index(end_date) + 1, self.num_days)
+        for index in range(start_index, end_index, 7):
             for res, days in self.availability.items():
                 if res == resident:
                     assert (
                         days[index] == 1
                     ), f"Trying to assign {resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
                 days[index] = 1 if res == resident else 0
-            index += 7
 
     def get_availability(self) -> Mapping[str, Sequence[int]]:
         self._validate()

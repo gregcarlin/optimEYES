@@ -66,7 +66,7 @@ def distribute_q2s_attempt(
 
 def main() -> None:
     input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
-    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY)
+    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-01", "2025-07-29")
     availability = input.get_availability()
 
     base = base_attempt(availability)
