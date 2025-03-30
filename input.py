@@ -22,7 +22,7 @@ class InputBuilder:
 
     def _validate(self) -> None:
         self._validate_no_days_without_availability()
-        # TODO maybe add other validations
+        # TODO maybe add other validations like same number of days per resident
 
     def _validate_no_days_without_availability(self) -> None:
         for i in range(self.num_days):
@@ -39,6 +39,7 @@ class InputBuilder:
     ) -> None:
         """
         Assigns the given resident to be on call every given weekday between the two dates.
+        Both the start and end dates are inclusive.
         """
         start_date = date.fromisoformat(start)
         end_date = date.fromisoformat(end)

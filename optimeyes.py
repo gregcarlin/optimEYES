@@ -1,7 +1,7 @@
 from typing import Mapping, Sequence
 
 import os
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder
@@ -31,6 +31,17 @@ RESIDENT_AVAILABILITY = {
     ],
 }
 # fmt: on
+
+
+def print_availability(availability: Mapping[str, Sequence[int]]) -> None:
+    print("Availability:")
+    num_days = len(next(iter(availability.values())))
+    for i in range(num_days):
+        day = START_DATE + timedelta(days=i)
+        available_residents = ", ".join(
+            resident for resident, days in availability.items() if days[i] == 1
+        )
+        print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
 def base_attempt(availability: Mapping[str, Sequence[int]]) -> Solution | str:
@@ -68,6 +79,8 @@ def main() -> None:
     input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
     input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-01", "2025-07-29")
     availability = input.get_availability()
+
+    print_availability(availability)
 
     base = base_attempt(availability)
     if isinstance(base, str):
