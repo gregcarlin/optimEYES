@@ -1,5 +1,5 @@
 from typing import Dict, Sequence, Iterable, Mapping
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil import days_until_next_weekday
 
@@ -61,6 +61,13 @@ class Solution:
                 result[assignments[day]] += 1
         return result
 
+    def get_q2_unfairness(self) -> int:
+        """
+        Calculate the difference between the maximum number of q2s and the minimum.
+        """
+        q2s = self.get_q2s_per_resident().values()
+        return max(q2s) - min(q2s)
+
     def _get_count_of_weekday(self, weekday) -> Dict[str, int]:
         assignments = self.get_assignments()
         result = {resident: 0 for resident in self.residents}
@@ -75,3 +82,23 @@ class Solution:
 
     def get_sundays(self) -> Dict[str, int]:
         return self._get_count_of_weekday(6)
+
+    def print(self) -> None:
+        for day, resident in enumerate(self.get_assignments()):
+            date = self.start_date + timedelta(days=day)
+            print(f"\t{date:%a %m-%d}: {resident}")
+
+        print("Total Q2 calls = ", self.get_objective_value())
+        print("Q2 unfairness = ", self.get_q2_unfairness())
+
+        print("Per resident stats:")
+        calls = self.get_calls_per_resident()
+        saturdays = self.get_saturdays()
+        sundays = self.get_sundays()
+        q2s = self.get_q2s_per_resident()
+        for resident in self.residents:
+            print(f"\t{resident}")
+            print(f"\t\tCalls = {calls[resident]}")
+            print(f"\t\tSaturdays = {saturdays[resident]}")
+            print(f"\t\tSundays = {sundays[resident]}")
+            print(f"\t\tQ2s = {q2s[resident]}")

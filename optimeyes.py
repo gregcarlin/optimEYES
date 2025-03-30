@@ -1,10 +1,12 @@
-import os
+from typing import Mapping, Sequence
 
-from datetime import date, timedelta
+import os
+from datetime import date
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder
 from input import InputBuilder
+from solution import Solution
 
 START_DATE = date.fromisoformat("2025-07-01")
 # fmt: off
@@ -31,51 +33,77 @@ RESIDENT_AVAILABILITY = {
 # fmt: on
 
 
-def main() -> None:
-    input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
-    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY)
-
-    problem = CallProblemBuilder(START_DATE, input.get_availability())
+def base_attempt(availability: Mapping[str, Sequence[int]]) -> Solution | str:
+    problem = CallProblemBuilder(START_DATE, availability)
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
     problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
-    # TODO if first solution fails, relax tolerance here
-    problem.evenly_distribute_q2s()
+    # Minimize Q2 calls
+    problem.minimize_q2s()
+
+    return problem.solve()
+
+
+def distribute_q2s_attempt(
+    availability: Mapping[str, Sequence[int]], tolerance: int
+) -> Solution | str:
+    problem = CallProblemBuilder(START_DATE, availability)
+
+    # Ensure even distribution of Saturdays and Sundays
+    problem.evenly_distribute_weekday(Weekday.SATURDAY)
+    problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
     # Minimize Q2 calls
     problem.minimize_q2s()
 
-    solution = problem.solve()
+    # Evenly distribute q2s
+    problem.evenly_distribute_q2s(tolerance)
 
-    # Overall status, were we able to find a solution?
-    if isinstance(solution, str):
-        width = os.get_terminal_size().columns
-        print("=" * width)
-        print(f"WARNING: Unable to find optimal solution with status: {solution}")
-        print("=" * width)
+    return problem.solve()
+
+
+def main() -> None:
+    input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
+    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY)
+    availability = input.get_availability()
+
+    base = base_attempt(availability)
+    if isinstance(base, str):
+        # TODO relax some constraints and try again
+        print("Unable to find optimal solution with status: {base}")
         return
-    else:
+
+    unfairness = base.get_q2_unfairness()
+
+    solutions = [base]
+    for tolerance in range(unfairness - 1, -1, -1):
+        attempt = distribute_q2s_attempt(availability, tolerance)
+        if isinstance(attempt, str):
+            # No solution found, give up
+            break
+        if attempt.get_objective_value() <= solutions[-1].get_objective_value():
+            # Note: objective value should never actually be less than, but it
+            # may be equal.  In this case, our new solution has the same number
+            # of q2 calls, but distributes them more evenly.
+            solutions = solutions[:-1]
+            solutions.append(attempt)
+        else:
+            solutions.append(attempt)
+
+    if len(solutions) == 1:
         print("Optimal solution found!")
+        solutions[0].print()
+        return
 
-    for day, resident in enumerate(solution.get_assignments()):
-        date = START_DATE + timedelta(days=day)
-        print(f"\t{date:%a %m-%d}: {resident}")
-
-    print("Total Q2 calls = ", solution.get_objective_value())
-
-    print("Per resident stats:")
-    calls = solution.get_calls_per_resident()
-    saturdays = solution.get_saturdays()
-    sundays = solution.get_sundays()
-    q2s = solution.get_q2s_per_resident()
-    for resident in RESIDENT_AVAILABILITY.keys():
-        print(f"\t{resident}")
-        print(f"\t\tCalls = {calls[resident]}")
-        print(f"\t\tSaturdays = {saturdays[resident]}")
-        print(f"\t\tSundays = {sundays[resident]}")
-        print(f"\t\tQ2s = {q2s[resident]}")
+    print(f"Found {len(solutions)} potential solutions:")
+    width = os.get_terminal_size().columns
+    for i, solution in enumerate(solutions):
+        text = f"Solution {i+1}:"
+        buffer = int((width - len(text)) / 2) * "="
+        print(f"{buffer}{text}{buffer}")
+        solution.print()
 
 
 if __name__ == "__main__":
