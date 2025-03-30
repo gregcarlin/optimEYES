@@ -2,13 +2,15 @@ import os
 
 from datetime import date, timedelta
 
+from dateutil import Weekday
 from call_problem import CallProblemBuilder
+from input import InputBuilder
 
-START_DATE = date.fromisoformat("2025-06-01")
+START_DATE = date.fromisoformat("2025-07-01")
 # fmt: off
 RESIDENT_AVAILABILITY = {
     "Sophia": [
-        0, 0, 0, 0, 1, 1, 1,
+        0, 1, 0, 0, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1,
@@ -28,15 +30,16 @@ RESIDENT_AVAILABILITY = {
 }
 # fmt: on
 
-# TODO: validate input
-
 
 def main() -> None:
-    problem = CallProblemBuilder(START_DATE, RESIDENT_AVAILABILITY)
+    input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
+    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY)
+
+    problem = CallProblemBuilder(START_DATE, input.get_availability())
 
     # Ensure even distribution of Saturdays and Sundays
-    problem.evenly_distribute_weekday(5)
-    problem.evenly_distribute_weekday(6)
+    problem.evenly_distribute_weekday(Weekday.SATURDAY)
+    problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
     # TODO if first solution fails, relax tolerance here
     problem.evenly_distribute_q2s()

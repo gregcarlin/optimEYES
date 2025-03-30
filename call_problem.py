@@ -4,7 +4,7 @@ import math
 from datetime import date, timedelta
 
 from solution import Solution, key_for_day
-from dateutil import days_until_next_weekday, num_weekdays_in_time_period
+from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
 from linear_problem import (
     PulpProblem,
     new_binary_variable,
@@ -62,7 +62,7 @@ class CallProblemBuilder:
 
         self.q2s: Mapping[str, List[Variable]] | None = None
 
-    def evenly_distribute_weekday(self, weekday: int) -> None:
+    def evenly_distribute_weekday(self, weekday: Weekday) -> None:
         num_weekdays = num_weekdays_in_time_period(
             self.start_date, self.num_days, weekday
         )
