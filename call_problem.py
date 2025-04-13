@@ -7,8 +7,6 @@ from solution import Solution, key_for_day
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
 from linear_problem import (
     PulpProblem,
-    new_binary_variable,
-    new_continuous_variable,
     Variable,
 )
 
@@ -32,7 +30,7 @@ class CallProblemBuilder:
         self.day_vars = {resident: [] for resident in resident_availability.keys()}
         for resident, availability in resident_availability.items():
             for day, is_available in enumerate(availability):
-                day_var = new_binary_variable(key_for_day(day, resident))
+                day_var = self.problem.new_binary_variable(key_for_day(day, resident))
                 self.day_vars[resident].append(day_var)
                 if is_available == 0:
                     # Resident is unavailable this day
@@ -88,8 +86,10 @@ class CallProblemBuilder:
         for resident, days_for_resident in self.day_vars.items():
             self.q2s[resident] = []
             for i in range(len(days_for_resident) - 2):
-                var = new_binary_variable(f"q2_{resident}_{i}")
-                var_slack = new_continuous_variable(f"q2_{resident}_{i}_cont", 0, 0.9)
+                var = self.problem.new_binary_variable(f"q2_{resident}_{i}")
+                var_slack = self.problem.new_continuous_variable(
+                    f"q2_{resident}_{i}_cont", 0, 0.9
+                )
                 self.problem.add_constraint(
                     0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + 2]
                     == var + var_slack

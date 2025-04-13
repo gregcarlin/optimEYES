@@ -9,22 +9,6 @@ This file provides a simple wrapper around the pulp API
 Variable = pulp.LpVariable
 
 
-def new_binary_variable(name: str) -> Variable:
-    return pulp.LpVariable(name, cat=pulp.LpBinary)
-
-
-def new_integer_variable(
-    name: str, lower_bound: Optional[int] = None, upper_bound: Optional[int] = None
-) -> Variable:
-    return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpInteger)
-
-
-def new_continuous_variable(
-    name: str, lower_bound: Optional[float] = None, upper_bound: Optional[float] = None
-) -> Variable:
-    return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpContinuous)
-
-
 class PulpSolution:
     def __init__(self, solved_problem: pulp.LpProblem) -> None:
         assert solved_problem.status != pulp.const.LpStatusNotSolved
@@ -45,19 +29,41 @@ class PulpSolution:
 
 class PulpProblem:
     def __init__(self, name: str, minimize: bool = True) -> None:
-        self.lp_problem = pulp.LpProblem(
-            name, pulp.LpMinimize if minimize else pulp.LpMaximize
-        )
+        self.name = name
+        self.minimize = minimize
+        self.var_names = set()
         self.objective_fn = None
         self.constraint_fns = []
-        self.solved = False
+
+    def new_binary_variable(self, name: str) -> Variable:
+        assert name not in self.var_names, f"Duplicate variable {name}"
+        self.var_names.add(name)
+        return pulp.LpVariable(name, cat=pulp.LpBinary)
+
+    def new_integer_variable(
+        self,
+        name: str,
+        lower_bound: Optional[int] = None,
+        upper_bound: Optional[int] = None,
+    ) -> Variable:
+        assert name not in self.var_names, f"Duplicate variable {name}"
+        self.var_names.add(name)
+        return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpInteger)
+
+    def new_continuous_variable(
+        self,
+        name: str,
+        lower_bound: Optional[float] = None,
+        upper_bound: Optional[float] = None,
+    ) -> Variable:
+        assert name not in self.var_names, f"Duplicate variable {name}"
+        self.var_names.add(name)
+        return pulp.LpVariable(name, lower_bound, upper_bound, pulp.LpContinuous)
 
     def set_objective(self, objective_fn) -> None:
-        assert not self.solved
         self.objective_fn = objective_fn
 
     def add_constraint(self, constraint) -> None:
-        assert not self.solved
         self.constraint_fns.append(constraint)
 
     def _get_decision_vars(self, var_name: str, count: int) -> Sequence[Variable]:
@@ -65,7 +71,7 @@ class PulpProblem:
         Returns a given number of binary decision variables, where exactly one will be set.
         """
         decision_vars = [
-            new_binary_variable(f"{var_name}_decision_{i}") for i in range(count)
+            self.new_binary_variable(f"{var_name}_decision_{i}") for i in range(count)
         ]
         self.add_constraint(sum(decision_vars) == 1)
         return decision_vars
@@ -74,10 +80,10 @@ class PulpProblem:
         self, variables: Sequence[Variable | int], max_possible_val: int, var_name: str
     ) -> Variable:
         """
-        Returns a new variable that will be set to the maximum or minimum of all the given variables
+        Returns a new variable that will be set to the maximum of all the given variables
         See https://math.stackexchange.com/a/3568461
         """
-        max_var = new_continuous_variable(var_name)
+        max_var = self.new_continuous_variable(var_name)
         decision_vars = self._get_decision_vars(var_name, len(variables))
         for var, decision_var in zip(variables, decision_vars):
             self.add_constraint(max_var >= var)
@@ -90,7 +96,7 @@ class PulpProblem:
         """
         Same as above, but for min.
         """
-        min_var = new_continuous_variable(var_name)
+        min_var = self.new_continuous_variable(var_name)
         decision_vars = self._get_decision_vars(var_name, len(variables))
         for var, decision_var in zip(variables, decision_vars):
             self.add_constraint(min_var <= var)
@@ -102,10 +108,12 @@ class PulpProblem:
     def solve(self) -> PulpSolution:
         assert self.objective_fn is not None, "No objective function specified"
 
-        self.lp_problem += self.objective_fn, "Objective"
+        lp_problem = pulp.LpProblem(
+            self.name, pulp.LpMinimize if self.minimize else pulp.LpMaximize
+        )
+        lp_problem += self.objective_fn, "Objective"
         for index, constraint_fn in enumerate(self.constraint_fns):
-            self.lp_problem += constraint_fn, f"Constraint_{index}"
+            lp_problem += constraint_fn, f"Constraint_{index}"
 
-        self.lp_problem.solve(pulp.COIN(msg=0))
-        self.solved = True
-        return PulpSolution(self.lp_problem)
+        lp_problem.solve(pulp.COIN(msg=0))
+        return PulpSolution(lp_problem)
