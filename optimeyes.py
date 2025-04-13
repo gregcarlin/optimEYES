@@ -45,7 +45,7 @@ def print_availability(availability: Mapping[str, Sequence[int]]) -> None:
 
 
 def base_attempt(availability: Mapping[str, Sequence[int]]) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, availability)
+    problem = CallProblemBuilder(START_DATE, availability, debug_infeasibility=False)
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)

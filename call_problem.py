@@ -13,12 +13,17 @@ from linear_problem import (
 
 class CallProblemBuilder:
     def __init__(
-        self, start_date: date, resident_availability: Mapping[str, Sequence[int]]
+        self,
+        start_date: date,
+        resident_availability: Mapping[str, Sequence[int]],
+        debug_infeasibility: bool = False,
     ) -> None:
         self.start_date = start_date
         self.resident_availability = resident_availability
 
-        self.problem = PulpProblem("optimEYES", minimize=True)
+        self.problem = PulpProblem(
+            "optimEYES", minimize=True, debug_infeasibility=debug_infeasibility
+        )
 
         self.num_days = len(next(iter(resident_availability.values())))
         self.num_residents = len(resident_availability.keys())

@@ -28,9 +28,12 @@ class PulpSolution:
 
 
 class PulpProblem:
-    def __init__(self, name: str, minimize: bool = True) -> None:
+    def __init__(
+        self, name: str, minimize: bool = True, debug_infeasibility: bool = False
+    ) -> None:
         self.name = name
         self.minimize = minimize
+        self.debug_infeasibility = debug_infeasibility
         self.var_names = set()
         self.objective_fn = None
         self.constraint_fns = []
@@ -65,6 +68,9 @@ class PulpProblem:
 
     def add_constraint(self, constraint) -> None:
         self.constraint_fns.append(constraint)
+        if self.debug_infeasibility:
+            if not self._solve_impl().was_successful():
+                raise ValueError("Problem is infeasible with constraint")
 
     def _get_decision_vars(self, var_name: str, count: int) -> Sequence[Variable]:
         """
@@ -107,11 +113,14 @@ class PulpProblem:
 
     def solve(self) -> PulpSolution:
         assert self.objective_fn is not None, "No objective function specified"
+        return self._solve_impl()
 
+    def _solve_impl(self) -> PulpSolution:
         lp_problem = pulp.LpProblem(
             self.name, pulp.LpMinimize if self.minimize else pulp.LpMaximize
         )
-        lp_problem += self.objective_fn, "Objective"
+        if self.objective_fn is not None:
+            lp_problem += self.objective_fn, "Objective"
         for index, constraint_fn in enumerate(self.constraint_fns):
             lp_problem += constraint_fn, f"Constraint_{index}"
 
