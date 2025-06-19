@@ -24,7 +24,9 @@ class PulpSolution:
         return {v.name: v.varValue for v in self.problem.variables()}  # pyright: ignore
 
     def get_objective_value(self) -> float:
-        return float(pulp.value(self.problem.objective))
+        val = pulp.value(self.problem.objective)
+        assert isinstance(val, float)
+        return val
 
 
 class PulpProblem:
