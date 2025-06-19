@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
-from input import InputBuilder
+from availability import AvailabilityBuilder
 from solution import Solution
 
 START_DATE = date.fromisoformat("2025-07-01")
@@ -88,7 +88,7 @@ def distribute_q2s_attempt(
 
 
 def main() -> None:
-    input = InputBuilder(START_DATE, RESIDENTS)
+    input = AvailabilityBuilder(START_DATE, RESIDENTS)
     input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-01", "2025-07-29")
     availability = input.build()
 

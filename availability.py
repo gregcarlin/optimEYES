@@ -6,7 +6,7 @@ from dateutil import Weekday, days_until_next_weekday
 from call_problem import Resident
 
 
-class InputBuilder:
+class AvailabilityBuilder:
     def __init__(self, start_date: date, residents: AbstractSet[Resident]) -> None:
         self.start_date = start_date
         self.num_days = len(next(iter(residents)).availability)
