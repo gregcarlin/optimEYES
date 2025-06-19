@@ -30,35 +30,38 @@ class Solution:
     def get_objective_value(self) -> float:
         return self.objective_value
 
-    def get_assignments(self) -> Sequence[str]:
+    def get_assignments(self) -> Sequence[Sequence[str]]:
         if self.assignments is not None:
             return self.assignments
 
         self.assignments = []
 
         for day in range(self.num_days):
-            assigned_resident = None
-            for resident in self.residents:
-                if self.values[key_for_day(day, resident)] != 0.0:
-                    assert (
-                        assigned_resident is None
-                    ), "Two residents assigned to the same day"
-                    assigned_resident = resident
-            assert assigned_resident is not None, "No residents assigned to a day"
-            self.assignments.append(assigned_resident)
+            assigned_residents = [
+                resident
+                for resident in self.residents
+                if self.values[key_for_day(day, resident)] != 0.0
+            ]
+            assert assigned_residents != [], "No residents assigned to a day"
+            self.assignments.append(assigned_residents)
 
         return self.assignments
 
     def get_calls_per_resident(self) -> Dict[str, int]:
-        assignments = self.get_assignments()
-        return {resident: assignments.count(resident) for resident in self.residents}
+        result = {resident: 0 for resident in self.residents}
+        for assignments in self.get_assignments():
+            for resident in assignments:
+                result[resident] += 1
+        return result
 
     def get_q2s_per_resident(self) -> Dict[str, int]:
         assignments = self.get_assignments()
         result = {resident: 0 for resident in self.residents}
         for day in range(self.num_days - 2):
-            if assignments[day] == assignments[day + 2]:
-                result[assignments[day]] += 1
+            for resident in set(assignments[day]).intersection(
+                set(assignments[day + 2])
+            ):
+                result[resident] += 1
         return result
 
     def get_q2_unfairness(self) -> int:
@@ -73,7 +76,8 @@ class Solution:
         result = {resident: 0 for resident in self.residents}
         next_day = days_until_next_weekday(self.start_date, weekday)
         while next_day < self.num_days:
-            result[assignments[next_day]] += 1
+            for resident in assignments[next_day]:
+                result[resident] += 1
             next_day += 7
         return result
 
@@ -84,9 +88,9 @@ class Solution:
         return self._get_count_of_weekday(6)
 
     def print(self) -> None:
-        for day, resident in enumerate(self.get_assignments()):
+        for day, residents in enumerate(self.get_assignments()):
             date = self.start_date + timedelta(days=day)
-            print(f"\t{date:%a %m-%d}: {resident}")
+            print(f"\t{date:%a %m-%d}: {', '.join(residents)}")
 
         print("Total Q2 calls = ", self.get_objective_value())
         print("Q2 unfairness = ", self.get_q2_unfairness())

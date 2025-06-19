@@ -9,11 +9,43 @@ from availability import AvailabilityBuilder
 from solution import Solution
 
 START_DATE = date.fromisoformat("2025-07-01")
+BUDDY_START = date.fromisoformat("2025-07-15")
+BUDDY_END = date.fromisoformat("2025-07-20")  # inclusive
 # fmt: off
 RESIDENTS = {
     Resident(
-        name="Sophia",
+        name="Jess",
         pgy=2,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Loubna",
+        pgy=2,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Other",
+        pgy=2,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Sophia",
+        pgy=3,
         availability=[
             0, 1, 0, 0, 1, 1, 1,
             1, 1, 1, 1, 1, 1, 1,
@@ -23,7 +55,7 @@ RESIDENTS = {
     ),
     Resident(
         name="Paris",
-        pgy=2,
+        pgy=3,
         availability=[
             0, 1, 1, 1, 1, 1, 1,
             1, 1, 1, 1, 1, 1, 1,
@@ -33,7 +65,37 @@ RESIDENTS = {
     ),
     Resident(
         name="Keir",
-        pgy=2,
+        pgy=3,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Althea",
+        pgy=4,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Nicolas",
+        pgy=4,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Monica",
+        pgy=4,
         availability=[
             1, 1, 1, 1, 1, 1, 1,
             1, 1, 1, 1, 1, 1, 1,
@@ -57,7 +119,9 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
 
 
 def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, availability, debug_infeasibility=False)
+    problem = CallProblemBuilder(
+        START_DATE, BUDDY_START, BUDDY_END, availability, debug_infeasibility=False
+    )
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
@@ -72,7 +136,7 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
 def distribute_q2s_attempt(
     availability: AbstractSet[Resident], tolerance: int
 ) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, availability)
+    problem = CallProblemBuilder(START_DATE, BUDDY_START, BUDDY_END, availability)
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
@@ -89,7 +153,7 @@ def distribute_q2s_attempt(
 
 def main() -> None:
     input = AvailabilityBuilder(START_DATE, RESIDENTS)
-    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-01", "2025-07-29")
+    input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-20", "2025-07-29")
     availability = input.build()
 
     print_availability(availability)
@@ -97,7 +161,7 @@ def main() -> None:
     base = base_attempt(availability)
     if isinstance(base, str):
         # TODO relax some constraints and try again
-        print("Unable to find optimal solution with status: {base}")
+        print(f"Unable to find optimal solution with status: {base}")
         return
 
     unfairness = base.get_q2_unfairness()

@@ -2,6 +2,7 @@ from typing import Mapping, Sequence, List, AbstractSet
 
 import math
 from datetime import date, timedelta
+from collections import defaultdict
 
 from solution import Solution, key_for_day
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
@@ -22,11 +23,13 @@ class CallProblemBuilder:
     def __init__(
         self,
         start_date: date,
+        buddy_start: date,
+        buddy_end: date,
         resident_availability: AbstractSet[Resident],
         debug_infeasibility: bool = False,
     ) -> None:
         self.start_date = start_date
-        self.resident_availability = resident_availability
+        self.residents = {resident.name: resident for resident in resident_availability}
 
         self.problem = PulpProblem(
             "optimEYES", minimize=True, debug_infeasibility=debug_infeasibility
@@ -58,12 +61,31 @@ class CallProblemBuilder:
                 sum(self.day_vars[resident.name]) <= max_days_per_resident
             )
 
-        # Ensure exactly one resident is assigned to each day
-        for day in range(self.num_days):
-            all_residents_for_day = [
-                days_for_resident[day] for days_for_resident in self.day_vars.values()
+        buddy_start_index = (buddy_start - self.start_date).days
+        buddy_end_index = (buddy_end - self.start_date).days  # inclusive
+        assert (
+            buddy_start_index >= 0 and buddy_start_index < self.num_days
+        ), "Invalid buddy call start date"
+        assert (
+            buddy_end_index >= 0 and buddy_end_index < self.num_days
+        ), "Invalid buddy call end date"
+
+        self._ensure_one_resident_per_day(range(buddy_start_index))
+        # self._ensure_one_resident_per_day(range(buddy_start_index, buddy_end_index))
+        for day in range(buddy_start_index, buddy_end_index + 1):
+            # Ensure one PGY2 and either one PGY3 or PGY4 is assigned to each day
+            vars_by_pgy = self._vars_for_day_by_pgy(day)
+            self.problem.add_constraint(sum(vars_by_pgy[2]) == 1)
+            self.problem.add_constraint(sum(vars_by_pgy[3] + vars_by_pgy[4]) == 1)
+            remaining_vars = [
+                v
+                for pgy, vs in vars_by_pgy.items()
+                if pgy != 2 and pgy != 3
+                for v in vs
             ]
-            self.problem.add_constraint(sum(all_residents_for_day) == 1)
+            if remaining_vars != []:
+                self.problem.add_constraint(sum(remaining_vars) == 0)
+        self._ensure_one_resident_per_day(range(buddy_end_index + 1, self.num_days))
 
         # Ensure a resident doesn't work two days in a row
         for days_for_resident in self.day_vars.values():
@@ -73,6 +95,20 @@ class CallProblemBuilder:
                 )
 
         self.q2s: Mapping[str, List[Variable]] | None = None
+
+    def _ensure_one_resident_per_day(self, indices: range) -> None:
+        # Ensure exactly one resident is assigned to each day in the given range
+        for day in indices:
+            all_residents_for_day = [
+                days_for_resident[day] for days_for_resident in self.day_vars.values()
+            ]
+            self.problem.add_constraint(sum(all_residents_for_day) == 1)
+
+    def _vars_for_day_by_pgy(self, day: int) -> Mapping[int, List[Variable]]:
+        result = defaultdict(list)
+        for name, days_for_resident in self.day_vars.items():
+            result[self.residents[name].pgy].append(days_for_resident[day])
+        return result
 
     def evenly_distribute_weekday(self, weekday: Weekday) -> None:
         num_weekdays = num_weekdays_in_time_period(
@@ -133,5 +169,5 @@ class CallProblemBuilder:
             solution.get_variables(),
             self.start_date,
             self.num_days,
-            {resident.name for resident in self.resident_availability},
+            self.residents.keys(),
         )
