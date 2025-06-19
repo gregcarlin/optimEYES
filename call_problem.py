@@ -1,4 +1,4 @@
-from typing import Mapping, Sequence, List
+from typing import Mapping, Sequence, List, AbstractSet
 
 import math
 from datetime import date, timedelta
@@ -11,11 +11,18 @@ from linear_problem import (
 )
 
 
+class Resident:
+    def __init__(self, name: str, pgy: int, availability: List[int]) -> None:
+        self.name = name
+        self.pgy = pgy
+        self.availability = availability
+
+
 class CallProblemBuilder:
     def __init__(
         self,
         start_date: date,
-        resident_availability: Mapping[str, Sequence[int]],
+        resident_availability: AbstractSet[Resident],
         debug_infeasibility: bool = False,
     ) -> None:
         self.start_date = start_date
@@ -25,28 +32,30 @@ class CallProblemBuilder:
             "optimEYES", minimize=True, debug_infeasibility=debug_infeasibility
         )
 
-        self.num_days = len(next(iter(resident_availability.values())))
-        self.num_residents = len(resident_availability.keys())
+        self.num_days = len(next(iter(resident_availability)).availability)
+        self.num_residents = len(resident_availability)
 
         min_days_per_resident = math.floor(self.num_days / float(self.num_residents))
         max_days_per_resident = math.ceil(self.num_days / float(self.num_residents))
 
         # For each resident, create a variable representing every day
-        self.day_vars = {resident: [] for resident in resident_availability.keys()}
-        for resident, availability in resident_availability.items():
-            for day, is_available in enumerate(availability):
-                day_var = self.problem.new_binary_variable(key_for_day(day, resident))
-                self.day_vars[resident].append(day_var)
+        self.day_vars = {resident.name: [] for resident in resident_availability}
+        for resident in resident_availability:
+            for day, is_available in enumerate(resident.availability):
+                day_var = self.problem.new_binary_variable(
+                    key_for_day(day, resident.name)
+                )
+                self.day_vars[resident.name].append(day_var)
                 if is_available == 0:
                     # Resident is unavailable this day
                     self.problem.add_constraint(day_var == 0)
 
             # Ensure even distribution
             self.problem.add_constraint(
-                sum(self.day_vars[resident]) >= min_days_per_resident
+                sum(self.day_vars[resident.name]) >= min_days_per_resident
             )
             self.problem.add_constraint(
-                sum(self.day_vars[resident]) <= max_days_per_resident
+                sum(self.day_vars[resident.name]) <= max_days_per_resident
             )
 
         # Ensure exactly one resident is assigned to each day
@@ -124,5 +133,5 @@ class CallProblemBuilder:
             solution.get_variables(),
             self.start_date,
             self.num_days,
-            self.resident_availability.keys(),
+            {resident.name for resident in self.resident_availability},
         )

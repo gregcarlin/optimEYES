@@ -1,17 +1,16 @@
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, AbstractSet, List
 
 from datetime import date, timedelta
 
 from dateutil import Weekday, days_until_next_weekday
+from call_problem import Resident
 
 
 class InputBuilder:
-    def __init__(
-        self, start_date: date, availability: Mapping[str, Sequence[int]]
-    ) -> None:
+    def __init__(self, start_date: date, residents: AbstractSet[Resident]) -> None:
         self.start_date = start_date
-        self.num_days = len(next(iter(availability.values())))
-        self.availability = {resident: list(a) for resident, a in availability.items()}
+        self.num_days = len(next(iter(residents)).availability)
+        self.residents = residents
         self._validate()
 
     def _get_day(self, index: int) -> date:
@@ -26,15 +25,15 @@ class InputBuilder:
         # TODO maybe add other validations
 
     def _validate_num_days_are_equal(self) -> None:
-        for resident, days in self.availability.items():
+        for resident in self.residents:
             assert (
-                len(days) == self.num_days
-            ), f"Number of days for {resident} is {len(days)}, expected {self.num_days}"
+                len(resident.availability) == self.num_days
+            ), f"Number of days for {resident.name} is {len(resident.availability)}, expected {self.num_days}"
 
     def _validate_no_days_without_availability(self) -> None:
         for i in range(self.num_days):
-            for days in self.availability.values():
-                if days[i] == 1:
+            for resident in self.residents:
+                if resident.availability[i] == 1:
                     break
             else:
                 assert (
@@ -56,13 +55,13 @@ class InputBuilder:
         )
         end_index = min(self._get_index(end_date) + 1, self.num_days)
         for index in range(start_index, end_index, 7):
-            for res, days in self.availability.items():
-                if res == resident:
+            for res in self.residents:
+                if res.name == resident:
                     assert (
-                        days[index] == 1
+                        res.availability[index] == 1
                     ), f"Trying to assign {resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
-                days[index] = 1 if res == resident else 0
+                res.availability[index] = 1 if res.name == resident else 0
 
-    def get_availability(self) -> Mapping[str, Sequence[int]]:
+    def build(self) -> AbstractSet[Resident]:
         self._validate()
-        return self.availability
+        return self.residents

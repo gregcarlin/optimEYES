@@ -1,50 +1,62 @@
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, AbstractSet
 
 import os
 from datetime import date, timedelta
 
 from dateutil import Weekday
-from call_problem import CallProblemBuilder
+from call_problem import CallProblemBuilder, Resident
 from input import InputBuilder
 from solution import Solution
 
 START_DATE = date.fromisoformat("2025-07-01")
 # fmt: off
-RESIDENT_AVAILABILITY = {
-    "Sophia": [
-        0, 1, 0, 0, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-    ],
-    "Paris": [
-        0, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-    ],
-    "Keir": [
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1,
-    ],
+RESIDENTS = {
+    Resident(
+        name="Sophia",
+        pgy=2,
+        availability=[
+            0, 1, 0, 0, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Paris",
+        pgy=2,
+        availability=[
+            0, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
+    Resident(
+        name="Keir",
+        pgy=2,
+        availability=[
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1,
+        ],
+    ),
 }
 # fmt: on
 
 
-def print_availability(availability: Mapping[str, Sequence[int]]) -> None:
+def print_availability(availability: AbstractSet[Resident]) -> None:
     print("Availability:")
-    num_days = len(next(iter(availability.values())))
+    num_days = len(next(iter(availability)).availability)
     for i in range(num_days):
         day = START_DATE + timedelta(days=i)
         available_residents = ", ".join(
-            resident for resident, days in availability.items() if days[i] == 1
+            resident.name for resident in availability if resident.availability[i] == 1
         )
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
-def base_attempt(availability: Mapping[str, Sequence[int]]) -> Solution | str:
+def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
     problem = CallProblemBuilder(START_DATE, availability, debug_infeasibility=False)
 
     # Ensure even distribution of Saturdays and Sundays
@@ -58,7 +70,7 @@ def base_attempt(availability: Mapping[str, Sequence[int]]) -> Solution | str:
 
 
 def distribute_q2s_attempt(
-    availability: Mapping[str, Sequence[int]], tolerance: int
+    availability: AbstractSet[Resident], tolerance: int
 ) -> Solution | str:
     problem = CallProblemBuilder(START_DATE, availability)
 
@@ -76,9 +88,9 @@ def distribute_q2s_attempt(
 
 
 def main() -> None:
-    input = InputBuilder(START_DATE, RESIDENT_AVAILABILITY)
+    input = InputBuilder(START_DATE, RESIDENTS)
     input.assign_to_day_of_week("Sophia", Weekday.WEDNESDAY, "2025-07-01", "2025-07-29")
-    availability = input.get_availability()
+    availability = input.build()
 
     print_availability(availability)
 

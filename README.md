@@ -1,3 +1,8 @@
+Install pulp:
+```
+python3 -m pip install pulp
+```
+
 Run type checker:
 ```
 pyright
