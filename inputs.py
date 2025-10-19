@@ -87,7 +87,11 @@ def get_availability() -> AvailabilityBuilder:
 
     input.assign_to_day_of_week("Andrieh", Weekday.MONDAY, "2026-05-18", "2026-06-30")
     input.assign_to_day_of_week(
-        ["Sophia", "Paris"], Weekday.THURSDAY, "2026-05-18", "2026-06-30"
+        # Note: Paris and Sophia and inverted to resolve conflicts with vacations
+        ["Paris", "Sophia"],
+        Weekday.THURSDAY,
+        "2026-05-18",
+        "2026-06-30",
     )
     input.assign_to_day_of_week(
         ["Alex", "Keir"], Weekday.FRIDAY, "2026-05-18", "2026-06-30"

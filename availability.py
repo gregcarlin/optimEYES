@@ -44,9 +44,8 @@ class AvailabilityBuilder:
                 if resident.availability[i] == 1:
                     break
             else:
-                errors.append(
-                    f"No residents are available on {self._get_day(i)} (day {i})"
-                )
+                day = self._get_day(i).strftime("%a %Y-%m-%d")
+                errors.append(f"No residents are available on {day} (day {i})")
         return errors
 
     def assign_to_day_of_week(
