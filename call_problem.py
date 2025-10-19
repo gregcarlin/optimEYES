@@ -23,8 +23,7 @@ class CallProblemBuilder:
     def __init__(
         self,
         start_date: date,
-        buddy_start: date,
-        buddy_end: date,
+        buddy_period: tuple[date, date] | None,
         resident_availability: AbstractSet[Resident],
         debug_infeasibility: bool = False,
     ) -> None:
@@ -61,31 +60,35 @@ class CallProblemBuilder:
                 sum(self.day_vars[resident.name]) <= max_days_per_resident
             )
 
-        buddy_start_index = (buddy_start - self.start_date).days
-        buddy_end_index = (buddy_end - self.start_date).days  # inclusive
-        assert (
-            buddy_start_index >= 0 and buddy_start_index < self.num_days
-        ), "Invalid buddy call start date"
-        assert (
-            buddy_end_index >= 0 and buddy_end_index < self.num_days
-        ), "Invalid buddy call end date"
+        if buddy_period:
+            buddy_start, buddy_end = buddy_period
 
-        self._ensure_one_resident_per_day(range(buddy_start_index))
-        # self._ensure_one_resident_per_day(range(buddy_start_index, buddy_end_index))
-        for day in range(buddy_start_index, buddy_end_index + 1):
-            # Ensure one PGY2 and either one PGY3 or PGY4 is assigned to each day
-            vars_by_pgy = self._vars_for_day_by_pgy(day)
-            self.problem.add_constraint(sum(vars_by_pgy[2]) == 1)
-            self.problem.add_constraint(sum(vars_by_pgy[3] + vars_by_pgy[4]) == 1)
-            remaining_vars = [
-                v
-                for pgy, vs in vars_by_pgy.items()
-                if pgy != 2 and pgy != 3
-                for v in vs
-            ]
-            if remaining_vars != []:
-                self.problem.add_constraint(sum(remaining_vars) == 0)
-        self._ensure_one_resident_per_day(range(buddy_end_index + 1, self.num_days))
+            buddy_start_index = (buddy_start - self.start_date).days
+            buddy_end_index = (buddy_end - self.start_date).days  # inclusive
+            assert (
+                buddy_start_index >= 0 and buddy_start_index < self.num_days
+            ), "Invalid buddy call start date"
+            assert (
+                buddy_end_index >= 0 and buddy_end_index < self.num_days
+            ), "Invalid buddy call end date"
+
+            self._ensure_one_resident_per_day(range(buddy_start_index))
+            for day in range(buddy_start_index, buddy_end_index + 1):
+                # Ensure one PGY2 and either one PGY3 or PGY4 is assigned to each day
+                vars_by_pgy = self._vars_for_day_by_pgy(day)
+                self.problem.add_constraint(sum(vars_by_pgy[2]) == 1)
+                self.problem.add_constraint(sum(vars_by_pgy[3] + vars_by_pgy[4]) == 1)
+                remaining_vars = [
+                    v
+                    for pgy, vs in vars_by_pgy.items()
+                    if pgy != 2 and pgy != 3
+                    for v in vs
+                ]
+                if remaining_vars != []:
+                    self.problem.add_constraint(sum(remaining_vars) == 0)
+            self._ensure_one_resident_per_day(range(buddy_end_index + 1, self.num_days))
+        else:
+            self._ensure_one_resident_per_day(range(self.num_days))
 
         # Ensure a resident doesn't work two days in a row
         for days_for_resident in self.day_vars.values():
