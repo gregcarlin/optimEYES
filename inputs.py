@@ -14,51 +14,19 @@ BUDDY_END = date.fromisoformat("2026-07-20")  # inclusive
 BUDDY_PERIOD = None
 
 RESIDENTS = {
-    Resident(
-        name="Andrew",
-        pgy=2,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Andrieh",
-        pgy=2,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Jess",
-        pgy=2,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Loubna",
-        pgy=2,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Paris",
-        pgy=3,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Alex",
-        pgy=3,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Sophia",
-        pgy=3,
-        num_days=NUM_DAYS,
-    ),
-    Resident(
-        name="Keir",
-        pgy=3,
-        num_days=NUM_DAYS,
-    ),
+    "Andrew": 2,
+    "Andrieh": 2,
+    "Jess": 2,
+    "Loubna": 2,
+    "Paris": 3,
+    "Alex": 3,
+    "Sophia": 3,
+    "Keir": 3,
 }
 
 
 def get_availability() -> AvailabilityBuilder:
-    input = AvailabilityBuilder(START_DATE, RESIDENTS)
+    input = AvailabilityBuilder(START_DATE, RESIDENTS, NUM_DAYS)
 
     # Weekday call
     input.assign_to_day_of_week("Andrew", Weekday.MONDAY, "2025-12-29", "2026-02-15")

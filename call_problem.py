@@ -13,10 +13,10 @@ from linear_problem import (
 
 
 class Resident:
-    def __init__(self, name: str, pgy: int, num_days: int) -> None:
+    def __init__(self, name: str, pgy: int, availability: list[int]) -> None:
         self.name = name
         self.pgy = pgy
-        self.availability = [1] * num_days
+        self.availability = availability
 
 
 class CallProblemBuilder:

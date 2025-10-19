@@ -3,20 +3,39 @@ from typing import Mapping, Sequence, AbstractSet, List
 import itertools
 
 from datetime import date, timedelta
+from enum import Enum
 
 from dateutil import Weekday, days_until_next_weekday
 from call_problem import Resident
 
 
-class AvailabilityBuilder:
-    def __init__(self, start_date: date, residents: AbstractSet[Resident]) -> None:
-        self.start_date = start_date
-        self.num_days = len(next(iter(residents)).availability)
-        self.residents = residents
-        self._validate()
+class Availability(Enum):
+    UNAVAILABLE = 0
+    AVAILABLE = 1
+    PREFERRED = 2
 
-    def _get_day(self, index: int) -> date:
-        return self.start_date + timedelta(days=index)
+
+class ResidentBuilder:
+    def __init__(self, name: str, pgy: int, num_days: int) -> None:
+        self.name = name
+        self.pgy = pgy
+        self.availability = [Availability.AVAILABLE] * num_days
+
+
+class AvailabilityBuilder:
+    def __init__(
+        self, start_date: date, residents: dict[str, int], num_days: int
+    ) -> None:
+        self.start_date = start_date
+        self.num_days = num_days
+        self.residents = [
+            ResidentBuilder(name, pgy, num_days) for name, pgy in residents.items()
+        ]
+        assert self._validate() == []
+
+    def _get_day(self, index: int) -> str:
+        day = self.start_date + timedelta(days=index)
+        return day.strftime("%a %Y-%m-%d")
 
     def _get_index(self, day: date) -> int:
         return (day - self.start_date).days
@@ -41,11 +60,12 @@ class AvailabilityBuilder:
         errors = []
         for i in range(self.num_days):
             for resident in self.residents:
-                if resident.availability[i] == 1:
+                if resident.availability[i] != Availability.UNAVAILABLE:
                     break
             else:
-                day = self._get_day(i).strftime("%a %Y-%m-%d")
-                errors.append(f"No residents are available on {day} (day {i})")
+                errors.append(
+                    f"No residents are available on {self._get_day(i)} (day {i})"
+                )
         return errors
 
     def assign_to_day_of_week(
@@ -68,19 +88,24 @@ class AvailabilityBuilder:
         )
         end_index = min(self._get_index(end_date) + 1, self.num_days)
         for index in range(start_index, end_index, 7):
-            chosen_resident = next(resident_iter)
-            for res in self.residents:
-                if res.name == chosen_resident:
-                    assert (
-                        res.availability[index] == 1
-                    ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
-                res.availability[index] = 1 if res.name == chosen_resident else 0
+            chosen_resident = self._get_resident(next(resident_iter))
+            assert (
+                chosen_resident.availability[index] != Availability.UNAVAILABLE
+            ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
+            chosen_resident.availability[index] = Availability.PREFERRED
 
-    def _get_resident(self, name: str) -> Resident:
+    def _get_resident(self, name: str) -> ResidentBuilder:
         for res in self.residents:
             if res.name == name:
                 return res
         raise ValueError(f"Unable to find resident {name}")
+
+    def _set_unavailable_impl(self, resident: ResidentBuilder, index: int) -> None:
+        if resident.availability[index] == Availability.PREFERRED:
+            print(
+                f"Warning: {resident.name} is supposed to be oncall {self._get_day(index)} but is unavailable. This day will be auto-assigned to someone else."
+            )
+        resident.availability[index] = Availability.UNAVAILABLE
 
     def set_unavailable(
         self, resident_name: str, start: str, end: str | None = None
@@ -92,17 +117,42 @@ class AvailabilityBuilder:
         start_index = max(self._get_index(date.fromisoformat(start)), 0)
 
         if not end:
-            resident.availability[start_index] = 0
+            self._set_unavailable_impl(resident, start_index)
             return
 
         end_index = min(self._get_index(date.fromisoformat(end)) + 1, self.num_days)
         assert end_index > start_index, f"Vacation end {end} is before start {start}"
 
         for index in range(start_index, end_index):
-            resident.availability[index] = 0
+            self._set_unavailable_impl(resident, index)
+
+    def _eliminate_non_preferred(self) -> None:
+        for index in range(self.num_days):
+            preferred = [
+                r.name
+                for r in self.residents
+                if r.availability[index] == Availability.PREFERRED
+            ]
+            assert (
+                len(preferred) <= 1
+            ), f"Multiple residents are preferred for {self._get_day(index)}: {preferred}"
+            if preferred != []:
+                # Someone is preferred, mark everyone else unavailable
+                for r in self.residents:
+                    if r.availability[index] != Availability.PREFERRED:
+                        r.availability[index] = Availability.UNAVAILABLE
+
+    def _convert_availability(self, availability: list[Availability]) -> list[int]:
+        return [0 if x == Availability.UNAVAILABLE else 1 for x in availability]
 
     def build(self) -> AbstractSet[Resident] | list[str]:
+        self._eliminate_non_preferred()
+
         errors = self._validate()
         if errors != []:
             return errors
-        return self.residents
+
+        return {
+            Resident(r.name, r.pgy, self._convert_availability(r.availability))
+            for r in self.residents
+        }
