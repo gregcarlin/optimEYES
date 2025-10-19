@@ -1,101 +1,13 @@
 from typing import Mapping, Sequence, AbstractSet
 
 import os
-from datetime import date, timedelta
+from datetime import timedelta
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
 from availability import AvailabilityBuilder
 from solution import Solution
-
-START_DATE = date.fromisoformat("2025-12-29")
-BUDDY_START = date.fromisoformat("2026-07-01")
-BUDDY_END = date.fromisoformat("2026-07-20")  # inclusive
-BUDDY_PERIOD = None
-# fmt: off
-RESIDENTS = {
-    Resident(
-        name="Andrew",
-        pgy=2,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Andrieh",
-        pgy=2,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Jess",
-        pgy=2,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Loubna",
-        pgy=2,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Paris",
-        pgy=3,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Alex",
-        pgy=3,
-        availability=[
-            0, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Sophia",
-        pgy=3,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-    Resident(
-        name="Keir",
-        pgy=3,
-        availability=[
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1,
-        ],
-    ),
-}
-# fmt: on
+from inputs import START_DATE, BUDDY_PERIOD, RESIDENTS
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:
@@ -127,7 +39,7 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
 def distribute_q2s_attempt(
     availability: AbstractSet[Resident], tolerance: int
 ) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, BUDDY_START, BUDDY_PERIOD, availability)
+    problem = CallProblemBuilder(START_DATE, BUDDY_PERIOD, availability)
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
