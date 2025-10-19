@@ -57,7 +57,7 @@ RESIDENTS = {
 }
 
 
-def get_availability() -> AbstractSet[Resident]:
+def get_availability() -> AvailabilityBuilder:
     input = AvailabilityBuilder(START_DATE, RESIDENTS)
 
     # Weekday call
@@ -119,4 +119,4 @@ def get_availability() -> AbstractSet[Resident]:
     input.set_unavailable("Jess", "2026-04-10", "2026-04-12")
     input.set_unavailable("Jess", "2026-05-09", "2026-05-11")
 
-    return input.build()
+    return input

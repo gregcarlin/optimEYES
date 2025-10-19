@@ -54,7 +54,15 @@ def distribute_q2s_attempt(
 
 
 def main() -> None:
-    availability = get_availability()
+    inputs = get_availability()
+    availability_or_errors = inputs.build()
+    if isinstance(availability_or_errors, list):
+        print("Availability is invalid. Found the following errors:")
+        for error in availability_or_errors:
+            print(error)
+        return
+
+    availability = availability_or_errors
     print_availability(availability)
 
     base = base_attempt(availability)

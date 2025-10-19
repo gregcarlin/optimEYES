@@ -21,26 +21,33 @@ class AvailabilityBuilder:
     def _get_index(self, day: date) -> int:
         return (day - self.start_date).days
 
-    def _validate(self) -> None:
-        self._validate_num_days_are_equal()
-        self._validate_no_days_without_availability()
+    def _validate(self) -> list[str]:
+        errors = []
+        errors += self._validate_num_days_are_equal()
+        errors += self._validate_no_days_without_availability()
         # TODO maybe add other validations
+        return errors
 
-    def _validate_num_days_are_equal(self) -> None:
+    def _validate_num_days_are_equal(self) -> list[str]:
+        errors = []
         for resident in self.residents:
-            assert (
-                len(resident.availability) == self.num_days
-            ), f"Number of days for {resident.name} is {len(resident.availability)}, expected {self.num_days}"
+            if len(resident.availability) != self.num_days:
+                errors.append(
+                    f"Number of days for {resident.name} is {len(resident.availability)}, expected {self.num_days}"
+                )
+        return errors
 
-    def _validate_no_days_without_availability(self) -> None:
+    def _validate_no_days_without_availability(self) -> list[str]:
+        errors = []
         for i in range(self.num_days):
             for resident in self.residents:
                 if resident.availability[i] == 1:
                     break
             else:
-                assert (
-                    False
-                ), f"No residents are available on {self._get_day(i)} (day {i})"
+                errors.append(
+                    f"No residents are available on {self._get_day(i)} (day {i})"
+                )
+        return errors
 
     def assign_to_day_of_week(
         self, residents: str | list[str], weekday: Weekday, start: str, end: str
@@ -95,6 +102,8 @@ class AvailabilityBuilder:
         for index in range(start_index, end_index + 1):
             resident.availability[index] = 0
 
-    def build(self) -> AbstractSet[Resident]:
-        self._validate()
+    def build(self) -> AbstractSet[Resident] | list[str]:
+        errors = self._validate()
+        if errors != []:
+            return errors
         return self.residents
