@@ -96,10 +96,10 @@ class AvailabilityBuilder:
             resident.availability[start_index] = 0
             return
 
-        end_index = min(self._get_index(date.fromisoformat(end)) + 1, self.num_days - 1)
+        end_index = min(self._get_index(date.fromisoformat(end)) + 1, self.num_days)
         assert end_index > start_index, f"Vacation end {end} is before start {start}"
 
-        for index in range(start_index, end_index + 1):
+        for index in range(start_index, end_index):
             resident.availability[index] = 0
 
     def build(self) -> AbstractSet[Resident] | list[str]:
