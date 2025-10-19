@@ -70,6 +70,31 @@ class AvailabilityBuilder:
                     ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
                 res.availability[index] = 1 if res.name == chosen_resident else 0
 
+    def _get_resident(self, name: str) -> Resident:
+        for res in self.residents:
+            if res.name == name:
+                return res
+        raise ValueError(f"Unable to find resident {name}")
+
+    def set_unavailable(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        """
+        Assigns the resident to be unavailable between the given dates, inclusive.
+        """
+        resident = self._get_resident(resident_name)
+        start_index = max(self._get_index(date.fromisoformat(start)), 0)
+
+        if not end:
+            resident.availability[start_index] = 0
+            return
+
+        end_index = min(self._get_index(date.fromisoformat(end)) + 1, self.num_days - 1)
+        assert end_index > start_index, f"Vacation end {end} is before start {start}"
+
+        for index in range(start_index, end_index + 1):
+            resident.availability[index] = 0
+
     def build(self) -> AbstractSet[Resident]:
         self._validate()
         return self.residents
