@@ -5,9 +5,8 @@ from datetime import timedelta
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
-from availability import AvailabilityBuilder
 from solution import Solution
-from inputs import START_DATE, BUDDY_PERIOD, RESIDENTS
+from inputs import START_DATE, BUDDY_PERIOD, get_availability
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:
@@ -55,42 +54,7 @@ def distribute_q2s_attempt(
 
 
 def main() -> None:
-    input = AvailabilityBuilder(START_DATE, RESIDENTS)
-
-    input.assign_to_day_of_week("Andrew", Weekday.MONDAY, "2025-12-29", "2026-02-15")
-    input.assign_to_day_of_week(
-        ["Alex", "Keir"], Weekday.THURSDAY, "2025-12-29", "2026-02-15"
-    )
-    input.assign_to_day_of_week(
-        ["Paris", "Sophia"], Weekday.FRIDAY, "2025-12-29", "2026-02-15"
-    )
-
-    input.assign_to_day_of_week("Loubna", Weekday.MONDAY, "2026-02-16", "2026-03-29")
-    input.assign_to_day_of_week(
-        ["Paris", "Sophia"], Weekday.THURSDAY, "2026-02-16", "2026-03-29"
-    )
-    input.assign_to_day_of_week(
-        ["Keir", "Alex"], Weekday.FRIDAY, "2026-02-16", "2026-03-29"
-    )
-
-    input.assign_to_day_of_week("Jess", Weekday.MONDAY, "2026-03-30", "2026-05-17")
-    input.assign_to_day_of_week(
-        ["Keir", "Alex"], Weekday.THURSDAY, "2026-03-30", "2026-05-17"
-    )
-    input.assign_to_day_of_week(
-        ["Sophia", "Paris"], Weekday.FRIDAY, "2026-03-30", "2026-05-17"
-    )
-
-    input.assign_to_day_of_week("Andrieh", Weekday.MONDAY, "2026-05-18", "2026-06-30")
-    input.assign_to_day_of_week(
-        ["Sophia", "Paris"], Weekday.THURSDAY, "2026-05-18", "2026-06-30"
-    )
-    input.assign_to_day_of_week(
-        ["Alex", "Keir"], Weekday.FRIDAY, "2026-05-18", "2026-06-30"
-    )
-
-    availability = input.build()
-
+    availability = get_availability()
     print_availability(availability)
 
     base = base_attempt(availability)
