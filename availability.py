@@ -1,5 +1,7 @@
 from typing import Mapping, Sequence, AbstractSet, List
 
+import itertools
+
 from datetime import date, timedelta
 
 from dateutil import Weekday, days_until_next_weekday
@@ -41,26 +43,32 @@ class AvailabilityBuilder:
                 ), f"No residents are available on {self._get_day(i)} (day {i})"
 
     def assign_to_day_of_week(
-        self, resident: str, weekday: Weekday, start: str, end: str
+        self, residents: str | list[str], weekday: Weekday, start: str, end: str
     ) -> None:
         """
         Assigns the given resident to be on call every given weekday between the two dates.
+        If multiple residents are given, does round robin assignment.
         Both the start and end dates are inclusive.
         """
         start_date = date.fromisoformat(start)
         end_date = date.fromisoformat(end)
+
+        if isinstance(residents, str):
+            residents = [residents]
+        resident_iter = itertools.cycle(residents)
 
         start_index = self._get_index(start_date) + days_until_next_weekday(
             start_date, weekday
         )
         end_index = min(self._get_index(end_date) + 1, self.num_days)
         for index in range(start_index, end_index, 7):
+            chosen_resident = next(resident_iter)
             for res in self.residents:
-                if res.name == resident:
+                if res.name == chosen_resident:
                     assert (
                         res.availability[index] == 1
-                    ), f"Trying to assign {resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
-                res.availability[index] = 1 if res.name == resident else 0
+                    ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
+                res.availability[index] = 1 if res.name == chosen_resident else 0
 
     def build(self) -> AbstractSet[Resident]:
         self._validate()
