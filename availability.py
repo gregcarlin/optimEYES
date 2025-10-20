@@ -88,6 +88,8 @@ class AvailabilityBuilder:
         )
         end_index = min(self._get_index(end_date) + 1, self.num_days)
         for index in range(start_index, end_index, 7):
+            if index < 0:
+                continue
             chosen_resident = self._get_resident(next(resident_iter))
             assert (
                 chosen_resident.availability[index] != Availability.UNAVAILABLE
