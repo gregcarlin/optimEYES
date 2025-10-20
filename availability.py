@@ -102,15 +102,17 @@ class AvailabilityBuilder:
                 return res
         raise ValueError(f"Unable to find resident {name}")
 
-    def _set_unavailable_impl(self, resident: ResidentBuilder, index: int) -> None:
+    def _set_unavailable_impl(
+        self, resident: ResidentBuilder, index: int, reason: str
+    ) -> None:
         if resident.availability[index] == Availability.PREFERRED:
             print(
-                f"Warning: {resident.name} is supposed to be oncall {self._get_day(index)} but is unavailable. This day will be auto-assigned to someone else."
+                f"Warning: {resident.name} is supposed to be oncall {self._get_day(index)} but is unavailable due to: {reason}. This day will be auto-assigned to someone else."
             )
         resident.availability[index] = Availability.UNAVAILABLE
 
     def set_unavailable(
-        self, resident_name: str, start: str, end: str | None = None
+        self, resident_name: str, reason: str, start: str, end: str | None = None
     ) -> None:
         """
         Assigns the resident to be unavailable between the given dates, inclusive.
@@ -119,14 +121,34 @@ class AvailabilityBuilder:
         start_index = max(self._get_index(date.fromisoformat(start)), 0)
 
         if not end:
-            self._set_unavailable_impl(resident, start_index)
+            self._set_unavailable_impl(resident, start_index, reason)
             return
 
         end_index = min(self._get_index(date.fromisoformat(end)) + 1, self.num_days)
         assert end_index > start_index, f"Vacation end {end} is before start {start}"
 
         for index in range(start_index, end_index):
-            self._set_unavailable_impl(resident, index)
+            self._set_unavailable_impl(resident, index, reason)
+
+    def set_vacation(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        self.set_unavailable(resident_name, "vacation", start, end)
+
+    def set_conference(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        self.set_unavailable(resident_name, "conference", start, end)
+
+    def set_holiday(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        self.set_unavailable(resident_name, "floating holiday", start, end)
+
+    def set_weekend(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        self.set_unavailable(resident_name, "requested weekend", start, end)
 
     def _eliminate_non_preferred(self) -> None:
         for index in range(self.num_days):
