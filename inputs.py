@@ -91,4 +91,27 @@ def get_availability() -> AvailabilityBuilder:
     input.set_unavailable("Jess", "2026-04-10", "2026-04-12")
     input.set_unavailable("Jess", "2026-05-09", "2026-05-11")
 
+    # Weekends
+    input.set_unavailable("Jess", "2026-04-11", "2026-04-12")
+    input.set_unavailable("Jess", "2026-03-14", "2026-03-15")
+    input.set_unavailable("Jess", "2026-02-14", "2026-02-15")
+    input.set_unavailable(
+        "Jess", "2026-02-28", "2026-03-01"
+    )  # is this a 'weekend in March?'
+    input.set_unavailable("Jess", "2026-03-07", "2026-03-08")
+    input.set_unavailable("Jess", "2026-03-21", "2026-03-22")
+    input.set_unavailable("Jess", "2026-03-28", "2026-03-29")
+    input.set_unavailable("Andrew", "2026-02-06", "2026-02-08")
+    input.set_unavailable("Andrew", "2026-06-27", "2026-06-28")
+    input.set_unavailable("Andrew", "2026-05-23", "2026-05-24")
+    input.set_unavailable("Andrieh", "2026-01-23", "2026-01-25")
+    input.set_unavailable("Andrieh", "2026-05-16", "2026-05-17")
+    input.set_unavailable("Andrieh", "2026-04-11", "2026-04-12")
+    input.set_unavailable("Andrieh", "2026-02-14", "2026-02-15")
+    input.set_unavailable("Sophia", "2026-01-24", "2026-01-25")
+    input.set_unavailable("Sophia", "2026-05-16", "2026-05-17")
+    input.set_unavailable("Sophia", "2026-02-21", "2026-02-22")
+    input.set_unavailable("Sophia", "2026-05-02", "2026-05-03")
+    input.set_unavailable("Sophia", "2026-02-14", "2026-02-15")
+
     return input
