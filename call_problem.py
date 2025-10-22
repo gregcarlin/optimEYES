@@ -37,9 +37,6 @@ class CallProblemBuilder:
         self.num_days = len(next(iter(resident_availability)).availability)
         self.num_residents = len(resident_availability)
 
-        min_days_per_resident = math.floor(self.num_days / float(self.num_residents))
-        max_days_per_resident = math.ceil(self.num_days / float(self.num_residents))
-
         # For each resident, create a variable representing every day
         self.day_vars = {resident.name: [] for resident in resident_availability}
         for resident in resident_availability:
@@ -52,13 +49,20 @@ class CallProblemBuilder:
                     # Resident is unavailable this day
                     self.problem.add_constraint(day_var == 0)
 
-            # Ensure even distribution
-            self.problem.add_constraint(
-                sum(self.day_vars[resident.name]) >= min_days_per_resident
+        # Ensure even distribution within a year
+        calls_per_resident_by_year = defaultdict(list)
+        for resident in resident_availability:
+            calls_per_resident_by_year[resident.pgy].append(
+                self.day_vars[resident.name]
             )
-            self.problem.add_constraint(
-                sum(self.day_vars[resident.name]) <= max_days_per_resident
+        for year, calls_per_resident in calls_per_resident_by_year.items():
+            upper = self.problem.max_of(
+                calls_per_resident, self.num_days, f"max_calls_pgy{year}"
             )
+            lower = self.problem.min_of(
+                calls_per_resident, self.num_days, f"min_calls_pgy{year}"
+            )
+            self.problem.add_constraint(upper - lower <= 1)
 
         if buddy_period:
             buddy_start, buddy_end = buddy_period
