@@ -6,17 +6,11 @@ from collections import defaultdict
 
 from solution import Solution, key_for_day
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
+from resident import Resident
 from linear_problem import (
     PulpProblem,
     Variable,
 )
-
-
-class Resident:
-    def __init__(self, name: str, pgy: int, availability: list[int]) -> None:
-        self.name = name
-        self.pgy = pgy
-        self.availability = availability
 
 
 class CallProblemBuilder:
@@ -185,5 +179,5 @@ class CallProblemBuilder:
             solution.get_variables(),
             self.start_date,
             self.num_days,
-            self.residents.keys(),
+            self.residents,
         )
