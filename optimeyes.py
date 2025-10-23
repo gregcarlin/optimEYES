@@ -6,7 +6,7 @@ from datetime import timedelta
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
 from solution import Solution
-from inputs import START_DATE, BUDDY_PERIOD, get_availability
+from inputs import START_DATE, BUDDY_PERIOD, PGY_2_3_GAP, get_availability
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:
@@ -22,7 +22,7 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
 
 def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
     problem = CallProblemBuilder(
-        START_DATE, BUDDY_PERIOD, availability, debug_infeasibility=False
+        START_DATE, BUDDY_PERIOD, availability, PGY_2_3_GAP, debug_infeasibility=False
     )
 
     # Ensure even distribution of Saturdays and Sundays
@@ -38,7 +38,7 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
 def distribute_q2s_attempt(
     availability: AbstractSet[Resident], tolerance: int
 ) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, BUDDY_PERIOD, availability)
+    problem = CallProblemBuilder(START_DATE, BUDDY_PERIOD, availability, PGY_2_3_GAP)
 
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)

@@ -25,6 +25,7 @@ class CallProblemBuilder:
         start_date: date,
         buddy_period: tuple[date, date] | None,
         resident_availability: AbstractSet[Resident],
+        pgy2_3_gap: int,
         debug_infeasibility: bool = False,
     ) -> None:
         self.start_date = start_date
@@ -55,6 +56,8 @@ class CallProblemBuilder:
             calls_per_resident_by_year[resident.pgy].append(
                 self.day_vars[resident.name]
             )
+        mins = {}
+        maxs = {}
         for year, calls_per_resident in calls_per_resident_by_year.items():
             upper = self.problem.max_of(
                 calls_per_resident, self.num_days, f"max_calls_pgy{year}"
@@ -63,6 +66,12 @@ class CallProblemBuilder:
                 calls_per_resident, self.num_days, f"min_calls_pgy{year}"
             )
             self.problem.add_constraint(upper - lower <= 1)
+            maxs[year] = upper
+            mins[year] = lower
+        # Ensure pgy2s and 3s aren't too far apart
+        assert 2 in calls_per_resident_by_year, "PGY2 year not found"
+        assert 3 in calls_per_resident_by_year, "PGY3 year not found"
+        self.problem.add_constraint(maxs[2] - mins[3] <= pgy2_3_gap)
 
         if buddy_period:
             buddy_start, buddy_end = buddy_period

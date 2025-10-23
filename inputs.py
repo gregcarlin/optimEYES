@@ -13,6 +13,10 @@ BUDDY_START = date.fromisoformat("2026-07-01")
 BUDDY_END = date.fromisoformat("2026-07-20")  # inclusive
 BUDDY_PERIOD = None
 
+# The maximum difference allowed between the PGY2 with the most call and the
+# PGY3 with the least call
+PGY_2_3_GAP = 3
+
 RESIDENTS = {
     "Andrew": 2,
     "Andrieh": 2,
