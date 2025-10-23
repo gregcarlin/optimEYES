@@ -31,7 +31,8 @@ class AvailabilityBuilder:
         self.residents = [
             ResidentBuilder(name, pgy, num_days) for name, pgy in residents.items()
         ]
-        assert self._validate() == []
+        errors = self._validate()
+        assert errors == [], errors
 
     def _get_day(self, index: int) -> str:
         day = self.start_date + timedelta(days=index)
@@ -95,6 +96,28 @@ class AvailabilityBuilder:
                 chosen_resident.availability[index] != Availability.UNAVAILABLE
             ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
             chosen_resident.availability[index] = Availability.PREFERRED
+
+    def assign_to_day(self, resident: str, day: str) -> None:
+        """
+        Assigns the given resident to be on call on the given day.
+        """
+        index = self._get_index(date.fromisoformat(day))
+        chosen_resident = self._get_resident(resident)
+        for res in self.residents:
+            if res.name == resident:
+                assert (
+                    res.availability[index] != Availability.UNAVAILABLE
+                ), f"Trying to assign {resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
+            else:
+                res.availability[index] = Availability.UNAVAILABLE
+
+    def open_for_coverage(self, day: str) -> None:
+        """
+        Marks all residents as available for the given day.
+        """
+        index = self._get_index(date.fromisoformat(day))
+        for res in self.residents:
+            res.availability[index] = Availability.AVAILABLE
 
     def _get_resident(self, name: str) -> ResidentBuilder:
         for res in self.residents:

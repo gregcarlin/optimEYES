@@ -5,7 +5,7 @@ from call_problem import Resident
 from availability import AvailabilityBuilder
 from dateutil import Weekday
 
-START_DATE = date.fromisoformat("2026-01-01")
+START_DATE = date.fromisoformat("2025-12-29")
 END_DATE = date.fromisoformat("2026-06-30")
 NUM_DAYS = (END_DATE - START_DATE).days + 1
 
@@ -135,5 +135,20 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Sophia", "2026-02-20", "2026-02-22")
     input.set_weekend("Sophia", "2026-05-01", "2026-05-03")
     input.set_weekend("Sophia", "2026-02-13", "2026-02-15")
+
+    # Holidays
+    input.open_for_coverage("2025-12-30")  # would otherwise be Jess
+    input.assign_to_day("Jess", "2025-12-31")
+    input.assign_to_day("Alex", "2026-01-01")
+    input.assign_to_day("Jess", "2026-01-02")
+    input.assign_to_day("Alex", "2026-01-03")
+    input.assign_to_day("Jess", "2026-01-04")
+    input.assign_to_day("Andrieh", "2026-01-17")
+    input.assign_to_day("Sophia", "2026-01-18")
+    input.assign_to_day("Andrieh", "2026-01-19")
+    # TODO this one potentially conflicts with Loubna's vacation
+    # input.assign_to_day("Loubna", "2026-05-23")
+    # input.assign_to_day("Andrew", "2026-05-24")
+    # input.assign_to_day("Loubna", "2026-05-25")
 
     return input
