@@ -15,7 +15,8 @@ BUDDY_PERIOD = None
 
 # The maximum difference allowed between the PGY2 with the most call and the
 # PGY3 with the least call
-PGY_2_3_GAP = 3
+# TODO tighten this as much as possible
+PGY_2_3_GAP = 10
 
 RESIDENTS = {
     "Andrew": 2,
@@ -139,16 +140,19 @@ def get_availability() -> AvailabilityBuilder:
     # Holidays
     input.open_for_coverage("2025-12-30")  # would otherwise be Jess
     input.assign_to_day("Jess", "2025-12-31")
-    input.assign_to_day("Alex", "2026-01-01")
+    input.assign_to_day("Loubna", "2026-01-01")
     input.assign_to_day("Jess", "2026-01-02")
-    input.assign_to_day("Alex", "2026-01-03")
+    input.assign_to_day("Loubna", "2026-01-03")
     input.assign_to_day("Jess", "2026-01-04")
+    input.assign_to_day("Sophia", "2026-01-16")
     input.assign_to_day("Andrieh", "2026-01-17")
     input.assign_to_day("Sophia", "2026-01-18")
     input.assign_to_day("Andrieh", "2026-01-19")
-    # TODO this one potentially conflicts with Loubna's vacation
-    # input.assign_to_day("Loubna", "2026-05-23")
+    # TODO Andrew has conflict with requested weekend 5/23
+    # input.assign_to_day("Andrew", "2026-05-22")
+    input.open_for_coverage("2026-05-22")  # TODO remove
+    input.assign_to_day("Alex", "2026-05-23")
     # input.assign_to_day("Andrew", "2026-05-24")
-    # input.assign_to_day("Loubna", "2026-05-25")
+    input.assign_to_day("Alex", "2026-05-25")
 
     return input
