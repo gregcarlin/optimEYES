@@ -139,6 +139,40 @@ class CallProblemBuilder:
                 sum(day_of_week_vars) <= max_weekdays_per_resident
             )
 
+    def eliminate_adjacent_weekends(self) -> None:
+        """
+        Ensure no resident works two weekends in a row.
+        """
+        for days_for_resident in self.day_vars.values():
+            first_saturday = days_until_next_weekday(self.start_date, Weekday.SATURDAY)
+            first_sunday = days_until_next_weekday(self.start_date, Weekday.SUNDAY)
+            assert (
+                first_saturday < first_sunday
+            ), "Starting on a sunday is not yet supported"
+            if first_saturday + 1 >= self.num_days:
+                # No full weekends in call period
+                return
+
+            last_saturday = days_for_resident[first_saturday]
+            last_sunday = days_for_resident[first_saturday + 1]
+            next_saturday = first_saturday + 7
+            while next_saturday < self.num_days:
+                curr_saturday = days_for_resident[next_saturday]
+                if next_saturday + 1 < self.num_days:
+                    curr_sunday = days_for_resident[next_saturday + 1]
+                    self.problem.add_constraint(
+                        last_saturday + last_sunday + curr_saturday + curr_sunday <= 1
+                    )
+
+                    last_saturday = curr_saturday
+                    last_sunday = curr_sunday
+                else:
+                    self.problem.add_constraint(
+                        last_saturday + last_sunday + curr_saturday <= 1
+                    )
+                    break  # should be redundant, but just in case
+                next_saturday += 7
+
     def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
         if self.q2s is not None:
             return self.q2s

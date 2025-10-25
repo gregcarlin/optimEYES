@@ -99,7 +99,7 @@ class Solution:
     def print(self) -> None:
         for day, residents in enumerate(self.get_assignments()):
             date = self.start_date + timedelta(days=day)
-            print(f"\t{date:%a %m-%d}: {', '.join(residents)}")
+            print(f"\t[{day}] {date:%a %m-%d}: {', '.join(residents)}")
 
         print("Total Q2 calls = ", self.get_objective_value())
         print("Q2 unfairness = ", self.get_q2_unfairness())

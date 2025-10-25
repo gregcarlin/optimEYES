@@ -29,6 +29,8 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
     problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
+    problem.eliminate_adjacent_weekends()
+
     # Minimize Q2 calls
     problem.minimize_q2s()
 
@@ -43,6 +45,8 @@ def distribute_q2s_attempt(
     # Ensure even distribution of Saturdays and Sundays
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
     problem.evenly_distribute_weekday(Weekday.SUNDAY)
+
+    problem.eliminate_adjacent_weekends()
 
     # Minimize Q2 calls
     problem.minimize_q2s()
@@ -73,7 +77,7 @@ def main() -> None:
 
     unfairness = base.get_q2_unfairness()
 
-    solutions = [base]
+    solutions: list[Solution] = [base]
     for tolerance in range(unfairness - 1, -1, -1):
         attempt = distribute_q2s_attempt(availability, tolerance)
         if isinstance(attempt, str):
@@ -94,7 +98,12 @@ def main() -> None:
         return
 
     print(f"Found {len(solutions)} potential solutions:")
-    width = os.get_terminal_size().columns
+    width = 80
+    try:
+        width = os.get_terminal_size().columns
+    except OSError:
+        # Thrown if output is not directly to a terminal (eg. it's piped to a file)
+        pass
     for i, solution in enumerate(solutions):
         text = f"Solution {i+1}:"
         buffer = int((width - len(text)) / 2) * "="
