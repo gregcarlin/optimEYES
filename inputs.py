@@ -15,8 +15,7 @@ BUDDY_PERIOD = None
 
 # The maximum difference allowed between the PGY2 with the most call and the
 # PGY3 with the least call
-# TODO tighten this as much as possible
-PGY_2_3_GAP = 10
+PGY_2_3_GAP = 4
 
 RESIDENTS = {
     "Andrew": 2,
