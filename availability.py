@@ -20,6 +20,11 @@ class ResidentBuilder:
         self.name = name
         self.pgy = pgy
         self.availability = [Availability.AVAILABLE] * num_days
+        # Tracks days a resident should be working due to their regular
+        # schedule, but will instead get coverage because they're unavailable,
+        # eg. due to vacation
+        # Map of day -> reason
+        self.coverage: dict[int, str] = {}
 
 
 class AvailabilityBuilder:
@@ -129,9 +134,8 @@ class AvailabilityBuilder:
         self, resident: ResidentBuilder, index: int, reason: str
     ) -> None:
         if resident.availability[index] == Availability.PREFERRED:
-            print(
-                f"Warning: {resident.name} is supposed to be oncall {self._get_day(index)} but is unavailable due to: {reason}. This day will be auto-assigned to someone else."
-            )
+            assert index not in resident.coverage
+            resident.coverage[index] = reason
         resident.availability[index] = Availability.UNAVAILABLE
 
     def set_unavailable(
@@ -200,6 +204,8 @@ class AvailabilityBuilder:
             return errors
 
         return {
-            Resident(r.name, r.pgy, self._convert_availability(r.availability))
+            Resident(
+                r.name, r.pgy, self._convert_availability(r.availability), r.coverage
+            )
             for r in self.residents
         }
