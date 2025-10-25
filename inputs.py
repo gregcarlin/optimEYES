@@ -126,7 +126,8 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Jess", "2026-03-27", "2026-03-29")
     input.set_weekend("Andrew", "2026-02-05", "2026-02-08")
     input.set_weekend("Andrew", "2026-06-26", "2026-06-28")
-    input.set_weekend("Andrew", "2026-05-22", "2026-05-24")
+    # Not possible to take off this weekend, working holiday
+    # input.set_weekend("Andrew", "2026-05-22", "2026-05-24")
     input.set_weekend("Andrieh", "2026-01-22", "2026-01-25")
     input.set_weekend("Andrieh", "2026-05-15", "2026-05-17")
     input.set_weekend("Andrieh", "2026-04-10", "2026-04-12")
@@ -154,11 +155,9 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Andrieh", "2026-01-17")
     input.assign_to_day("Sophia", "2026-01-18")
     input.assign_to_day("Andrieh", "2026-01-19")
-    # TODO Andrew has conflict with requested weekend 5/23
-    # input.assign_to_day("Andrew", "2026-05-22")
-    input.open_for_coverage("2026-05-22")  # TODO remove
+    input.assign_to_day("Andrew", "2026-05-22")
     input.assign_to_day("Alex", "2026-05-23")
-    # input.assign_to_day("Andrew", "2026-05-24")
+    input.assign_to_day("Andrew", "2026-05-24")
     input.assign_to_day("Alex", "2026-05-25")
 
     return input
