@@ -116,13 +116,19 @@ class AvailabilityBuilder:
             else:
                 res.availability[index] = Availability.UNAVAILABLE
 
-    def open_for_coverage(self, day: str) -> None:
+    def open_for_coverage(self, day: str, reason: str) -> None:
         """
         Marks all residents as available for the given day.
         """
         index = self._get_index(date.fromisoformat(day))
+        previous_resident = None
         for res in self.residents:
+            if res.availability[index] == Availability.PREFERRED:
+                assert previous_resident is None
+                previous_resident = res
             res.availability[index] = Availability.AVAILABLE
+        assert previous_resident is not None
+        previous_resident.coverage[index] = reason
 
     def _get_resident(self, name: str) -> ResidentBuilder:
         for res in self.residents:

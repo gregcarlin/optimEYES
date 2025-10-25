@@ -144,12 +144,13 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Loubna", "2026-05-29", "2026-06-01")
 
     # Holidays
-    input.open_for_coverage("2025-12-30")  # would otherwise be Jess
+    input.open_for_coverage("2025-12-30", "working next day")  # would otherwise be Jess
     input.assign_to_day("Jess", "2025-12-31")
     input.assign_to_day("Loubna", "2026-01-01")
     input.assign_to_day("Jess", "2026-01-02")
     input.assign_to_day("Loubna", "2026-01-03")
     input.assign_to_day("Jess", "2026-01-04")
+    input.open_for_coverage("2026-01-06", "avoiding Q2")  # would otherwise be Jess
     input.assign_to_day("Sophia", "2026-01-16")
     input.assign_to_day("Andrieh", "2026-01-17")
     input.assign_to_day("Sophia", "2026-01-18")
