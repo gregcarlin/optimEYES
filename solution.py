@@ -96,7 +96,7 @@ class Solution:
     def get_sundays(self) -> Dict[str, int]:
         return self._get_count_of_weekday(6)
 
-    def _coverage_msg_for(self, index) -> str:
+    def _coverage_msg_for(self, index: int, csv: bool) -> str:
         covered = [
             (name, resident.coverage[index])
             for name, resident in self.residents.items()
@@ -109,13 +109,22 @@ class Solution:
                 len(covered) == 1
             ), "Multiple residents covered on day {index}: {', '.join(name for name, _ in covered)}"
             name, reason = covered[0]
-            return f" (covering for {name} due to {reason})"
+            if csv:
+                return f"{name} due to {reason}"
+            else:
+                return f" (covering for {name} due to {reason})"
 
-    def print(self) -> None:
+    def print(self, csv: bool = False) -> None:
         for day, residents in enumerate(self.get_assignments()):
             date = self.start_date + timedelta(days=day)
-            cover_msg = self._coverage_msg_for(day)
-            print(f"\t[{day}] {date:%a %m-%d}: {', '.join(residents)}{cover_msg}")
+            cover_msg = self._coverage_msg_for(day, csv)
+            if csv:
+                print(f"{date:%A},{date:%m/%d/%Y},{'/'.join(residents)},{cover_msg}")
+            else:
+                print(f"\t[{day}] {date:%a %m-%d}: {', '.join(residents)}{cover_msg}")
+
+        if csv:
+            return
 
         print("Total Q2 calls = ", self.get_objective_value())
         print("Q2 unfairness = ", self.get_q2_unfairness())

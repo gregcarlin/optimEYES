@@ -2,6 +2,7 @@ from typing import Mapping, Sequence, AbstractSet
 
 import os
 from datetime import timedelta
+import argparse
 
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
@@ -56,7 +57,15 @@ def distribute_q2s_attempt(
     return problem.solve()
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--csv", action="store_true")
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+
     inputs = get_availability()
     availability_or_errors = inputs.build()
     if isinstance(availability_or_errors, list):
@@ -66,7 +75,8 @@ def main() -> None:
         return
 
     availability = availability_or_errors
-    print_availability(availability)
+    if not args.csv:
+        print_availability(availability)
 
     base = base_attempt(availability)
     if isinstance(base, str):
@@ -93,7 +103,11 @@ def main() -> None:
 
     if len(solutions) == 1:
         print("Optimal solution found!")
-        solutions[0].print()
+        solutions[0].print(args.csv)
+        return
+
+    if args.csv:
+        solutions[0].print(True)
         return
 
     print(f"Found {len(solutions)} potential solutions:")
