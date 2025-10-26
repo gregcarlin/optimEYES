@@ -33,6 +33,8 @@ def get_availability() -> AvailabilityBuilder:
     input = AvailabilityBuilder(START_DATE, RESIDENTS, NUM_DAYS)
 
     # Weekday call
+
+    # Block 1
     input.assign_to_day_of_week("Andrew", Weekday.MONDAY, "2025-12-29", "2026-02-15")
     input.assign_to_day_of_week("Jess", Weekday.TUESDAY, "2025-12-29", "2026-02-15")
     input.assign_to_day_of_week(
@@ -53,7 +55,9 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Paris", "Sophia"], Weekday.FRIDAY, "2025-12-29", "2026-02-15"
     )
+    input.set_va(["Andrew", "Paris", "Sophia"], "2025-12-29", "2026-02-15")
 
+    # Block 2
     input.assign_to_day_of_week("Loubna", Weekday.MONDAY, "2026-02-16", "2026-03-29")
     input.assign_to_day_of_week("Andrieh", Weekday.TUESDAY, "2026-02-16", "2026-03-29")
     input.assign_to_day_of_week("Andrew", Weekday.WEDNESDAY, "2026-02-16", "2026-03-09")
@@ -66,7 +70,9 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Keir", "Alex"], Weekday.FRIDAY, "2026-02-16", "2026-03-29"
     )
+    input.set_va(["Loubna", "Keir", "Alex"], "2026-02-16", "2026-03-29")
 
+    # Block 3
     input.assign_to_day_of_week("Jess", Weekday.MONDAY, "2026-03-30", "2026-05-17")
     input.assign_to_day_of_week("Andrew", Weekday.TUESDAY, "2026-03-30", "2026-05-17")
     input.assign_to_day_of_week("Loubna", Weekday.WEDNESDAY, "2026-03-30", "2026-04-20")
@@ -84,7 +90,11 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Sophia", "Paris"], Weekday.FRIDAY, "2026-03-30", "2026-05-17"
     )
+    input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-04-22")
+    # Thursday 4/23 would force Andrew into a 3rd Q3, leave it open for coverage from a VA person
+    input.set_va(["Jess", "Sophia", "Paris"], "2026-04-24", "2026-05-17")
 
+    # Block 4
     input.assign_to_day_of_week("Andrieh", Weekday.MONDAY, "2026-05-18", "2026-06-30")
     input.assign_to_day_of_week("Loubna", Weekday.TUESDAY, "2026-05-18", "2026-06-30")
     input.assign_to_day_of_week("Jess", Weekday.WEDNESDAY, "2026-05-18", "2026-06-08")
@@ -104,6 +114,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Alex", "Keir"], Weekday.FRIDAY, "2026-05-18", "2026-06-30"
     )
+    input.set_va(["Andrieh", "Alex", "Keir"], "2026-05-18", "2026-06-30")
 
     # Vacations
     input.set_vacation("Paris", "2026-03-27", "2026-04-05")

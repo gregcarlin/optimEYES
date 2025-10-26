@@ -99,7 +99,7 @@ class AvailabilityBuilder:
             chosen_resident = self._get_resident(next(resident_iter))
             assert (
                 chosen_resident.availability[index] != Availability.UNAVAILABLE
-            ), f"Trying to assign {chosen_resident} to {self._get_day(index)} (day {index}) but they're marked unavailable."
+            ), f"Trying to assign {chosen_resident.name} to {self._get_day(index)} (day {index}) but they're marked unavailable."
             chosen_resident.availability[index] = Availability.PREFERRED
 
     def assign_to_day(self, resident: str, day: str) -> None:
@@ -186,7 +186,35 @@ class AvailabilityBuilder:
     def set_consults(
         self, resident_name: str, start: str, end: str | None = None
     ) -> None:
-        self.set_unavailable(resident_name, "consults", start, end)
+        self.set_unavailable(
+            resident_name, "consults - should not require coverage", start, end
+        )
+
+    def _set_unavailable_for_va(
+        self, residents: list[ResidentBuilder], index: int
+    ) -> None:
+        for resident in residents:
+            if index < 0 or index >= len(resident.availability):
+                return
+            assert resident.availability[index] != Availability.PREFERRED
+            resident.availability[index] = Availability.UNAVAILABLE
+
+    def set_va(self, resident_names: list[str], start: str, end: str) -> None:
+        residents = [self._get_resident(name) for name in resident_names]
+        start_date = date.fromisoformat(start)
+        index = self._get_index(start_date) + days_until_next_weekday(
+            start_date, Weekday.TUESDAY
+        )
+        end_date = date.fromisoformat(end)
+        end_index = self._get_index(end_date)
+
+        while index < end_index and index < self.num_days:
+            self._set_unavailable_for_va(residents, index)
+            if index + 1 < end_index:
+                self._set_unavailable_for_va(residents, index + 1)
+                if index + 2 < end_index:
+                    self._set_unavailable_for_va(residents, index + 2)
+            index += 7
 
     def _eliminate_non_preferred(self) -> None:
         for index in range(self.num_days):
