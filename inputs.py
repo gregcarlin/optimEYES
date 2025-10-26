@@ -160,6 +160,14 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Loubna", "2026-03-06", "2026-03-08")
     input.set_weekend("Loubna", "2026-03-13", "2026-03-15")
     input.set_weekend("Loubna", "2026-05-29", "2026-06-01")
+    input.set_weekend("Keir", "2026-01-09", "2026-01-11")
+    input.set_weekend("Keir", "2026-04-17", "2026-04-19")
+    input.set_weekend("Keir", "2026-04-03", "2026-04-05")
+    input.set_weekend("Keir", "2026-05-08", "2026-05-10")
+    input.set_weekend("Keir", "2026-05-29", "2026-06-01")
+    input.set_weekend("Keir", "2026-02-13", "2026-02-15")
+    input.set_weekend("Paris", "2026-03-27", "2026-03-29")
+    input.set_weekend("Paris", "2026-05-22", "2026-05-24")
 
     # Holidays
     input.open_for_coverage("2025-12-30", "working next day")  # would otherwise be Jess
