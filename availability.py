@@ -183,6 +183,11 @@ class AvailabilityBuilder:
     ) -> None:
         self.set_unavailable(resident_name, "requested weekend", start, end)
 
+    def set_consults(
+        self, resident_name: str, start: str, end: str | None = None
+    ) -> None:
+        self.set_unavailable(resident_name, "consults", start, end)
+
     def _eliminate_non_preferred(self) -> None:
         for index in range(self.num_days):
             preferred = [
