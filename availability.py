@@ -126,7 +126,7 @@ class AvailabilityBuilder:
             if res.availability[index] == Availability.PREFERRED:
                 assert previous_resident is None
                 previous_resident = res
-            res.availability[index] = Availability.AVAILABLE
+                res.availability[index] = Availability.AVAILABLE
         assert previous_resident is not None
         previous_resident.coverage[index] = reason
 
