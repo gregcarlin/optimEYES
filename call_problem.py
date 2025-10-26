@@ -139,6 +139,14 @@ class CallProblemBuilder:
                 sum(day_of_week_vars) <= max_weekdays_per_resident
             )
 
+    def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
+        day = days_until_next_weekday(self.start_date, weekday)
+        day_vars = []
+        while day < self.num_days:
+            day_vars.append(self.day_vars[resident][day])
+            day += 7
+        self.problem.add_constraint(sum(day_vars) <= count)
+
     def eliminate_adjacent_weekends(self) -> None:
         """
         Ensure no resident works two weekends in a row.

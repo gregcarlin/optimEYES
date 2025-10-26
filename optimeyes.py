@@ -20,7 +20,7 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
-def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
+def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     problem = CallProblemBuilder(
         START_DATE, BUDDY_PERIOD, availability, PGY_2_3_GAP, debug_infeasibility=False
     )
@@ -34,22 +34,21 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
     # Minimize Q2 calls
     problem.minimize_q2s()
 
+    problem.limit_weekday("Sophia", Weekday.SATURDAY, 3)
+    problem.limit_weekday("Sophia", Weekday.SUNDAY, 3)
+
+    return problem
+
+
+def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
+    problem = _common_attempt(availability)
     return problem.solve()
 
 
 def distribute_q2s_attempt(
     availability: AbstractSet[Resident], tolerance: int
 ) -> Solution | str:
-    problem = CallProblemBuilder(START_DATE, BUDDY_PERIOD, availability, PGY_2_3_GAP)
-
-    # Ensure even distribution of Saturdays and Sundays
-    problem.evenly_distribute_weekday(Weekday.SATURDAY)
-    problem.evenly_distribute_weekday(Weekday.SUNDAY)
-
-    problem.eliminate_adjacent_weekends()
-
-    # Minimize Q2 calls
-    problem.minimize_q2s()
+    problem = _common_attempt(availability)
 
     # Evenly distribute q2s
     problem.evenly_distribute_q2s(tolerance)
