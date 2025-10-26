@@ -145,6 +145,10 @@ def get_availability() -> AvailabilityBuilder:
 
     # Holidays
     input.open_for_coverage("2025-12-30", "working next day")  # would otherwise be Jess
+    input.set_unavailable("Paris", "Start", "2025-12-29", "2025-12-30")
+    input.set_unavailable("Andrieh", "Start", "2025-12-29", "2025-12-30")
+    input.set_unavailable("Loubna", "Start", "2025-12-29", "2025-12-30")
+    input.set_unavailable("Jess", "Start", "2025-12-29", "2025-12-30")
     input.assign_to_day("Jess", "2025-12-31")
     input.assign_to_day("Loubna", "2026-01-01")
     input.assign_to_day("Jess", "2026-01-02")
