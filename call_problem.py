@@ -21,12 +21,16 @@ class CallProblemBuilder:
         resident_availability: AbstractSet[Resident],
         pgy2_3_gap: int,
         debug_infeasibility: bool = False,
+        seed: int | None = None,
     ) -> None:
         self.start_date = start_date
         self.residents = {resident.name: resident for resident in resident_availability}
 
         self.problem = PulpProblem(
-            "optimEYES", minimize=True, debug_infeasibility=debug_infeasibility
+            "optimEYES",
+            minimize=True,
+            debug_infeasibility=debug_infeasibility,
+            seed=seed,
         )
 
         self.num_days = len(next(iter(resident_availability)).availability)

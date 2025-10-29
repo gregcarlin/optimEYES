@@ -17,6 +17,8 @@ BUDDY_PERIOD = None
 # PGY3 with the least call
 PGY_2_3_GAP = 4
 
+SEED = 5678
+
 RESIDENTS = {
     "Andrew": 2,
     "Andrieh": 2,

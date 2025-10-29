@@ -31,7 +31,11 @@ class PulpSolution:
 
 class PulpProblem:
     def __init__(
-        self, name: str, minimize: bool = True, debug_infeasibility: bool = False
+        self,
+        name: str,
+        minimize: bool = True,
+        debug_infeasibility: bool = False,
+        seed: int | None = None,
     ) -> None:
         self.name = name
         self.minimize = minimize
@@ -39,6 +43,7 @@ class PulpProblem:
         self.var_names = set()
         self.objective_fn = None
         self.constraint_fns = []
+        self.seed = seed
 
     def new_binary_variable(self, name: str) -> Variable:
         assert name not in self.var_names, f"Duplicate variable {name}"
@@ -126,5 +131,8 @@ class PulpProblem:
         for index, constraint_fn in enumerate(self.constraint_fns):
             lp_problem += constraint_fn, f"Constraint_{index}"
 
-        lp_problem.solve(pulp.PULP_CBC_CMD(msg=False))
+        options = []
+        if self.seed is not None:
+            options = [f"RandomS {self.seed}"]
+        lp_problem.solve(pulp.PULP_CBC_CMD(msg=False, options=options))
         return PulpSolution(lp_problem)
