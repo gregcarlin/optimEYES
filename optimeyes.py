@@ -109,7 +109,8 @@ def main() -> None:
             solutions.append(attempt)
 
     if len(solutions) == 1:
-        print("Optimal solution found!")
+        if not args.csv:
+            print("Optimal solution found!")
         solutions[0].print(args.csv)
         return
 
