@@ -211,6 +211,11 @@ class CallProblemBuilder:
         min_q2s = self.problem.min_of(q2s_per_resident, self.num_days, "min_q2s")
         self.problem.add_constraint(max_q2s - min_q2s <= tolerance)
 
+    def limit_q2s(self, limit: int) -> None:
+        q2s_dict = self._get_q2_vars()
+        for q2_vars in q2s_dict.values():
+            self.problem.add_constraint(sum(q2_vars) <= limit)
+
     def solve(self) -> Solution | str:
         solution = self.problem.solve()
         if not solution.was_successful():

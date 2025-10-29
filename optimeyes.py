@@ -44,12 +44,15 @@ def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
 
 
 def distribute_q2s_attempt(
-    availability: AbstractSet[Resident], tolerance: int
+    availability: AbstractSet[Resident], tolerance: int, max_q2s: int
 ) -> Solution | str:
     problem = _common_attempt(availability)
 
     # Evenly distribute q2s
     problem.evenly_distribute_q2s(tolerance)
+
+    # See if we can get a solution where the resident with the most q2s has less
+    problem.limit_q2s(max_q2s)
 
     return problem.solve()
 
@@ -85,7 +88,9 @@ def main() -> None:
 
     solutions: list[Solution] = [base]
     for tolerance in range(unfairness - 1, -1, -1):
-        attempt = distribute_q2s_attempt(availability, tolerance)
+        attempt = distribute_q2s_attempt(
+            availability, tolerance, solutions[-1].get_max_q2s() - 1
+        )
         if isinstance(attempt, str):
             # No solution found, give up
             break

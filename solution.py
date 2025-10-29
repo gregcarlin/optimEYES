@@ -73,6 +73,13 @@ class Solution:
         q2s = self.get_q2s_per_resident().values()
         return max(q2s) - min(q2s)
 
+    def get_max_q2s(self) -> int:
+        """
+        Calculate the most Q2s anyone has.
+        """
+        q2s = self.get_q2s_per_resident().values()
+        return max(q2s)
+
     def get_calls_taken_by_year(self) -> Dict[int, int]:
         result = defaultdict(lambda: 0)
         for assignments in self.get_assignments():
