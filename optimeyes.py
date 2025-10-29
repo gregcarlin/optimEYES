@@ -35,9 +35,6 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     # Minimize Q2 calls
     problem.minimize_q2s()
 
-    problem.limit_weekday("Sophia", Weekday.SATURDAY, 3)
-    problem.limit_weekday("Sophia", Weekday.SUNDAY, 3)
-
     return problem
 
 
