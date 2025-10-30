@@ -4,6 +4,7 @@ from datetime import date
 from call_problem import Resident
 from availability import AvailabilityBuilder
 from dateutil import Weekday
+from call_problem import CallProblemBuilder
 
 START_DATE = date.fromisoformat("2025-12-29")
 END_DATE = date.fromisoformat("2026-06-30")
@@ -17,7 +18,7 @@ BUDDY_PERIOD = None
 # PGY3 with the least call
 PGY_2_3_GAP = 4
 
-SEED = 1761769935
+SEED = 1761842917
 
 RESIDENTS = {
     "Andrew": 2,
@@ -206,3 +207,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Alex", "2026-05-25")
 
     return input
+
+def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
+    builder.limit_calls_for_year(2, 25)
+    builder.limit_calls_for_year(3, 21)

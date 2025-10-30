@@ -143,6 +143,34 @@ class CallProblemBuilder:
                 sum(day_of_week_vars) <= max_weekdays_per_resident
             )
 
+    def evenly_distribute_weekends(self) -> None:
+        num_saturdays = num_weekdays_in_time_period(
+            self.start_date, self.num_days, Weekday.SATURDAY
+        )
+        num_sundays = num_weekdays_in_time_period(
+            self.start_date, self.num_days, Weekday.SUNDAY
+        )
+        num_weekend_days = num_saturdays + num_sundays
+        min_per_resident = math.floor(num_weekend_days / float(self.num_residents))
+        max_per_resident = math.ceil(num_weekend_days / float(self.num_residents))
+
+        first_saturday = days_until_next_weekday(self.start_date, Weekday.SATURDAY)
+        first_sunday = days_until_next_weekday(self.start_date, Weekday.SUNDAY)
+        assert (
+            first_saturday < first_sunday
+        ), "Starting on a sunday is not yet supported"
+
+        for days_for_resident in self.day_vars.values():
+            day_of_week_vars = []
+            next_day = first_saturday
+            while next_day < self.num_days:
+                day_of_week_vars.append(days_for_resident[next_day])
+                if next_day + 1 < self.num_days:
+                    day_of_week_vars.append(days_for_resident[next_day + 1])
+                next_day += 7
+            self.problem.add_constraint(sum(day_of_week_vars) >= min_per_resident)
+            self.problem.add_constraint(sum(day_of_week_vars) <= max_per_resident)
+
     def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
         day = days_until_next_weekday(self.start_date, weekday)
         day_vars = []
@@ -184,6 +212,15 @@ class CallProblemBuilder:
                     )
                     break  # should be redundant, but just in case
                 next_saturday += 7
+
+    def limit_calls_for_year(self, pgy: int, limit: int) -> None:
+        """
+        Limit the number of calls for residents in a given year.
+        """
+        for resident, days_for_resident in self.day_vars.items():
+            if self.residents[resident].pgy != pgy:
+                continue
+            self.problem.add_constraint(sum(days_for_resident) <= limit)
 
     def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
         if self.q2s is not None:

@@ -7,7 +7,7 @@ import argparse
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
 from solution import Solution
-from inputs import START_DATE, BUDDY_PERIOD, PGY_2_3_GAP, SEED, get_availability
+from inputs import START_DATE, BUDDY_PERIOD, PGY_2_3_GAP, SEED, get_availability, special_handling_for_this_round
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:
@@ -35,7 +35,10 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     problem.evenly_distribute_weekday(Weekday.SATURDAY)
     problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
+    problem.evenly_distribute_weekends()
     problem.eliminate_adjacent_weekends()
+
+    special_handling_for_this_round(problem)
 
     # Minimize Q2 calls
     problem.minimize_q2s()
