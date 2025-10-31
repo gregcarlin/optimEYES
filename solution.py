@@ -117,7 +117,7 @@ class Solution:
             ), "Multiple residents covered on day {index}: {', '.join(name for name, _ in covered)}"
             name, reason = covered[0]
             if csv:
-                return f"{name} due to {reason}"
+                return f"Covering for {name} due to {reason}"
             else:
                 return f" (covering for {name} due to {reason})"
 
