@@ -186,7 +186,9 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Alex", "2026-06-19", "2026-06-21")
     input.set_weekend("Alex", "2026-02-20", "2026-02-22")
 
-    input.open_for_coverage("2026-02-19", "so she can cover next day") # would otherwise be Paris
+    input.open_for_coverage(
+        "2026-02-19", "so she can cover next day"
+    )  # would otherwise be Paris
 
     # Holidays
     input.open_for_coverage("2025-12-30", "working next day")  # would otherwise be Jess
@@ -210,6 +212,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Alex", "2026-05-25")
 
     return input
+
 
 def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
     builder.limit_calls_for_year(2, 25)

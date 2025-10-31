@@ -7,7 +7,14 @@ import argparse
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
 from solution import Solution
-from inputs import START_DATE, BUDDY_PERIOD, PGY_2_3_GAP, SEED, get_availability, special_handling_for_this_round
+from inputs import (
+    START_DATE,
+    BUDDY_PERIOD,
+    PGY_2_3_GAP,
+    SEED,
+    get_availability,
+    special_handling_for_this_round,
+)
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:
