@@ -109,6 +109,7 @@ class CallProblemBuilder:
                 )
 
         self.q2s: Mapping[str, List[Variable]] | None = None
+        self.va_vars: list[Variable] | None = None
 
     def _ensure_one_resident_per_day(self, indices: range) -> None:
         # Ensure exactly one resident is assigned to each day in the given range
@@ -180,13 +181,22 @@ class CallProblemBuilder:
                 day += 7
             self.problem.add_constraint(sum(day_vars) <= count)
 
-    def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
+    def _vars_for_weekday(self, resident: str, weekday: Weekday) -> list[Variable]:
         day = days_until_next_weekday(self.start_date, weekday)
         day_vars = []
         while day < self.num_days:
             day_vars.append(self.day_vars[resident][day])
             day += 7
+        return day_vars
+        
+    def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
+        day_vars = self._vars_for_weekday(resident, weekday)
         self.problem.add_constraint(sum(day_vars) <= count)
+
+    def set_minimum_for_weekdays(self, resident: str, weekdays: list[Weekday], count: int) -> None:
+        day_varss = [self._vars_for_weekday(resident, weekday) for weekday in weekdays]
+        day_vars = [dv for sublist in day_varss for dv in sublist]
+        self.problem.add_constraint(sum(day_vars) >= count)
 
     def eliminate_adjacent_weekends(self) -> None:
         """
@@ -231,6 +241,19 @@ class CallProblemBuilder:
                 continue
             self.problem.add_constraint(sum(days_for_resident) <= limit)
 
+    def _get_va_vars(self) -> list[Variable]:
+        if self.va_vars is not None:
+            return self.va_vars
+        self.va_vars = []
+        for name, days_for_resident in self.day_vars.items():
+            for i, v in enumerate(days_for_resident):
+                if self.residents[name].va[i]:
+                    self.va_vars.append(v)
+        return self.va_vars
+
+    def limit_va_coverage(self, global_limit: int) -> None:
+        self.problem.add_constraint(sum(self._get_va_vars()) <= global_limit)
+
     def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
         if self.q2s is not None:
             return self.q2s
@@ -253,6 +276,10 @@ class CallProblemBuilder:
         q2s_dict = self._get_q2_vars()
         q2s = [v for vs in q2s_dict.values() for v in vs]
         self.problem.set_objective(sum(q2s))
+
+    def minimize_va_coverage(self) -> None:
+        va_vars = self._get_va_vars()
+        self.problem.set_objective(sum(va_vars))
 
     def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
         q2s_dict = self._get_q2_vars()

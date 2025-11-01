@@ -103,6 +103,14 @@ class Solution:
     def get_sundays(self) -> Dict[str, int]:
         return self._get_count_of_weekday(6)
 
+    def get_va_covered_days(self) -> list[date]:
+        result = []
+        for day, residents in enumerate(self.get_assignments()):
+            va_residents = [resident for resident in residents if self.residents[resident].va[day]]
+            if va_residents:
+                result.append(self.start_date + timedelta(days=day))
+        return result
+
     def _coverage_msg_for(self, index: int, csv: bool) -> str:
         covered = [
             (name, resident.coverage[index])
@@ -142,6 +150,7 @@ class Solution:
         print(
             f"Calls taken by PGY3s =  {calls_by_year[3]}  ({calls_by_year[3] / self.num_days * 100:.2f}%)"
         )
+        print("VA coverage dates: ", ", ".join(f"{d:%m/%d/%Y}" for d in self.get_va_covered_days()))
 
         print("Per resident stats:")
         calls = self.get_calls_per_resident()

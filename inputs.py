@@ -123,7 +123,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Alex", "Keir"], Weekday.FRIDAY, "2026-05-18", "2026-06-30"
     )
-    input.set_va(["Andrieh", "Alex", "Keir"], "2026-05-18", "2026-06-30")
+    input.set_va(["Andrieh", "Alex", "Keir"], "2026-05-17", "2026-06-30")
 
     # Vacations
     input.set_vacation("Paris", "2026-03-27", "2026-04-05")
@@ -230,3 +230,4 @@ def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
     builder.limit_calls_for_year(3, 21)
     builder.limit_weekday_for_all(Weekday.SATURDAY, 4)
     builder.limit_weekday_for_all(Weekday.SUNDAY, 4)
+    builder.set_minimum_for_weekdays("Keir", [Weekday.SATURDAY, Weekday.SUNDAY], 7)

@@ -6,13 +6,14 @@ from datetime import date, timedelta
 from enum import Enum
 
 from dateutil import Weekday, days_until_next_weekday
-from call_problem import Resident
+from resident import Resident
 
 
 class Availability(Enum):
     UNAVAILABLE = 0
     AVAILABLE = 1
     PREFERRED = 2
+    UNAVAILABLE_VA = 3
 
 
 class ResidentBuilder:
@@ -199,7 +200,7 @@ class AvailabilityBuilder:
             if index < 0 or index >= len(resident.availability):
                 return
             assert resident.availability[index] != Availability.PREFERRED
-            resident.availability[index] = Availability.UNAVAILABLE
+            resident.availability[index] = Availability.UNAVAILABLE_VA
 
     def set_va(
         self,
@@ -256,6 +257,9 @@ class AvailabilityBuilder:
     def _convert_availability(self, availability: list[Availability]) -> list[int]:
         return [0 if x == Availability.UNAVAILABLE else 1 for x in availability]
 
+    def _convert_va_unavailability(self, availability: list[Availability]) -> list[int]:
+        return [1 if x == Availability.UNAVAILABLE_VA else 0 for x in availability]
+
     def build(self) -> AbstractSet[Resident] | list[str]:
         self._eliminate_non_preferred()
 
@@ -265,7 +269,7 @@ class AvailabilityBuilder:
 
         return {
             Resident(
-                r.name, r.pgy, self._convert_availability(r.availability), r.coverage
+                r.name, r.pgy, self._convert_availability(r.availability), self._convert_va_unavailability(r.availability), r.coverage
             )
             for r in self.residents
         }

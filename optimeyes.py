@@ -23,7 +23,7 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
     for i in range(num_days):
         day = START_DATE + timedelta(days=i)
         available_residents = ", ".join(
-            resident.name for resident in availability if resident.availability[i] == 1
+            f"{resident.name} (VA)" if resident.va[i] == 1 else resident.name for resident in availability if resident.availability[i] == 1
         )
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
@@ -45,10 +45,14 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     problem.evenly_distribute_weekends()
     problem.eliminate_adjacent_weekends()
 
+    problem.limit_va_coverage(3)
+
     special_handling_for_this_round(problem)
 
     # Minimize Q2 calls
     problem.minimize_q2s()
+    #problem.minimize_va_coverage()
+    problem.limit_q2s(2)
 
     return problem
 
@@ -102,6 +106,7 @@ def main() -> None:
     unfairness = base.get_q2_unfairness()
 
     solutions: list[Solution] = [base]
+    """
     for tolerance in range(unfairness - 1, -1, -1):
         attempt = distribute_q2s_attempt(
             availability, tolerance, solutions[-1].get_max_q2s() - 1
@@ -117,6 +122,7 @@ def main() -> None:
             solutions.append(attempt)
         else:
             solutions.append(attempt)
+    """
 
     if len(solutions) == 1:
         if not args.csv:
