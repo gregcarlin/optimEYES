@@ -80,6 +80,10 @@ class Solution:
         q2s = self.get_q2s_per_resident().values()
         return max(q2s)
 
+    def get_total_q2s(self) -> int:
+        q2s = self.get_q2s_per_resident().values()
+        return sum(q2s)
+
     def get_calls_taken_by_year(self) -> Dict[int, int]:
         result = defaultdict(lambda: 0)
         for assignments in self.get_assignments():
@@ -143,7 +147,8 @@ class Solution:
         if csv:
             return
 
-        print("Total Q2 calls = ", self.get_objective_value())
+        print("Objective value = ", self.get_objective_value())
+        print("Total Q2 calls = ", self.get_total_q2s())
         print("Q2 unfairness = ", self.get_q2_unfairness())
         calls_by_year = self.get_calls_taken_by_year()
         print(
