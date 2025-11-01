@@ -98,9 +98,6 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Sophia", "Paris"], Weekday.FRIDAY, "2026-03-30", "2026-05-17"
     )
-    # input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-04-22")
-    # Thursday 4/23 would force Andrew into a 3rd Q3, leave it open for coverage from a VA person
-    # input.set_va(["Jess", "Sophia", "Paris"], "2026-04-24", "2026-05-17")
     input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-05-17")
 
     # Block 4
