@@ -106,7 +106,9 @@ class Solution:
     def get_va_covered_days(self) -> list[date]:
         result = []
         for day, residents in enumerate(self.get_assignments()):
-            va_residents = [resident for resident in residents if self.residents[resident].va[day]]
+            va_residents = [
+                resident for resident in residents if self.residents[resident].va[day]
+            ]
             if va_residents:
                 result.append(self.start_date + timedelta(days=day))
         return result
@@ -150,7 +152,10 @@ class Solution:
         print(
             f"Calls taken by PGY3s =  {calls_by_year[3]}  ({calls_by_year[3] / self.num_days * 100:.2f}%)"
         )
-        print("VA coverage dates: ", ", ".join(f"{d:%m/%d/%Y}" for d in self.get_va_covered_days()))
+        print(
+            "VA coverage dates: ",
+            ", ".join(f"{d:%m/%d/%Y}" for d in self.get_va_covered_days()),
+        )
 
         print("Per resident stats:")
         calls = self.get_calls_per_resident()

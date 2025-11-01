@@ -269,7 +269,11 @@ class AvailabilityBuilder:
 
         return {
             Resident(
-                r.name, r.pgy, self._convert_availability(r.availability), self._convert_va_unavailability(r.availability), r.coverage
+                r.name,
+                r.pgy,
+                self._convert_availability(r.availability),
+                self._convert_va_unavailability(r.availability),
+                r.coverage,
             )
             for r in self.residents
         }

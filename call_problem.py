@@ -188,12 +188,14 @@ class CallProblemBuilder:
             day_vars.append(self.day_vars[resident][day])
             day += 7
         return day_vars
-        
+
     def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
         day_vars = self._vars_for_weekday(resident, weekday)
         self.problem.add_constraint(sum(day_vars) <= count)
 
-    def set_minimum_for_weekdays(self, resident: str, weekdays: list[Weekday], count: int) -> None:
+    def set_minimum_for_weekdays(
+        self, resident: str, weekdays: list[Weekday], count: int
+    ) -> None:
         day_varss = [self._vars_for_weekday(resident, weekday) for weekday in weekdays]
         day_vars = [dv for sublist in day_varss for dv in sublist]
         self.problem.add_constraint(sum(day_vars) >= count)

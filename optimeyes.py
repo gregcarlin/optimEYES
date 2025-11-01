@@ -23,7 +23,9 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
     for i in range(num_days):
         day = START_DATE + timedelta(days=i)
         available_residents = ", ".join(
-            f"{resident.name} (VA)" if resident.va[i] == 1 else resident.name for resident in availability if resident.availability[i] == 1
+            f"{resident.name} (VA)" if resident.va[i] == 1 else resident.name
+            for resident in availability
+            if resident.availability[i] == 1
         )
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
@@ -51,7 +53,7 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
 
     # Minimize Q2 calls
     problem.minimize_q2s()
-    #problem.minimize_va_coverage()
+    # problem.minimize_va_coverage()
     problem.limit_q2s(2)
 
     return problem
