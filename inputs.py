@@ -58,7 +58,12 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Paris", "Sophia"], Weekday.FRIDAY, "2025-12-29", "2026-02-15"
     )
-    input.set_va(["Andrew", "Paris", "Sophia"], "2025-12-29", "2026-02-15")
+    input.set_va(
+        ["Andrew", "Paris", "Sophia"],
+        "2025-12-29",
+        "2026-02-15",
+        omit=["2026-01-11", "2026-01-17", "2026-01-18", "2026-01-19"],
+    )
 
     # Block 2
     input.assign_to_day_of_week("Loubna", Weekday.MONDAY, "2026-02-16", "2026-03-29")
@@ -93,9 +98,10 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Sophia", "Paris"], Weekday.FRIDAY, "2026-03-30", "2026-05-17"
     )
-    input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-04-22")
+    # input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-04-22")
     # Thursday 4/23 would force Andrew into a 3rd Q3, leave it open for coverage from a VA person
-    input.set_va(["Jess", "Sophia", "Paris"], "2026-04-24", "2026-05-17")
+    # input.set_va(["Jess", "Sophia", "Paris"], "2026-04-24", "2026-05-17")
+    input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-05-17")
 
     # Block 4
     input.assign_to_day_of_week("Andrieh", Weekday.MONDAY, "2026-05-18", "2026-06-30")
@@ -211,9 +217,16 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Andrew", "2026-05-24")
     input.assign_to_day("Alex", "2026-05-25")
 
+    input.open_for_coverage("2026-04-21", "avoiding Q2")  # would be Andrew
+    input.open_for_coverage(
+        "2026-04-22", "so he can cover previous day"
+    )  # would be Andrieh
+
     return input
 
 
 def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
     builder.limit_calls_for_year(2, 25)
     builder.limit_calls_for_year(3, 21)
+    builder.limit_weekday_for_all(Weekday.SATURDAY, 4)
+    builder.limit_weekday_for_all(Weekday.SUNDAY, 4)

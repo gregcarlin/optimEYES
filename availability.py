@@ -191,30 +191,51 @@ class AvailabilityBuilder:
         )
 
     def _set_unavailable_for_va(
-        self, residents: list[ResidentBuilder], index: int
+        self, residents: list[ResidentBuilder], index: int, omit: list[int]
     ) -> None:
+        if index in omit:
+            return
         for resident in residents:
             if index < 0 or index >= len(resident.availability):
                 return
             assert resident.availability[index] != Availability.PREFERRED
             resident.availability[index] = Availability.UNAVAILABLE
 
-    def set_va(self, resident_names: list[str], start: str, end: str) -> None:
+    def set_va(
+        self,
+        resident_names: list[str],
+        start: str,
+        end: str,
+        omit: list[str] | None = None,
+        omit_sundays: bool = False,
+    ) -> None:
         residents = [self._get_resident(name) for name in resident_names]
         start_date = date.fromisoformat(start)
         index = self._get_index(start_date) + days_until_next_weekday(
             start_date, Weekday.TUESDAY
         )
         end_date = date.fromisoformat(end)
-        end_index = self._get_index(end_date)
+        end_index = self._get_index(end_date) + 1
+        if omit:
+            omit_indices = [self._get_index(date.fromisoformat(o)) for o in omit]
+        else:
+            omit_indices = []
 
         while index < end_index and index < self.num_days:
-            self._set_unavailable_for_va(residents, index)
+            self._set_unavailable_for_va(residents, index, omit_indices)
             if index + 1 < end_index:
-                self._set_unavailable_for_va(residents, index + 1)
+                self._set_unavailable_for_va(residents, index + 1, omit_indices)
                 if index + 2 < end_index:
-                    self._set_unavailable_for_va(residents, index + 2)
+                    self._set_unavailable_for_va(residents, index + 2, omit_indices)
             index += 7
+
+        if not omit_sundays:
+            index = self._get_index(start_date) + days_until_next_weekday(
+                start_date, Weekday.SUNDAY
+            )
+            while index < end_index and index < self.num_days:
+                self._set_unavailable_for_va(residents, index, omit_indices)
+                index += 7
 
     def _eliminate_non_preferred(self) -> None:
         for index in range(self.num_days):

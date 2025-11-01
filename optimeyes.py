@@ -39,8 +39,8 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     )
 
     # Ensure even distribution of Saturdays and Sundays
-    problem.evenly_distribute_weekday(Weekday.SATURDAY)
-    problem.evenly_distribute_weekday(Weekday.SUNDAY)
+    # problem.evenly_distribute_weekday(Weekday.SATURDAY)
+    # problem.evenly_distribute_weekday(Weekday.SUNDAY)
 
     problem.evenly_distribute_weekends()
     problem.eliminate_adjacent_weekends()

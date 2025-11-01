@@ -171,6 +171,15 @@ class CallProblemBuilder:
             self.problem.add_constraint(sum(day_of_week_vars) >= min_per_resident)
             self.problem.add_constraint(sum(day_of_week_vars) <= max_per_resident)
 
+    def limit_weekday_for_all(self, weekday: Weekday, count: int) -> None:
+        for days_for_resident in self.day_vars.values():
+            day = days_until_next_weekday(self.start_date, weekday)
+            day_vars = []
+            while day < self.num_days:
+                day_vars.append(days_for_resident[day])
+                day += 7
+            self.problem.add_constraint(sum(day_vars) <= count)
+
     def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
         day = days_until_next_weekday(self.start_date, weekday)
         day_vars = []
