@@ -59,10 +59,10 @@ def get_availability() -> AvailabilityBuilder:
         ["Paris", "Sophia"], Weekday.FRIDAY, "2025-12-29", "2026-02-15"
     )
     input.set_va(
-        ["Andrew", "Paris", "Sophia"],
+        ["Andrew", "Paris"],
         "2025-12-29",
         "2026-02-15",
-        omit=["2026-01-11", "2026-01-17", "2026-01-18", "2026-01-19"],
+        omit=["2026-01-17", "2026-01-18", "2026-01-19"],
     )
 
     # Block 2
@@ -78,7 +78,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Keir", "Alex"], Weekday.FRIDAY, "2026-02-16", "2026-03-29"
     )
-    input.set_va(["Loubna", "Keir", "Alex"], "2026-02-16", "2026-03-29")
+    input.set_va(["Loubna", "Keir"], "2026-02-16", "2026-03-29")
 
     # Block 3
     input.assign_to_day_of_week("Jess", Weekday.MONDAY, "2026-03-30", "2026-05-17")
@@ -98,7 +98,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Sophia", "Paris"], Weekday.FRIDAY, "2026-03-30", "2026-05-17"
     )
-    input.set_va(["Jess", "Sophia", "Paris"], "2026-03-30", "2026-05-17")
+    input.set_va(["Jess", "Sophia"], "2026-03-30", "2026-05-17")
 
     # Block 4
     input.assign_to_day_of_week("Andrieh", Weekday.MONDAY, "2026-05-18", "2026-06-30")
@@ -120,7 +120,7 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week(
         ["Alex", "Keir"], Weekday.FRIDAY, "2026-05-18", "2026-06-30"
     )
-    input.set_va(["Andrieh", "Alex", "Keir"], "2026-05-17", "2026-06-30")
+    input.set_va(["Andrieh", "Alex"], "2026-05-17", "2026-06-30")
 
     # Vacations
     input.set_vacation("Paris", "2026-03-27", "2026-04-05")
@@ -227,4 +227,3 @@ def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
     builder.limit_calls_for_year(3, 21)
     builder.limit_weekday_for_all(Weekday.SATURDAY, 4)
     builder.limit_weekday_for_all(Weekday.SUNDAY, 4)
-    builder.set_minimum_for_weekdays("Keir", [Weekday.SATURDAY, Weekday.SUNDAY], 7)
