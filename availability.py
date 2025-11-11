@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from enum import Enum
 
 from dateutil import Weekday, days_until_next_weekday
-from resident import Resident
+from structs.resident import Resident
 
 
 class Availability(Enum):

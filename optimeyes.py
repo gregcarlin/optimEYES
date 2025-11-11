@@ -5,9 +5,10 @@ from datetime import timedelta
 import argparse
 
 from dateutil import Weekday
-from call_problem import CallProblemBuilder, Resident
+from call_problem import CallProblemBuilder
 from solution import Solution
-from output_mode import OutputMode
+from structs.output_mode import OutputMode
+from structs.resident import Resident
 from inputs import (
     START_DATE,
     BUDDY_PERIOD,

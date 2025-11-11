@@ -3,8 +3,8 @@ from datetime import date, timedelta
 from collections import defaultdict
 
 from dateutil import days_until_next_weekday
-from resident import Resident
-from output_mode import OutputMode
+from structs.output_mode import OutputMode
+from structs.resident import Resident
 
 
 def key_for_day(day: int, resident: str) -> str:

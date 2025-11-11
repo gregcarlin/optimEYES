@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from solution import Solution, key_for_day
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
-from resident import Resident
+from structs.resident import Resident
 from linear_problem import (
     PulpProblem,
     Variable,
