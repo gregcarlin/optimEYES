@@ -279,6 +279,21 @@ class CallProblemBuilder:
         q2s = [v for vs in q2s_dict.values() for v in vs]
         self.problem.set_objective(sum(q2s))
 
+    def minimize_q2s_and_changes_from_previous_solution(
+        self, previous_result: list[list[str]]
+    ) -> None:
+        q2s_dict = self._get_q2_vars()
+        q2s = [v for vs in q2s_dict.values() for v in vs]
+
+        is_changed_vars = []
+        for i, previous in enumerate(previous_result):
+            if len(previous) != 1:
+                raise ValueError(
+                    "Minimizing changes from previous not yet supported for buddy call"
+                )
+            is_changed_vars.append(1 - self.day_vars[previous[0]][i])
+        self.problem.set_objective(sum(q2s) * self.num_days + sum(is_changed_vars))
+
     def minimize_va_coverage(self) -> None:
         va_vars = self._get_va_vars()
         self.problem.set_objective(sum(va_vars))

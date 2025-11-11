@@ -7,6 +7,7 @@ import argparse
 from dateutil import Weekday
 from call_problem import CallProblemBuilder, Resident
 from solution import Solution
+from output_mode import OutputMode
 from inputs import (
     START_DATE,
     BUDDY_PERIOD,
@@ -30,7 +31,9 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
-def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
+def _common_attempt(
+    availability: AbstractSet[Resident], previous_attempt: list[list[str]] | None
+) -> CallProblemBuilder:
     problem = CallProblemBuilder(
         START_DATE,
         BUDDY_PERIOD,
@@ -52,22 +55,30 @@ def _common_attempt(availability: AbstractSet[Resident]) -> CallProblemBuilder:
     special_handling_for_this_round(problem)
 
     # Minimize Q2 calls
-    problem.minimize_q2s()
+    if previous_attempt is None:
+        problem.minimize_q2s()
+    else:
+        problem.minimize_q2s_and_changes_from_previous_solution(previous_attempt)
     # problem.minimize_va_coverage()
     problem.limit_q2s(2)
 
     return problem
 
 
-def base_attempt(availability: AbstractSet[Resident]) -> Solution | str:
-    problem = _common_attempt(availability)
+def base_attempt(
+    availability: AbstractSet[Resident], previous_attempt: list[list[str]] | None
+) -> Solution | str:
+    problem = _common_attempt(availability, previous_attempt)
     return problem.solve()
 
 
 def distribute_q2s_attempt(
-    availability: AbstractSet[Resident], tolerance: int, max_q2s: int
+    availability: AbstractSet[Resident],
+    tolerance: int,
+    max_q2s: int,
+    previous_attempt: list[list[str]] | None,
 ) -> Solution | str:
-    problem = _common_attempt(availability)
+    problem = _common_attempt(availability, previous_attempt)
 
     # Evenly distribute q2s
     problem.evenly_distribute_q2s(tolerance)
@@ -80,7 +91,13 @@ def distribute_q2s_attempt(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv", action="store_true")
+    parser.add_argument(
+        "--output",
+        type=OutputMode,
+        choices=list(OutputMode),
+        default=OutputMode.INTERACTIVE,
+    )
+    parser.add_argument("--previous", type=str)
     return parser.parse_args()
 
 
@@ -96,10 +113,15 @@ def main() -> None:
         return
 
     availability = availability_or_errors
-    if not args.csv:
+    if args.output == OutputMode.INTERACTIVE:
         print_availability(availability)
 
-    base = base_attempt(availability)
+    previous_attempt = None
+    if args.previous:
+        with open(args.previous) as f:
+            previous_attempt = [line.strip().split(",") for line in f.readlines()]
+
+    base = base_attempt(availability, previous_attempt)
     if isinstance(base, str):
         # TODO relax some constraints and try again
         print(f"Unable to find optimal solution with status: {base}")
@@ -111,7 +133,7 @@ def main() -> None:
     """
     for tolerance in range(unfairness - 1, -1, -1):
         attempt = distribute_q2s_attempt(
-            availability, tolerance, solutions[-1].get_max_q2s() - 1
+            availability, tolerance, solutions[-1].get_max_q2s() - 1, previous_attempt
         )
         if isinstance(attempt, str):
             # No solution found, give up
@@ -127,13 +149,13 @@ def main() -> None:
     """
 
     if len(solutions) == 1:
-        if not args.csv:
+        if args.output == OutputMode.INTERACTIVE:
             print("Optimal solution found!")
-        solutions[0].print(args.csv)
+        solutions[0].print(args.output)
         return
 
-    if args.csv:
-        solutions[0].print(True)
+    if args.output != OutputMode.INTERACTIVE:
+        solutions[0].print(args.output)
         return
 
     print(f"Found {len(solutions)} potential solutions:")
@@ -147,7 +169,7 @@ def main() -> None:
         text = f"Solution {i+1}:"
         buffer = int((width - len(text)) / 2) * "="
         print(f"{buffer}{text}{buffer}")
-        solution.print()
+        solution.print(OutputMode.INTERACTIVE)
 
 
 if __name__ == "__main__":

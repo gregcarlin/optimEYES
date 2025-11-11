@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from dateutil import days_until_next_weekday
 from resident import Resident
+from output_mode import OutputMode
 
 
 def key_for_day(day: int, resident: str) -> str:
@@ -135,16 +136,24 @@ class Solution:
             else:
                 return f" (covering for {name} due to {reason})"
 
-    def print(self, csv: bool = False) -> None:
+    def print(self, mode: OutputMode) -> None:
+        if mode == OutputMode.LIST:
+            print(
+                "\n".join(
+                    ",".join(sorted(residents)) for residents in self.get_assignments()
+                )
+            )
+            return
+
         for day, residents in enumerate(self.get_assignments()):
             date = self.start_date + timedelta(days=day)
-            cover_msg = self._coverage_msg_for(day, csv)
-            if csv:
+            cover_msg = self._coverage_msg_for(day, mode == OutputMode.CSV)
+            if mode == OutputMode.CSV:
                 print(f"{date:%A},{date:%m/%d/%Y},{'/'.join(residents)},{cover_msg}")
             else:
                 print(f"\t[{day}] {date:%a %m-%d}: {', '.join(residents)}{cover_msg}")
 
-        if csv:
+        if mode == OutputMode.CSV:
             return
 
         print("Objective value = ", self.get_objective_value())
