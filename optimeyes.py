@@ -60,6 +60,8 @@ def _common_attempt(
         problem.minimize_q2s()
     else:
         problem.minimize_q2s_and_changes_from_previous_solution(previous_attempt)
+    # problem.minimize_changes_from_previous_solution(previous_attempt)
+    # problem.limit_total_q2s(10)
     # problem.minimize_va_coverage()
     problem.limit_q2s(2)
 
@@ -152,11 +154,11 @@ def main() -> None:
     if len(solutions) == 1:
         if args.output == OutputMode.INTERACTIVE:
             print("Optimal solution found!")
-        solutions[0].print(args.output)
+        solutions[0].print(args.output, previous_attempt)
         return
 
     if args.output != OutputMode.INTERACTIVE:
-        solutions[0].print(args.output)
+        solutions[0].print(args.output, previous_attempt)
         return
 
     print(f"Found {len(solutions)} potential solutions:")
@@ -170,7 +172,7 @@ def main() -> None:
         text = f"Solution {i+1}:"
         buffer = int((width - len(text)) / 2) * "="
         print(f"{buffer}{text}{buffer}")
-        solution.print(OutputMode.INTERACTIVE)
+        solution.print(OutputMode.INTERACTIVE, previous_attempt)
 
 
 if __name__ == "__main__":
