@@ -60,8 +60,6 @@ def _common_attempt(
         problem.minimize_q2s()
     else:
         problem.minimize_q2s_and_changes_from_previous_solution(previous_attempt)
-    # problem.minimize_changes_from_previous_solution(previous_attempt)
-    # problem.limit_total_q2s(10)
     # problem.minimize_va_coverage()
     problem.limit_q2s(2)
 

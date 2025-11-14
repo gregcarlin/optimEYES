@@ -141,7 +141,7 @@ def get_availability() -> AvailabilityBuilder:
 
     # Conferences
     for resident in ["Paris", "Keir", "Sophia", "Alex"]:
-        input.set_conference(resident, "2026-04-14", "2026-04-19")
+        input.set_conference(resident, "2026-04-14", "2026-04-18")
 
     # Floating holidays
     input.set_holiday("Andrew", "2026-02-05", "2026-02-08")
