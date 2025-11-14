@@ -84,11 +84,12 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day_of_week("Jess", Weekday.MONDAY, "2026-03-30", "2026-05-17")
     input.assign_to_day_of_week("Andrew", Weekday.TUESDAY, "2026-03-30", "2026-05-17")
     input.assign_to_day_of_week("Loubna", Weekday.WEDNESDAY, "2026-03-30", "2026-04-20")
-    input.set_consults("Andrieh", "2026-03-29", "2026-04-17")
+    input.set_consults("Andrieh", "2026-03-29", "2026-04-14")
+    input.set_consults("Andrieh", "2026-04-16", "2026-04-17")
     input.assign_to_day_of_week(
         "Andrieh", Weekday.WEDNESDAY, "2026-04-21", "2026-05-11"
     )
-    input.set_consults("Loubna", "2026-04-19", "2026-05-08")
+    input.set_consults("Loubna", "2026-04-20", "2026-05-08")
     # Note: extra week in this block, swapping back again
     input.assign_to_day_of_week("Loubna", Weekday.WEDNESDAY, "2026-05-12", "2026-05-17")
     input.set_consults("Andrieh", "2026-05-10", "2026-05-15")
@@ -141,7 +142,7 @@ def get_availability() -> AvailabilityBuilder:
 
     # Conferences
     for resident in ["Paris", "Keir", "Sophia", "Alex"]:
-        input.set_conference(resident, "2026-04-14", "2026-04-18")
+        input.set_conference(resident, "2026-04-14", "2026-04-19")
 
     # Floating holidays
     input.set_holiday("Andrew", "2026-02-05", "2026-02-08")
@@ -177,6 +178,7 @@ def get_availability() -> AvailabilityBuilder:
     input.set_weekend("Loubna", "2026-03-06", "2026-03-08")
     input.set_weekend("Loubna", "2026-03-13", "2026-03-15")
     input.set_weekend("Loubna", "2026-05-29", "2026-06-01")
+    input.set_weekend("Loubna", "2026-04-15", "2026-04-18")
     input.set_weekend("Keir", "2026-01-09", "2026-01-11")
     input.set_weekend("Keir", "2026-04-17", "2026-04-19")
     input.set_weekend("Keir", "2026-04-03", "2026-04-05")
@@ -214,12 +216,13 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Andrew", "2026-05-24")
     input.assign_to_day("Alex", "2026-05-25")
 
-    input.assign_to_day("Andrieh", "2026-04-19")
+    #input.assign_to_day("Andrieh", "2026-04-19")
 
     input.open_for_coverage("2026-04-21", "avoiding Q2")  # would be Andrew
     input.open_for_coverage(
         "2026-04-22", "so he can cover previous day"
     )  # would be Andrieh
+    #input.open_for_coverage("2026-04-14", "test") # would be Andrew
 
     return input
 

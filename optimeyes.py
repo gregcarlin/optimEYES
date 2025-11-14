@@ -51,7 +51,7 @@ def _common_attempt(
     problem.evenly_distribute_weekends()
     problem.eliminate_adjacent_weekends()
 
-    problem.limit_va_coverage(3)
+    problem.limit_va_coverage(5)
 
     special_handling_for_this_round(problem)
 
