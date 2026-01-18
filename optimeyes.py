@@ -55,11 +55,15 @@ def _common_attempt(
 
     special_handling_for_this_round(problem)
 
+    q2s_objective = problem.get_q2s_objective()
     # Minimize Q2 calls
     if previous_attempt is None:
-        problem.minimize_q2s()
+        problem.set_objective(q2s_objective)
     else:
-        problem.minimize_q2s_and_changes_from_previous_solution(previous_attempt)
+        changes_objective = problem.get_changes_from_previous_solution_objective(
+            previous_attempt
+        )
+        problem.set_objective(q2s_objective.then(changes_objective))
     # problem.minimize_va_coverage()
     problem.limit_q2s(2)
 

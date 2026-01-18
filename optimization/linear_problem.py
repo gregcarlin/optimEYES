@@ -7,6 +7,7 @@ This file provides a simple wrapper around the pulp API
 """
 
 Variable = pulp.LpVariable
+VariableLike = pulp.LpVariable | pulp.LpAffineExpression
 
 
 class PulpSolution:

@@ -10,7 +10,9 @@ from structs.resident import Resident
 from optimization.linear_problem import (
     PulpProblem,
     Variable,
+    VariableLike,
 )
+from optimization.objective import Objective
 
 
 class CallProblemBuilder:
@@ -274,10 +276,11 @@ class CallProblemBuilder:
                 self.q2s[resident].append(var)
         return self.q2s
 
-    def minimize_q2s(self) -> None:
+    def get_q2s_objective(self) -> Objective:
         q2s_dict = self._get_q2_vars()
-        q2s = [v for vs in q2s_dict.values() for v in vs]
-        self.problem.set_objective(sum(q2s))
+        q2s = sum(v for vs in q2s_dict.values() for v in vs)
+        assert isinstance(q2s, VariableLike)
+        return Objective(q2s, math.ceil(self.num_days / 2.0) * len(self.residents))
 
     def _get_is_changed_vars(self, previous_result: list[list[str]]) -> list[Variable]:
         is_changed_vars = []
@@ -289,25 +292,20 @@ class CallProblemBuilder:
             is_changed_vars.append(1 - self.day_vars[previous[0]][i])
         return is_changed_vars
 
-    def minimize_changes_from_previous_solution(
+    def get_changes_from_previous_solution_objective(
         self, previous_result: list[list[str]]
-    ) -> None:
-        is_changed_vars = self._get_is_changed_vars(previous_result)
-        self.problem.set_objective(sum(is_changed_vars))
+    ) -> Objective:
+        is_changed_vars = sum(self._get_is_changed_vars(previous_result))
+        assert isinstance(is_changed_vars, VariableLike)
+        return Objective(is_changed_vars, self.num_days)
 
-    def minimize_q2s_and_changes_from_previous_solution(
-        self, previous_result: list[list[str]]
-    ) -> None:
-        q2s_dict = self._get_q2_vars()
-        q2s = [v for vs in q2s_dict.values() for v in vs]
+    def get_va_coverage_objective(self) -> Objective:
+        va_vars = sum(self._get_va_vars())
+        assert isinstance(va_vars, VariableLike)
+        return Objective(va_vars, self.num_days * len(self.residents))
 
-        is_changed_vars = self._get_is_changed_vars(previous_result)
-
-        self.problem.set_objective(sum(q2s) * self.num_days + sum(is_changed_vars))
-
-    def minimize_va_coverage(self) -> None:
-        va_vars = self._get_va_vars()
-        self.problem.set_objective(sum(va_vars))
+    def set_objective(self, objective: Objective) -> None:
+        self.problem.set_objective(objective.value)
 
     def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
         q2s_dict = self._get_q2_vars()

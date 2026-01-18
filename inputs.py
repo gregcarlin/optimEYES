@@ -216,13 +216,13 @@ def get_availability() -> AvailabilityBuilder:
     input.assign_to_day("Andrew", "2026-05-24")
     input.assign_to_day("Alex", "2026-05-25")
 
-    #input.assign_to_day("Andrieh", "2026-04-19")
+    # input.assign_to_day("Andrieh", "2026-04-19")
 
     input.open_for_coverage("2026-04-21", "avoiding Q2")  # would be Andrew
     input.open_for_coverage(
         "2026-04-22", "so he can cover previous day"
     )  # would be Andrieh
-    #input.open_for_coverage("2026-04-14", "test") # would be Andrew
+    # input.open_for_coverage("2026-04-14", "test") # would be Andrew
 
     return input
 
