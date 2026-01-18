@@ -20,6 +20,12 @@ from inputs import (
 )
 
 
+class SolutionWithInfo:
+    def __init__(self, solution: Solution, optimizes_va: bool) -> None:
+        self.solution = solution
+        self.optimizes_va = optimizes_va
+
+
 def print_availability(availability: AbstractSet[Resident]) -> None:
     print("Availability:")
     num_days = len(next(iter(availability)).availability)
@@ -34,7 +40,9 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
 
 
 def _common_attempt(
-    availability: AbstractSet[Resident], previous_attempt: list[list[str]] | None
+    availability: AbstractSet[Resident],
+    previous_attempt: list[list[str]] | None,
+    prioritize_va: bool,
 ) -> CallProblemBuilder:
     problem = CallProblemBuilder(
         START_DATE,
@@ -53,42 +61,40 @@ def _common_attempt(
     problem.evenly_distribute_weekends()
     problem.eliminate_adjacent_weekends()
 
-    problem.limit_va_coverage(5)
-
     special_handling_for_this_round(problem)
 
     q2s_objective = problem.get_q2s_objective()
-    weariness_objective = problem.get_weariness_objective()
-    objective = q2s_objective.then(weariness_objective)
-    # Minimize Q2 calls
-    if previous_attempt is None:
-        problem.set_objective(objective)
+    va_objective = problem.get_va_coverage_objective()
+    if prioritize_va:
+        objective = va_objective.then(q2s_objective)
     else:
+        objective = q2s_objective.then(va_objective)
+    objective = objective.then(problem.get_weariness_objective())
+    # Minimize Q2 calls
+    if previous_attempt is not None:
         changes_objective = problem.get_changes_from_previous_solution_objective(
             previous_attempt
         )
-        problem.set_objective(objective.then(changes_objective))
-    # problem.minimize_va_coverage()
-    problem.limit_q2s(2)
+        objective = objective.then(changes_objective)
+    problem.set_objective(objective)
 
     return problem
 
 
 def base_attempt(
-    availability: AbstractSet[Resident], previous_attempt: list[list[str]] | None
+    availability: AbstractSet[Resident],
+    previous_attempt: list[list[str]] | None,
+    prioritize_va: bool,
 ) -> Solution | str:
-    problem = _common_attempt(availability, previous_attempt)
+    problem = _common_attempt(availability, previous_attempt, prioritize_va)
     return problem.solve()
 
 
 def distribute_q2s_attempt(
-    availability: AbstractSet[Resident],
+    problem: CallProblemBuilder,
     tolerance: int,
     max_q2s: int,
-    previous_attempt: list[list[str]] | None,
 ) -> Solution | str:
-    problem = _common_attempt(availability, previous_attempt)
-
     # Evenly distribute q2s
     problem.evenly_distribute_q2s(tolerance)
 
@@ -96,6 +102,36 @@ def distribute_q2s_attempt(
     problem.limit_q2s(max_q2s)
 
     return problem.solve()
+
+
+def find_alternatives(
+    base: Solution,
+    availability: AbstractSet[Resident],
+    previous_attempt: list[list[str]] | None,
+    prioritize_va: bool,
+) -> list[SolutionWithInfo]:
+    """
+    Given an initial solution, attempt to find alternatives
+    """
+    solutions: list[Solution] = [base]
+    unfairness = base.get_q2_unfairness()
+    for tolerance in range(unfairness - 1, -1, -1):
+        problem = _common_attempt(availability, previous_attempt, prioritize_va)
+        attempt = distribute_q2s_attempt(
+            problem, tolerance, solutions[-1].get_max_q2s() - 1
+        )
+        if isinstance(attempt, str):
+            # No solution found, give up
+            break
+        if attempt.get_total_q2s() <= solutions[-1].get_total_q2s():
+            # Note: q2 count should never actually be less than, but it may be
+            # equal. In this case, our new solution has the same number of q2
+            # calls, but distributes them more evenly.
+            solutions = solutions[:-1]
+            solutions.append(attempt)
+        else:
+            solutions.append(attempt)
+    return [SolutionWithInfo(solution, prioritize_va) for solution in solutions]
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,41 +166,39 @@ def main() -> None:
         with open(args.previous) as f:
             previous_attempt = [line.strip().split(",") for line in f.readlines()]
 
-    base = base_attempt(availability, previous_attempt)
-    if isinstance(base, str):
+    if args.output == OutputMode.INTERACTIVE:
+        print("Solving for base result")
+    base_q2 = base_attempt(availability, previous_attempt, False)
+    if isinstance(base_q2, str):
         # TODO relax some constraints and try again
-        print(f"Unable to find optimal solution with status: {base}")
+        print(f"Unable to find optimal solution with status: {base_q2}")
         return
 
-    unfairness = base.get_q2_unfairness()
+    if args.output == OutputMode.INTERACTIVE:
+        print("Considering alternative solutions")
+    solutions = find_alternatives(base_q2, availability, previous_attempt, False)
 
-    solutions: list[Solution] = [base]
-    """
-    for tolerance in range(unfairness - 1, -1, -1):
-        attempt = distribute_q2s_attempt(
-            availability, tolerance, solutions[-1].get_max_q2s() - 1, previous_attempt
+    if args.output == OutputMode.INTERACTIVE:
+        print("Considering VA coverage")
+    base_va = base_attempt(availability, previous_attempt, True)
+    assert not isinstance(
+        base_va, str
+    ), "Found result when prioritizing Q2s but failed when prioritizing VA, this shouldn't happen"
+    if base_va.get_va_covered_days() < base_q2.get_va_covered_days():
+        if args.output == OutputMode.INTERACTIVE:
+            print("Considering alternative VA solutions")
+        solutions.extend(
+            find_alternatives(base_va, availability, previous_attempt, True)
         )
-        if isinstance(attempt, str):
-            # No solution found, give up
-            break
-        if attempt.get_objective_value() <= solutions[-1].get_objective_value():
-            # Note: objective value should never actually be less than, but it
-            # may be equal.  In this case, our new solution has the same number
-            # of q2 calls, but distributes them more evenly.
-            solutions = solutions[:-1]
-            solutions.append(attempt)
-        else:
-            solutions.append(attempt)
-    """
 
     if len(solutions) == 1:
         if args.output == OutputMode.INTERACTIVE:
             print("Optimal solution found!")
-        solutions[0].print(args.output, previous_attempt)
+        solutions[0].solution.print(args.output, previous_attempt)
         return
 
     if args.output != OutputMode.INTERACTIVE:
-        solutions[0].print(args.output, previous_attempt)
+        solutions[0].solution.print(args.output, previous_attempt)
         return
 
     print(f"Found {len(solutions)} potential solutions:")
@@ -175,10 +209,10 @@ def main() -> None:
         # Thrown if output is not directly to a terminal (eg. it's piped to a file)
         pass
     for i, solution in enumerate(solutions):
-        text = f"Solution {i+1}:"
+        text = f"Solution {i+1} (optimizes for {'VA coverage' if solution.optimizes_va else 'Q2s'}):"
         buffer = int((width - len(text)) / 2) * "="
         print(f"{buffer}{text}{buffer}")
-        solution.print(OutputMode.INTERACTIVE, previous_attempt)
+        solution.solution.print(OutputMode.INTERACTIVE, previous_attempt)
 
 
 if __name__ == "__main__":
