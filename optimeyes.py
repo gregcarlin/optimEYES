@@ -5,8 +5,8 @@ from datetime import timedelta
 import argparse
 
 from dateutil import Weekday
-from call_problem import CallProblemBuilder
-from solution import Solution
+from optimization.call_problem import CallProblemBuilder
+from optimization.solution import Solution
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 from inputs import (

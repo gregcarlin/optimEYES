@@ -1,10 +1,10 @@
 from typing import AbstractSet
 
 from datetime import date
-from call_problem import Resident
+from structs.resident import Resident
 from availability import AvailabilityBuilder
 from dateutil import Weekday
-from call_problem import CallProblemBuilder
+from optimization.call_problem import CallProblemBuilder
 
 START_DATE = date.fromisoformat("2025-12-29")
 END_DATE = date.fromisoformat("2026-06-30")
