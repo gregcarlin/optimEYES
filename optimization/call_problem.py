@@ -24,6 +24,7 @@ class CallProblemBuilder:
         pgy2_3_gap: int,
         weariness_map: dict[int, int],
         debug_infeasibility: bool = False,
+        soft_availability: bool = False,
         seed: int | None = None,
     ) -> None:
         self.start_date = start_date
@@ -39,6 +40,7 @@ class CallProblemBuilder:
 
         self.num_days = len(next(iter(resident_availability)).availability)
         self.num_residents = len(resident_availability)
+        self.soft_unavailable_days: list[Variable] = []
 
         # For each resident, create a variable representing every day
         self.day_vars = {resident.name: [] for resident in resident_availability}
@@ -50,7 +52,10 @@ class CallProblemBuilder:
                 self.day_vars[resident.name].append(day_var)
                 if is_available == 0:
                     # Resident is unavailable this day
-                    self.problem.add_constraint(day_var == 0)
+                    if soft_availability:
+                        self.soft_unavailable_days.append(day_var)
+                    else:
+                        self.problem.add_constraint(day_var == 0)
 
         # Ensure even distribution within a year
         calls_per_resident_by_year = defaultdict(list)
@@ -334,7 +339,16 @@ class CallProblemBuilder:
         return Objective(max_weariness, max_possible_weariness)
 
     def set_objective(self, objective: Objective) -> None:
+        assert (
+            self.soft_unavailable_days == []
+        ), "Cannot set objective when using soft availability"
         self.problem.set_objective(objective.value)
+
+    def check_unavailability(self) -> None:
+        assert (
+            self.soft_unavailable_days != []
+        ), "Must specify soft_availability=True to use check_unavailability"
+        self.problem.set_objective(sum(self.soft_unavailable_days))
 
     def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
         q2s_dict = self._get_qn_vars(2)

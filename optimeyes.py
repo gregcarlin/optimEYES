@@ -39,10 +39,9 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
-def _common_attempt(
+def _setup_problem(
     availability: AbstractSet[Resident],
-    previous_attempt: list[list[str]] | None,
-    prioritize_va: bool,
+    soft_availability: bool,
 ) -> CallProblemBuilder:
     problem = CallProblemBuilder(
         START_DATE,
@@ -51,6 +50,7 @@ def _common_attempt(
         PGY_2_3_GAP,
         WEARINESS_MAP,
         debug_infeasibility=False,
+        soft_availability=soft_availability,
         seed=SEED,
     )
 
@@ -63,6 +63,14 @@ def _common_attempt(
 
     special_handling_for_this_round(problem)
 
+    return problem
+
+
+def _setup_objective(
+    problem: CallProblemBuilder,
+    previous_attempt: list[list[str]] | None,
+    prioritize_va: bool,
+) -> None:
     q2s_objective = problem.get_q2s_objective()
     va_objective = problem.get_va_coverage_objective()
     if prioritize_va:
@@ -78,16 +86,16 @@ def _common_attempt(
         objective = objective.then(changes_objective)
     problem.set_objective(objective)
 
-    return problem
 
-
-def base_attempt(
+def common_attempt(
     availability: AbstractSet[Resident],
     previous_attempt: list[list[str]] | None,
     prioritize_va: bool,
-) -> Solution | str:
-    problem = _common_attempt(availability, previous_attempt, prioritize_va)
-    return problem.solve()
+    soft_availability: bool,
+) -> CallProblemBuilder:
+    problem = _setup_problem(availability, soft_availability)
+    _setup_objective(problem, previous_attempt, prioritize_va)
+    return problem
 
 
 def distribute_q2s_attempt(
@@ -116,7 +124,7 @@ def find_alternatives(
     solutions: list[Solution] = [base]
     unfairness = base.get_q2_unfairness()
     for tolerance in range(unfairness - 1, -1, -1):
-        problem = _common_attempt(availability, previous_attempt, prioritize_va)
+        problem = common_attempt(availability, previous_attempt, prioritize_va, False)
         attempt = distribute_q2s_attempt(
             problem, tolerance, solutions[-1].get_max_q2s() - 1
         )
@@ -168,10 +176,29 @@ def main() -> None:
 
     if args.output == OutputMode.INTERACTIVE:
         print("Solving for base result")
-    base_q2 = base_attempt(availability, previous_attempt, False)
+    base_q2 = common_attempt(availability, previous_attempt, False, False).solve()
     if isinstance(base_q2, str):
-        # TODO relax some constraints and try again
         print(f"Unable to find optimal solution with status: {base_q2}")
+        # Re-run with soft availability, see if it can identify any scheduling conflicts
+        print(f"Attempting to identify the problem")
+        debug_problem = _setup_problem(availability, True)
+        # While including the other objectives (as secondaries) wouldn't
+        # meaningfully change the resulting hint, it makes finding it
+        # significantly slower. So we just focus on the availability objective.
+        debug_problem.check_unavailability()
+        base_debug = debug_problem.solve()
+        if isinstance(base_debug, str):
+            print("Unable to generate hints for failed attempt, you're on your own")
+        else:
+            violations = base_debug.get_availability_violations()
+            assert len(violations) > 0, "Error calculating availability violations"
+            print(
+                f"Hint (may not be accurate): Try checking the schedule around the following days and/or residents:"
+            )
+            for day, residents in violations.items():
+                date = START_DATE + timedelta(days=day)
+                residents_str = ", ".join(residents)
+                print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
     if args.output == OutputMode.INTERACTIVE:
@@ -180,7 +207,7 @@ def main() -> None:
 
     if args.output == OutputMode.INTERACTIVE:
         print("Considering VA coverage")
-    base_va = base_attempt(availability, previous_attempt, True)
+    base_va = common_attempt(availability, previous_attempt, True, False).solve()
     assert not isinstance(
         base_va, str
     ), "Found result when prioritizing Q2s but failed when prioritizing VA, this shouldn't happen"

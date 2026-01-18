@@ -155,6 +155,20 @@ class Solution:
                 )
         return changed
 
+    def get_availability_violations(self) -> dict[int, list[str]]:
+        # index of day violated -> residents now assigned to that day
+        results: dict[int, list[str]] = {}
+        for day in range(self.num_days):
+            violated = [
+                resident.name
+                for resident in self.residents.values()
+                if self.values[key_for_day(day, resident.name)] != 0.0
+                and resident.availability[day] == 0
+            ]
+            if violated != []:
+                results[day] = violated
+        return results
+
     def _coverage_msg_for(self, index: int, csv: bool) -> str:
         covered = [
             (name, resident.coverage[index])
