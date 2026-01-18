@@ -110,7 +110,8 @@ class CallProblemBuilder:
                     days_for_resident[i] + days_for_resident[i + 1] <= 1
                 )
 
-        self.q2s: Mapping[str, List[Variable]] | None = None
+        # Cache of q2s, q3s, etc
+        self.qns: dict[int, dict[str, List[Variable]]] = {}
         self.va_vars: list[Variable] | None = None
 
     def _ensure_one_resident_per_day(self, indices: range) -> None:
@@ -258,26 +259,29 @@ class CallProblemBuilder:
     def limit_va_coverage(self, global_limit: int) -> None:
         self.problem.add_constraint(sum(self._get_va_vars()) <= global_limit)
 
-    def _get_q2_vars(self) -> Mapping[str, Sequence[Variable]]:
-        if self.q2s is not None:
-            return self.q2s
-        self.q2s = {}
+    def _get_qn_vars(self, n: int = 2) -> Mapping[str, Sequence[Variable]]:
+        assert n >= 2, f"Invalid value for n: {n}"
+        if n in self.qns:
+            return self.qns[n]
+
+        result = {}
         for resident, days_for_resident in self.day_vars.items():
-            self.q2s[resident] = []
-            for i in range(len(days_for_resident) - 2):
-                var = self.problem.new_binary_variable(f"q2_{resident}_{i}")
+            result[resident] = []
+            for i in range(len(days_for_resident) - n):
+                var = self.problem.new_binary_variable(f"q{n}_{resident}_{i}")
                 var_slack = self.problem.new_continuous_variable(
-                    f"q2_{resident}_{i}_cont", 0, 0.9
+                    f"q{n}_{resident}_{i}_cont", 0, 0.9
                 )
                 self.problem.add_constraint(
-                    0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + 2]
+                    0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + n]
                     == var + var_slack
                 )
-                self.q2s[resident].append(var)
-        return self.q2s
+                result[resident].append(var)
+        self.qns[n] = result
+        return result
 
     def get_q2s_objective(self) -> Objective:
-        q2s_dict = self._get_q2_vars()
+        q2s_dict = self._get_qn_vars(2)
         q2s = sum(v for vs in q2s_dict.values() for v in vs)
         assert isinstance(q2s, VariableLike)
         return Objective(q2s, math.ceil(self.num_days / 2.0) * len(self.residents))
@@ -308,19 +312,19 @@ class CallProblemBuilder:
         self.problem.set_objective(objective.value)
 
     def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
-        q2s_dict = self._get_q2_vars()
+        q2s_dict = self._get_qn_vars(2)
         q2s_per_resident = [sum(q2_vars) for q2_vars in q2s_dict.values()]
         max_q2s = self.problem.max_of(q2s_per_resident, self.num_days, "max_q2s")
         min_q2s = self.problem.min_of(q2s_per_resident, self.num_days, "min_q2s")
         self.problem.add_constraint(max_q2s - min_q2s <= tolerance)
 
     def limit_q2s(self, limit: int) -> None:
-        q2s_dict = self._get_q2_vars()
+        q2s_dict = self._get_qn_vars(2)
         for q2_vars in q2s_dict.values():
             self.problem.add_constraint(sum(q2_vars) <= limit)
 
     def limit_total_q2s(self, limit: int) -> None:
-        q2s_dict = self._get_q2_vars()
+        q2s_dict = self._get_qn_vars(2)
         q2s = [v for vs in q2s_dict.values() for v in vs]
         self.problem.add_constraint(sum(q2s) <= limit)
 
