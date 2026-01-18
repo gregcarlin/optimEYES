@@ -22,11 +22,13 @@ class CallProblemBuilder:
         buddy_period: tuple[date, date] | None,
         resident_availability: AbstractSet[Resident],
         pgy2_3_gap: int,
+        weariness_map: dict[int, int],
         debug_infeasibility: bool = False,
         seed: int | None = None,
     ) -> None:
         self.start_date = start_date
         self.residents = {resident.name: resident for resident in resident_availability}
+        self.weariness_map = weariness_map
 
         self.problem = PulpProblem(
             "optimEYES",
@@ -308,6 +310,29 @@ class CallProblemBuilder:
         assert isinstance(va_vars, VariableLike)
         return Objective(va_vars, self.num_days * len(self.residents))
 
+    def get_weariness_objective(self) -> Objective:
+        # resident -> qn -> count of that qn
+        qns_per_resident: dict[str, dict[int, VariableLike]] = defaultdict(dict)
+        for n, incr in self.weariness_map.items():
+            qn_dict = self._get_qn_vars(n)
+            for resident, qns in qn_dict.items():
+                qns_per_resident[resident][n] = sum(qns)
+
+        weariness_scores: list[VariableLike] = []
+        for resident, qns_by_n in qns_per_resident.items():
+            weariness_scores.append(
+                sum(qns * self.weariness_map[n] for n, qns in qns_by_n.items())
+            )
+
+        max_possible_weariness = sum(
+            math.ceil(self.num_days / n) * incr
+            for n, incr in self.weariness_map.items()
+        )
+        max_weariness = self.problem.max_of(
+            weariness_scores, max_possible_weariness, "max_weariness"
+        )
+        return Objective(max_weariness, max_possible_weariness)
+
     def set_objective(self, objective: Objective) -> None:
         self.problem.set_objective(objective.value)
 
@@ -339,4 +364,5 @@ class CallProblemBuilder:
             self.start_date,
             self.num_days,
             self.residents,
+            self.weariness_map,
         )

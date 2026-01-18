@@ -7,7 +7,7 @@ This file provides a simple wrapper around the pulp API
 """
 
 Variable = pulp.LpVariable
-VariableLike = pulp.LpVariable | pulp.LpAffineExpression
+VariableLike = pulp.LpVariable | pulp.LpAffineExpression | int
 
 
 class PulpSolution:
@@ -91,8 +91,8 @@ class PulpProblem:
         return decision_vars
 
     def max_of(
-        self, variables: Sequence[Variable | int], max_possible_val: int, var_name: str
-    ) -> Variable:
+        self, variables: Sequence[VariableLike], max_possible_val: int, var_name: str
+    ) -> VariableLike:
         """
         Returns a new variable that will be set to the maximum of all the given variables
         See https://math.stackexchange.com/a/3568461
@@ -105,8 +105,8 @@ class PulpProblem:
         return max_var
 
     def min_of(
-        self, variables: Sequence[Variable | int], max_possible_val: int, var_name: str
-    ) -> Variable:
+        self, variables: Sequence[VariableLike], max_possible_val: int, var_name: str
+    ) -> VariableLike:
         """
         Same as above, but for min.
         """

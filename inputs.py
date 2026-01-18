@@ -20,6 +20,17 @@ PGY_2_3_GAP = 4
 
 SEED = 1761842917
 
+# If a resident has two calls that are K days apart, increase their weariness
+# score by V, where K and V are the keys and values in this map.
+WEARINESS_MAP = {
+    # Don't consider Q2s because we already handle them separately
+    3: 10,
+    4: 5,
+    5: 3,
+    6: 2,
+    7: 1,
+}
+
 RESIDENTS = {
     "Andrew": 2,
     "Andrieh": 2,

@@ -19,12 +19,14 @@ class Solution:
         start_date: date,
         num_days: int,
         residents: dict[str, Resident],
+        weariness_map: dict[int, int],
     ) -> None:
         self.objective_value = objective_value
         self.values = values
         self.start_date = start_date
         self.num_days = num_days
         self.residents = residents
+        self.weariness_map = weariness_map
         self.assignments = None
 
     def __getitem__(self, key: str) -> float:
@@ -57,32 +59,56 @@ class Solution:
                 result[resident] += 1
         return result
 
-    def get_q2s_per_resident(self) -> Dict[str, int]:
+    def get_qns_per_resident(self, n: int) -> Dict[str, int]:
         assignments = self.get_assignments()
         result = {resident: 0 for resident in self.residents.keys()}
-        for day in range(self.num_days - 2):
+        for day in range(self.num_days - n):
             for resident in set(assignments[day]).intersection(
-                set(assignments[day + 2])
+                set(assignments[day + n])
             ):
                 result[resident] += 1
         return result
+
+    def get_weariness_per_resident(self) -> dict[str, tuple[int, dict[int, int]]]:
+        """
+        For each resident, returns total weariness score and breakdown of count
+        of each qn.
+        """
+        scores: dict[str, int] = {resident: 0 for resident in self.residents.keys()}
+        breakdown: dict[str, dict[int, int]] = {
+            resident: {} for resident in self.residents.keys()
+        }
+        for n, incr in self.weariness_map.items():
+            for resident, qns in self.get_qns_per_resident(n).items():
+                scores[resident] += qns * incr
+                breakdown[resident][n] = qns
+        return {r: (scores[r], breakdown[r]) for r in self.residents.keys()}
+
+    def fmt_weariness(self, score_and_breakdown: tuple[int, dict[int, int]]) -> str:
+        score, breakdown = score_and_breakdown
+        breakdown_str = ", ".join(
+            f"{breakdown[n]}x Q{n}"
+            for n in sorted(breakdown.keys())
+            if breakdown[n] > 0
+        )
+        return f"{score} ({breakdown_str})"
 
     def get_q2_unfairness(self) -> int:
         """
         Calculate the difference between the maximum number of q2s and the minimum.
         """
-        q2s = self.get_q2s_per_resident().values()
+        q2s = self.get_qns_per_resident(2).values()
         return max(q2s) - min(q2s)
 
     def get_max_q2s(self) -> int:
         """
         Calculate the most Q2s anyone has.
         """
-        q2s = self.get_q2s_per_resident().values()
+        q2s = self.get_qns_per_resident(2).values()
         return max(q2s)
 
     def get_total_q2s(self) -> int:
-        q2s = self.get_q2s_per_resident().values()
+        q2s = self.get_qns_per_resident(2).values()
         return sum(q2s)
 
     def get_calls_taken_by_year(self) -> Dict[int, int]:
@@ -192,10 +218,12 @@ class Solution:
         calls = self.get_calls_per_resident()
         saturdays = self.get_saturdays()
         sundays = self.get_sundays()
-        q2s = self.get_q2s_per_resident()
+        q2s = self.get_qns_per_resident(2)
+        weariness = self.get_weariness_per_resident()
         for resident in self.residents.keys():
             print(f"\t{resident}")
             print(f"\t\tCalls = {calls[resident]}")
             print(f"\t\tSaturdays = {saturdays[resident]}")
             print(f"\t\tSundays = {sundays[resident]}")
             print(f"\t\tQ2s = {q2s[resident]}")
+            print(f"\t\tWeariness = {self.fmt_weariness(weariness[resident])}")
