@@ -10,6 +10,12 @@ from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekd
 
 
 class Constraint(ABC):
+    @abstractmethod
+    def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
+        pass
+
+
+class SerializableConstraint(Constraint):
     @staticmethod
     @abstractmethod
     def get_name() -> str:
@@ -17,19 +23,15 @@ class Constraint(ABC):
 
     @staticmethod
     @abstractmethod
-    def deserialize(data: dict[str, Any]) -> "Constraint":
+    def deserialize(data: dict[str, Any]) -> Constraint:
         pass
 
     @abstractmethod
     def serialize(self) -> dict[str, Any]:
         pass
 
-    @abstractmethod
-    def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
-        pass
 
-
-class DistributeDayOfWeekConstraint(Constraint):
+class DistributeDayOfWeekConstraint(SerializableConstraint):
     def __init__(self, weekday: Weekday) -> None:
         self.weekday = weekday
 
@@ -70,7 +72,7 @@ class DistributeDayOfWeekConstraint(Constraint):
         return constraints
 
 
-class DistributeWeekendsConstraint(Constraint):
+class DistributeWeekendsConstraint(SerializableConstraint):
     @staticmethod
     @override
     def get_name() -> str:
@@ -123,7 +125,7 @@ class DistributeWeekendsConstraint(Constraint):
         return constraints
 
 
-class LimitWeekdayConstraint(Constraint):
+class LimitWeekdayConstraint(SerializableConstraint):
     def __init__(self, weekday: Weekday, limit: int) -> None:
         self.weekday = weekday
         self.limit = limit
@@ -155,7 +157,7 @@ class LimitWeekdayConstraint(Constraint):
         return constraints
 
 
-class LimitWeekdayForResidentConstraint(Constraint):
+class LimitWeekdayForResidentConstraint(SerializableConstraint):
     def __init__(self, weekday: Weekday, limit: int, resident: str) -> None:
         self.weekday = weekday
         self.limit = limit
@@ -187,7 +189,7 @@ class LimitWeekdayForResidentConstraint(Constraint):
         return [var_sum(day_vars) <= self.limit]
 
 
-class SetMinimumForDaysOfWeekForResidentConstraint(Constraint):
+class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     def __init__(self, weekdays: list[Weekday], minimum: int, resident: str) -> None:
         self.weekdays = weekdays
         self.minimum = minimum
@@ -225,7 +227,7 @@ class SetMinimumForDaysOfWeekForResidentConstraint(Constraint):
         return [var_sum(day_vars) >= self.minimum]
 
 
-class NoAdjacentWeekendsConstraint(Constraint):
+class NoAdjacentWeekendsConstraint(SerializableConstraint):
     """
     Ensure no resident works two weekends in a row.
     """
@@ -282,7 +284,7 @@ class NoAdjacentWeekendsConstraint(Constraint):
         return constraints
 
 
-class LimitForPGYConstraint(Constraint):
+class LimitForPGYConstraint(SerializableConstraint):
     """
     Limit the number of calls for residents in a given year.
     """
@@ -315,7 +317,7 @@ class LimitForPGYConstraint(Constraint):
         return constraints
 
 
-class LimitVACoverageConstraint(Constraint):
+class LimitVACoverageConstraint(SerializableConstraint):
     def __init__(self, limit: int) -> None:
         self.limit = limit
 
@@ -338,7 +340,7 @@ class LimitVACoverageConstraint(Constraint):
         return [var_sum(builder.get_va_vars()) <= self.limit]
 
 
-class DistributeQ2sConstraint(Constraint):
+class DistributeQ2sConstraint(SerializableConstraint):
     def __init__(self, tolerance: int) -> None:
         self.tolerance = tolerance
 
@@ -369,7 +371,7 @@ class DistributeQ2sConstraint(Constraint):
         return [max_q2s - min_q2s <= self.tolerance]
 
 
-class LimitQ2sConstraint(Constraint):
+class LimitQ2sConstraint(SerializableConstraint):
     def __init__(self, limit: int) -> None:
         self.limit = limit
 
@@ -396,7 +398,7 @@ class LimitQ2sConstraint(Constraint):
         return constraints
 
 
-class LimitTotalQ2sConstraint(Constraint):
+class LimitTotalQ2sConstraint(SerializableConstraint):
     def __init__(self, limit: int) -> None:
         self.limit = limit
 
@@ -440,5 +442,5 @@ class ConstraintRegistry:
             ]
         }
 
-    def deserialize(self, name: str, data: dict[str, Any]) -> Constraint:
+    def deserialize(self, name: str, data: dict[str, Any]) -> SerializableConstraint:
         return self.constraints[name].deserialize(data)

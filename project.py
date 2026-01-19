@@ -2,8 +2,8 @@ from typing import Any, AbstractSet
 from datetime import date
 from dataclasses import dataclass
 
-from optimization.constraint import Constraint, ConstraintRegistry
-from optimization.objective import Objective, ObjectiveRegistry
+from optimization.constraint import SerializableConstraint, ConstraintRegistry
+from optimization.objective import SerializableObjective, ObjectiveRegistry
 from structs.resident import Resident
 
 
@@ -15,8 +15,8 @@ class Project:
     availability: AbstractSet[Resident]
     pgy_2_3_gap: int
     seed: int
-    constraints: list[Constraint]
-    objectives: list[Objective]
+    constraints: list[SerializableConstraint]
+    objectives: list[SerializableObjective]
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> "Project":

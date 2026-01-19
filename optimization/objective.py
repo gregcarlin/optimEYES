@@ -8,20 +8,6 @@ from optimization.call_problem import CallProblemBuilder
 
 
 class Objective(ABC):
-    @staticmethod
-    @abstractmethod
-    def get_name() -> str:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def deserialize(cls, data: dict[str, Any]) -> "Objective":
-        pass
-
-    @abstractmethod
-    def serialize(self) -> dict[str, Any]:
-        pass
-
     @abstractmethod
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
         pass
@@ -31,7 +17,23 @@ class Objective(ABC):
         pass
 
 
-class NoArgObjective(Objective):
+class SerializableObjective(Objective):
+    @staticmethod
+    @abstractmethod
+    def get_name() -> str:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, data: dict[str, Any]) -> Objective:
+        pass
+
+    @abstractmethod
+    def serialize(self) -> dict[str, Any]:
+        pass
+
+
+class NoArgSerializableObjective(SerializableObjective):
     @classmethod
     @override
     def deserialize(cls, data: dict[str, Any]) -> Objective:
@@ -42,7 +44,7 @@ class NoArgObjective(Objective):
         return {}
 
 
-class Q2Objective(NoArgObjective):
+class Q2Objective(NoArgSerializableObjective):
     @staticmethod
     @override
     def get_name() -> str:
@@ -60,7 +62,7 @@ class Q2Objective(NoArgObjective):
         return math.ceil(builder.get_num_days() / 2.0) * builder.get_num_residents()
 
 
-class ChangesFromPreviousSolutionObjective(Objective):
+class ChangesFromPreviousSolutionObjective(SerializableObjective):
     def __init__(self, path: str) -> None:
         self.path = path
 
@@ -99,7 +101,7 @@ class ChangesFromPreviousSolutionObjective(Objective):
         return builder.get_num_days()
 
 
-class VACoverageObjective(NoArgObjective):
+class VACoverageObjective(NoArgSerializableObjective):
     @staticmethod
     @override
     def get_name() -> str:
@@ -116,7 +118,7 @@ class VACoverageObjective(NoArgObjective):
         return builder.get_num_days() * builder.get_num_residents()
 
 
-class WearinessObjective(Objective):
+class WearinessObjective(SerializableObjective):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map
 
@@ -181,12 +183,13 @@ class ObjectiveRegistry:
             ]
         }
 
-    def deserialize(self, name: str, data: dict[str, Any]) -> Objective:
+    def deserialize(self, name: str, data: dict[str, Any]) -> SerializableObjective:
         return self.objectives[name].deserialize(data)
 
 
 def combine_objectives(
-    builder: CallProblemBuilder, objectives: list[Objective]
+    builder: CallProblemBuilder,
+    objectives: list[Objective] | list[SerializableObjective],
 ) -> VariableLike:
     """
     Return an objective that first targets the first objective in the list,

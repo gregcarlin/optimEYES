@@ -139,8 +139,8 @@ class PulpProblem:
         return PulpSolution(lp_problem)
 
 
-def var_sum(data: Sequence[Variable]) -> Variable:
+def var_sum(data: Sequence[Variable]) -> pulp.LpVariable | pulp.LpAffineExpression:
+    assert data != [], "Cannot sum empty list"
     result = sum(data)
-    # Not sure why this is needed
-    assert isinstance(result, Variable)
+    assert isinstance(result, (pulp.LpVariable, pulp.LpAffineExpression))
     return result

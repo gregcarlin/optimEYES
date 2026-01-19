@@ -8,6 +8,7 @@ import argparse
 from dateutil import Weekday
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.solution import Solution
+from optimization.availability import AvailabilityConstraint, AvailabilityObjective
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 from project import Project
@@ -183,25 +184,28 @@ def main() -> None:
         project = Project.deserialize(project_data)
 
     builder = CallProblemBuilderImpl(project, availability)
-    # TODO add constraints and objectives, then solve
-    """
+    builder.apply_constraints([AvailabilityConstraint()])
+    builder.apply_constraints(project.constraints)
+    builder.set_objectives(project.objectives)
+
     if args.output == OutputMode.INTERACTIVE:
         print("Solving for base result")
-    base_q2 = common_attempt(availability, previous_attempt, False, False).solve()
-    if isinstance(base_q2, str):
-        print(f"Unable to find optimal solution with status: {base_q2}")
+    base_result = builder.solve()
+    if isinstance(base_result, str):
+        print(f"Unable to find optimal solution with status: {base_result}")
         # Re-run with soft availability, see if it can identify any scheduling conflicts
         print(f"Attempting to identify the problem")
-        debug_problem = _setup_problem(availability, True)
         # While including the other objectives (as secondaries) wouldn't
         # meaningfully change the resulting hint, it makes finding it
         # significantly slower. So we just focus on the availability objective.
-        debug_problem.check_unavailability()
-        base_debug = debug_problem.solve()
-        if isinstance(base_debug, str):
+        debug_builder = CallProblemBuilderImpl(project, availability)
+        debug_builder.apply_constraints(project.constraints)
+        debug_builder.set_objectives([AvailabilityObjective()])
+        debug_result = debug_builder.solve()
+        if isinstance(debug_result, str):
             print("Unable to generate hints for failed attempt, you're on your own")
         else:
-            violations = base_debug.get_availability_violations()
+            violations = debug_result.get_availability_violations()
             assert len(violations) > 0, "Error calculating availability violations"
             print(
                 f"Hint (may not be accurate): Try checking the schedule around the following days and/or residents:"
@@ -212,6 +216,8 @@ def main() -> None:
                 print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
+    base_result.print(OutputMode.INTERACTIVE, None)
+    """
     if args.output == OutputMode.INTERACTIVE:
         print("Considering alternative solutions")
     solutions = find_alternatives(base_q2, availability, previous_attempt, False)

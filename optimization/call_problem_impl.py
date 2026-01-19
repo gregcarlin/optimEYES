@@ -6,6 +6,8 @@ from collections import defaultdict
 
 from optimization.call_problem import CallProblemBuilder
 from optimization.solution import Solution, key_for_day
+from optimization.constraint import Constraint, SerializableConstraint
+from optimization.objective import combine_objectives, Objective, SerializableObjective
 from project import Project
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
 from structs.resident import Resident
@@ -17,34 +19,19 @@ from optimization.linear_problem import (
 
 
 class CallProblemBuilderImpl(CallProblemBuilder):
-    """
     def __init__(
         self,
-        start_date: date,
-        buddy_period: tuple[date, date] | None,
+        project: Project,
         resident_availability: AbstractSet[Resident],
-        pgy2_3_gap: int,
-        weariness_map: dict[int, int],
         debug_infeasibility: bool = False,
-        soft_availability: bool = False,
-        seed: int | None = None,
-    ) -> None:
-        self.start_date = start_date
-        self.residents = {resident.name: resident for resident in resident_availability}
-        self.weariness_map = weariness_map
-    """
-
-    def __init__(
-        self, project: Project, resident_availability: AbstractSet[Resident]
     ) -> None:
         self.start_date = project.start_date
         self.residents = {resident.name: resident for resident in resident_availability}
-        soft_availability = False  # TODO
 
         self.problem = PulpProblem(
             "optimEYES",
             minimize=True,
-            debug_infeasibility=False,  # TODO
+            debug_infeasibility=debug_infeasibility,
             seed=project.seed,
         )
 
@@ -55,17 +42,11 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         # For each resident, create a variable representing every day
         self.day_vars = {resident.name: [] for resident in resident_availability}
         for resident in resident_availability:
-            for day, is_available in enumerate(resident.availability):
+            for day in range(len(resident.availability)):
                 day_var = self.problem.new_binary_variable(
                     key_for_day(day, resident.name)
                 )
                 self.day_vars[resident.name].append(day_var)
-                if is_available == 0:
-                    # Resident is unavailable this day
-                    if soft_availability:
-                        self.soft_unavailable_days.append(day_var)
-                    else:
-                        self.problem.add_constraint(day_var == 0)
 
         # Ensure even distribution within a year
         calls_per_resident_by_year = defaultdict(list)
@@ -211,19 +192,18 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         self.qns[n] = result
         return result
 
-    """
-    def set_objective(self, objective: Objective) -> None:
-        assert (
-            self.soft_unavailable_days == []
-        ), "Cannot set objective when using soft availability"
-        self.problem.set_objective(objective.value)
+    def apply_constraints(
+        self, constraints: list[Constraint] | list[SerializableConstraint]
+    ) -> None:
+        for constraint_builder in constraints:
+            for constraint in constraint_builder.get_constraints(self):
+                self.problem.add_constraint(constraint)
 
-    def check_unavailability(self) -> None:
-        assert (
-            self.soft_unavailable_days != []
-        ), "Must specify soft_availability=True to use check_unavailability"
-        self.problem.set_objective(sum(self.soft_unavailable_days))
-    """
+    def set_objectives(
+        self, objective_hierarchy: list[Objective] | list[SerializableObjective]
+    ) -> None:
+        objective = combine_objectives(self, objective_hierarchy)
+        self.problem.set_objective(objective)
 
     def solve(self) -> Solution | str:
         solution = self.problem.solve()
