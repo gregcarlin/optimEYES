@@ -218,6 +218,7 @@ def main() -> None:
             find_alternatives(base_va, availability, previous_attempt, True)
         )
 
+    return solutions
     if len(solutions) == 1:
         if args.output == OutputMode.INTERACTIVE:
             print("Optimal solution found!")

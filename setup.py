@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ['OptimEYES.py']
+APP = ['gui.py']
 DATA_FILES = []
 OPTIONS = {}
 
@@ -16,4 +16,5 @@ setup(
     data_files=DATA_FILES,
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
+    name="OptimEYES",
 )
