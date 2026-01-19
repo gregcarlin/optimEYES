@@ -30,6 +30,7 @@ class Objective(ABC):
     def get_max_value(self, builder: CallProblemBuilder) -> int:
         pass
 
+
 class NoArgObjective(Objective):
     @classmethod
     @override
@@ -39,6 +40,7 @@ class NoArgObjective(Objective):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
 
 class Q2Objective(NoArgObjective):
     @staticmethod
@@ -56,6 +58,7 @@ class Q2Objective(NoArgObjective):
     @override
     def get_max_value(self, builder: CallProblemBuilder) -> int:
         return math.ceil(builder.get_num_days() / 2.0) * builder.get_num_residents()
+
 
 class ChangesFromPreviousSolutionObjective(Objective):
     def __init__(self, path: str) -> None:
@@ -95,6 +98,7 @@ class ChangesFromPreviousSolutionObjective(Objective):
     def get_max_value(self, builder: CallProblemBuilder) -> int:
         return builder.get_num_days()
 
+
 class VACoverageObjective(NoArgObjective):
     @staticmethod
     @override
@@ -110,6 +114,7 @@ class VACoverageObjective(NoArgObjective):
     @override
     def get_max_value(self, builder: CallProblemBuilder) -> int:
         return builder.get_num_days() * builder.get_num_residents()
+
 
 class WearinessObjective(Objective):
     def __init__(self, weariness_map: dict[int, int]) -> None:
@@ -131,7 +136,9 @@ class WearinessObjective(Objective):
 
     @override
     def serialize(self) -> dict[str, Any]:
-        map_str = ",".join(f"{k}={self.weariness_map[k]}" for k in sorted(self.weariness_map.keys()))
+        map_str = ",".join(
+            f"{k}={self.weariness_map[k]}" for k in sorted(self.weariness_map.keys())
+        )
         return {"map": map_str}
 
     @override
@@ -161,14 +168,26 @@ class WearinessObjective(Objective):
             for n, incr in self.weariness_map.items()
         )
 
+
 class ObjectiveRegistry:
     def __init__(self) -> None:
-        self.objectives = {o.get_name(): o for o in [Q2Objective, ChangesFromPreviousSolutionObjective, VACoverageObjective, WearinessObjective]}
+        self.objectives = {
+            o.get_name(): o
+            for o in [
+                Q2Objective,
+                ChangesFromPreviousSolutionObjective,
+                VACoverageObjective,
+                WearinessObjective,
+            ]
+        }
 
     def deserialize(self, name: str, data: dict[str, Any]) -> Objective:
         return self.objectives[name].deserialize(data)
 
-def combine_objectives(builder: CallProblemBuilder, objectives: list[Objective]) -> VariableLike:
+
+def combine_objectives(
+    builder: CallProblemBuilder, objectives: list[Objective]
+) -> VariableLike:
     """
     Return an objective that first targets the first objective in the list,
     then breaks ties with the next one in the list, etc. Only works if the
@@ -177,5 +196,7 @@ def combine_objectives(builder: CallProblemBuilder, objectives: list[Objective])
     assert objectives != [], "At least one objective must be specified"
     variable = objectives[0].get_objective(builder)
     for objective in objectives[1:]:
-        variable = variable * (objective.get_max_value(builder) + 1) + objective.get_objective(builder)
+        variable = variable * (
+            objective.get_max_value(builder) + 1
+        ) + objective.get_objective(builder)
     return variable

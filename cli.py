@@ -18,7 +18,7 @@ from inputs import (
     WEARINESS_MAP,
     SEED,
     get_availability,
-    #special_handling_for_this_round,
+    # special_handling_for_this_round,
 )
 
 
@@ -178,7 +178,7 @@ def main() -> None:
         with open(args.previous) as f:
             previous_attempt = [line.strip().split(",") for line in f.readlines()]
 
-    with open(args.project, 'r') as project_file:
+    with open(args.project, "r") as project_file:
         project_data = json.loads(project_file.read())
         project = Project.deserialize(project_data)
 

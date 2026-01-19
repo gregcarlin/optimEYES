@@ -6,6 +6,7 @@ from optimization.linear_problem import Variable, PulpProblem
 from structs.resident import Resident
 from dateutil import Weekday
 
+
 class CallProblemBuilder(ABC):
     @abstractmethod
     def get_num_days(self) -> int:
@@ -42,4 +43,3 @@ class CallProblemBuilder(ABC):
     @abstractmethod
     def get_va_vars(self) -> list[Variable]:
         pass
-

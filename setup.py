@@ -7,14 +7,14 @@ Usage:
 
 from setuptools import setup
 
-APP = ['gui.py']
+APP = ["gui.py"]
 DATA_FILES = []
 OPTIONS = {}
 
 setup(
     app=APP,
     data_files=DATA_FILES,
-    options={'py2app': OPTIONS},
-    setup_requires=['py2app'],
+    options={"py2app": OPTIONS},
+    setup_requires=["py2app"],
     name="OptimEYES",
 )

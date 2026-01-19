@@ -6,6 +6,7 @@ from optimization.constraint import Constraint, ConstraintRegistry
 from optimization.objective import Objective, ObjectiveRegistry
 from structs.resident import Resident
 
+
 @dataclass
 class Project:
     start_date: date
@@ -36,12 +37,27 @@ class Project:
         seed = int(data["seed"])
 
         constraint_registry = ConstraintRegistry()
-        constraints = [constraint_registry.deserialize(c["name"], c.get("data", {})) for c in data["constraints"]]
+        constraints = [
+            constraint_registry.deserialize(c["name"], c.get("data", {}))
+            for c in data["constraints"]
+        ]
 
         objective_registry = ObjectiveRegistry()
-        objectives = [objective_registry.deserialize(o["name"], o.get("data", {})) for o in data["objectives"]]
+        objectives = [
+            objective_registry.deserialize(o["name"], o.get("data", {}))
+            for o in data["objectives"]
+        ]
 
-        return Project(start_date, end_date, buddy_period, availability, pgy_2_3_gap, seed, constraints, objectives)
+        return Project(
+            start_date,
+            end_date,
+            buddy_period,
+            availability,
+            pgy_2_3_gap,
+            seed,
+            constraints,
+            objectives,
+        )
 
     def serialize(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -51,11 +67,19 @@ class Project:
         if self.buddy_period:
             data["buddy_period_start_date"] = f"{self.buddy_period[0]:%Y-%m-%d}"
             data["buddy_period_end_date"] = f"{self.buddy_period[1]:%Y-%m-%d}"
-        data.update({
-            "availability": {}, # TODO
-            "pgy_2_3_gap": self.pgy_2_3_gap,
-            "seed": self.seed,
-            "constraints": [{"name": c.get_name(), "data": c.serialize()} for c in self.constraints],
-            "objectives": [{"name": o.get_name(), "data": o.serialize()} for o in self.objectives],
-        })
+        data.update(
+            {
+                "availability": {},  # TODO
+                "pgy_2_3_gap": self.pgy_2_3_gap,
+                "seed": self.seed,
+                "constraints": [
+                    {"name": c.get_name(), "data": c.serialize()}
+                    for c in self.constraints
+                ],
+                "objectives": [
+                    {"name": o.get_name(), "data": o.serialize()}
+                    for o in self.objectives
+                ],
+            }
+        )
         return data

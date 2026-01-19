@@ -138,6 +138,7 @@ class PulpProblem:
         lp_problem.solve(pulp.PULP_CBC_CMD(msg=False, options=options))
         return PulpSolution(lp_problem)
 
+
 def var_sum(data: Sequence[Variable]) -> Variable:
     result = sum(data)
     # Not sure why this is needed

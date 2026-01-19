@@ -34,15 +34,17 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         self.weariness_map = weariness_map
     """
 
-    def __init__(self, project: Project, resident_availability: AbstractSet[Resident]) -> None:
+    def __init__(
+        self, project: Project, resident_availability: AbstractSet[Resident]
+    ) -> None:
         self.start_date = project.start_date
         self.residents = {resident.name: resident for resident in resident_availability}
-        soft_availability = False # TODO
+        soft_availability = False  # TODO
 
         self.problem = PulpProblem(
             "optimEYES",
             minimize=True,
-            debug_infeasibility=False, # TODO
+            debug_infeasibility=False,  # TODO
             seed=project.seed,
         )
 
@@ -234,5 +236,5 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             self.start_date,
             self.num_days,
             self.residents,
-            {}, # TODO
+            {},  # TODO
         )

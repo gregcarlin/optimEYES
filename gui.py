@@ -2,6 +2,7 @@ import sys
 from PySide6 import QtCore, QtWidgets, QtGui
 from cli import main as cli_main
 
+
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -9,8 +10,7 @@ class MyWidget(QtWidgets.QWidget):
         self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
 
         self.button = QtWidgets.QPushButton("Click me!")
-        self.text = QtWidgets.QLabel("Hello world",
-                                     alignment=QtCore.Qt.AlignCenter)
+        self.text = QtWidgets.QLabel("Hello world", alignment=QtCore.Qt.AlignCenter)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.text)
@@ -25,6 +25,7 @@ class MyWidget(QtWidgets.QWidget):
         v = solution.solution.get_objective_value()
         self.text.setText(f"the num is: {v}")
 
+
 def main() -> int:
     app = QtWidgets.QApplication([])
 
@@ -34,6 +35,6 @@ def main() -> int:
 
     return app.exec()
 
+
 if __name__ == "__main__":
     sys.exit(main())
-
