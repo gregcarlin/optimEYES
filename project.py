@@ -12,7 +12,7 @@ class Project:
     start_date: date
     end_date: date
     buddy_period: tuple[date, date] | None
-    availability: AbstractSet[Resident]
+    availability: list[Resident]
     pgy_2_3_gap: int
     seed: int
     constraints: list[SerializableConstraint]
@@ -30,8 +30,7 @@ class Project:
         else:
             buddy_period = None
 
-        # TODO availability
-        availability = set()
+        availability = [Resident.deserialize(r) for r in data["availability"]]
 
         pgy_2_3_gap = int(data["pgy_2_3_gap"])
         seed = int(data["seed"])
@@ -69,7 +68,7 @@ class Project:
             data["buddy_period_end_date"] = f"{self.buddy_period[1]:%Y-%m-%d}"
         data.update(
             {
-                "availability": {},  # TODO
+                "availability": [r.serialize() for r in self.availability],
                 "pgy_2_3_gap": self.pgy_2_3_gap,
                 "seed": self.seed,
                 "constraints": [

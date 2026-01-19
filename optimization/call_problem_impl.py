@@ -22,11 +22,10 @@ class CallProblemBuilderImpl(CallProblemBuilder):
     def __init__(
         self,
         project: Project,
-        resident_availability: AbstractSet[Resident],
         debug_infeasibility: bool = False,
     ) -> None:
         self.start_date = project.start_date
-        self.residents = {resident.name: resident for resident in resident_availability}
+        self.residents = {resident.name: resident for resident in project.availability}
 
         self.problem = PulpProblem(
             "optimEYES",
@@ -35,13 +34,13 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             seed=project.seed,
         )
 
-        self.num_days = len(next(iter(resident_availability)).availability)
-        self.num_residents = len(resident_availability)
+        self.num_days = len(next(iter(project.availability)).availability)
+        self.num_residents = len(project.availability)
         self.soft_unavailable_days: list[Variable] = []
 
         # For each resident, create a variable representing every day
-        self.day_vars = {resident.name: [] for resident in resident_availability}
-        for resident in resident_availability:
+        self.day_vars = {resident.name: [] for resident in project.availability}
+        for resident in project.availability:
             for day in range(len(resident.availability)):
                 day_var = self.problem.new_binary_variable(
                     key_for_day(day, resident.name)
@@ -50,7 +49,7 @@ class CallProblemBuilderImpl(CallProblemBuilder):
 
         # Ensure even distribution within a year
         calls_per_resident_by_year = defaultdict(list)
-        for resident in resident_availability:
+        for resident in project.availability:
             calls_per_resident_by_year[resident.pgy].append(
                 self.day_vars[resident.name]
             )

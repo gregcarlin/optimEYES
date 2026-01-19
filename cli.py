@@ -9,7 +9,10 @@ from dateutil import Weekday
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.solution import Solution
 from optimization.availability import AvailabilityConstraint, AvailabilityObjective
-from optimization.objective import ChangesFromPreviousSolutionObjective, WearinessObjective
+from optimization.objective import (
+    ChangesFromPreviousSolutionObjective,
+    WearinessObjective,
+)
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 from project import Project
@@ -32,7 +35,7 @@ class SolutionWithInfo:
 """
 
 
-def print_availability(availability: AbstractSet[Resident]) -> None:
+def print_availability(availability: Sequence[Resident]) -> None:
     print("Availability:")
     num_days = len(next(iter(availability)).availability)
     for i in range(num_days):
@@ -158,13 +161,13 @@ def parse_args() -> argparse.Namespace:
         choices=list(OutputMode),
         default=OutputMode.INTERACTIVE,
     )
-    parser.add_argument("--previous", type=str)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
 
+    """
     inputs = get_availability()
     availability_or_errors = inputs.build()
     if isinstance(availability_or_errors, list):
@@ -174,29 +177,32 @@ def main() -> None:
         return
 
     availability = availability_or_errors
-    if args.output == OutputMode.INTERACTIVE:
-        print_availability(availability)
-
-    previous_attempt = None
-    if args.previous:
-        with open(args.previous) as f:
-            previous_attempt = [line.strip().split(",") for line in f.readlines()]
+    """
 
     with open(args.project, "r") as project_file:
         project_data = json.loads(project_file.read())
         project = Project.deserialize(project_data)
 
-    builder = CallProblemBuilderImpl(project, availability)
+    if args.output == OutputMode.INTERACTIVE:
+        print_availability(project.availability)
+
+    builder = CallProblemBuilderImpl(project)
     builder.apply_constraints([AvailabilityConstraint()])
     builder.apply_constraints(project.constraints)
     builder.set_objectives(project.objectives)
 
     # TODO generalize into objective with metric
-    weariness_objs = [obj for obj in project.objectives if isinstance(obj, WearinessObjective)]
+    weariness_objs = [
+        obj for obj in project.objectives if isinstance(obj, WearinessObjective)
+    ]
     assert len(weariness_objs) <= 1, "Multiple weariness objectives not yet supported"
     weariness_map = None if weariness_objs == [] else weariness_objs[0].weariness_map
 
-    previous_objs = [obj for obj in project.objectives if isinstance(obj, ChangesFromPreviousSolutionObjective)]
+    previous_objs = [
+        obj
+        for obj in project.objectives
+        if isinstance(obj, ChangesFromPreviousSolutionObjective)
+    ]
     assert len(previous_objs) <= 1, "Multiple previous result objectives not supported"
     previous_data = None if previous_objs == [] else previous_objs[0].read_data()
 
@@ -210,7 +216,7 @@ def main() -> None:
         # While including the other objectives (as secondaries) wouldn't
         # meaningfully change the resulting hint, it makes finding it
         # significantly slower. So we just focus on the availability objective.
-        debug_builder = CallProblemBuilderImpl(project, availability)
+        debug_builder = CallProblemBuilderImpl(project)
         debug_builder.apply_constraints(project.constraints)
         debug_builder.set_objectives([AvailabilityObjective()])
         debug_result = debug_builder.solve()
@@ -228,7 +234,7 @@ def main() -> None:
                 print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
-    base_result.print(OutputMode.INTERACTIVE, previous_data, weariness_map)
+    base_result.print(args.output, previous_data, weariness_map)
     """
     if args.output == OutputMode.INTERACTIVE:
         print("Considering alternative solutions")
