@@ -14,6 +14,7 @@
   "objectives": [
     {"name": "q2s"},
     {"name": "va_coverage"},
-    {"name": "weariness", "data": {"map": "3=10,4=5,5=3,6=2,7=1"}}
+    {"name": "weariness", "data": {"map": "3=10,4=5,5=3,6=2,7=1"}},
+    {"name": "changes_from_previous_solution", "data": {"path": "baseline.txt"}}
   ]
 }

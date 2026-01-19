@@ -23,10 +23,12 @@ from inputs import (
 )
 
 
+"""
 class SolutionWithInfo:
     def __init__(self, solution: Solution, optimizes_va: bool) -> None:
         self.solution = solution
         self.optimizes_va = optimizes_va
+"""
 
 
 def print_availability(availability: AbstractSet[Resident]) -> None:

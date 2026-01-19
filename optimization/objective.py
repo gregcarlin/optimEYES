@@ -82,8 +82,11 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective):
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
-        # TODO load previous result
-        previous_result: list[list[str]] = []
+        with open(self.path, "r") as result_file:
+            previous_result: list[list[str]] = [
+                line.strip().split(",") for line in result_file.readlines()
+            ]
+
         is_changed_vars = []
         for i, previous in enumerate(previous_result):
             if len(previous) != 1:
