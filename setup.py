@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ['optimeyes.py']
+APP = ['OptimEYES.py']
 DATA_FILES = []
 OPTIONS = {}
 
