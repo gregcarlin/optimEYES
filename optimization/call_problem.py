@@ -1,382 +1,45 @@
-from typing import Mapping, Sequence, List, AbstractSet
+from typing import Mapping, Sequence
+from abc import ABC, abstractmethod
+from datetime import date
 
-import math
-from datetime import date, timedelta
-from collections import defaultdict
-
-from optimization.solution import Solution, key_for_day
-from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
+from optimization.linear_problem import Variable, PulpProblem
 from structs.resident import Resident
-from optimization.linear_problem import (
-    PulpProblem,
-    Variable,
-    VariableLike,
-)
-from optimization.objective import Objective
+from dateutil import Weekday
 
+class CallProblemBuilder(ABC):
+    @abstractmethod
+    def get_num_days(self) -> int:
+        pass
 
-class CallProblemBuilder:
-    def __init__(
-        self,
-        start_date: date,
-        buddy_period: tuple[date, date] | None,
-        resident_availability: AbstractSet[Resident],
-        pgy2_3_gap: int,
-        weariness_map: dict[int, int],
-        debug_infeasibility: bool = False,
-        soft_availability: bool = False,
-        seed: int | None = None,
-    ) -> None:
-        self.start_date = start_date
-        self.residents = {resident.name: resident for resident in resident_availability}
-        self.weariness_map = weariness_map
+    @abstractmethod
+    def get_start_date(self) -> date:
+        pass
 
-        self.problem = PulpProblem(
-            "optimEYES",
-            minimize=True,
-            debug_infeasibility=debug_infeasibility,
-            seed=seed,
-        )
+    @abstractmethod
+    def get_num_residents(self) -> int:
+        pass
 
-        self.num_days = len(next(iter(resident_availability)).availability)
-        self.num_residents = len(resident_availability)
-        self.soft_unavailable_days: list[Variable] = []
+    @abstractmethod
+    def get_residents(self) -> Mapping[str, Resident]:
+        pass
 
-        # For each resident, create a variable representing every day
-        self.day_vars = {resident.name: [] for resident in resident_availability}
-        for resident in resident_availability:
-            for day, is_available in enumerate(resident.availability):
-                day_var = self.problem.new_binary_variable(
-                    key_for_day(day, resident.name)
-                )
-                self.day_vars[resident.name].append(day_var)
-                if is_available == 0:
-                    # Resident is unavailable this day
-                    if soft_availability:
-                        self.soft_unavailable_days.append(day_var)
-                    else:
-                        self.problem.add_constraint(day_var == 0)
+    @abstractmethod
+    def get_problem(self) -> PulpProblem:
+        pass
 
-        # Ensure even distribution within a year
-        calls_per_resident_by_year = defaultdict(list)
-        for resident in resident_availability:
-            calls_per_resident_by_year[resident.pgy].append(
-                self.day_vars[resident.name]
-            )
-        mins = {}
-        maxs = {}
-        for year, calls_per_resident in calls_per_resident_by_year.items():
-            upper = self.problem.max_of(
-                calls_per_resident, self.num_days, f"max_calls_pgy{year}"
-            )
-            lower = self.problem.min_of(
-                calls_per_resident, self.num_days, f"min_calls_pgy{year}"
-            )
-            self.problem.add_constraint(upper - lower <= 1)
-            maxs[year] = upper
-            mins[year] = lower
-        # Ensure pgy2s and 3s aren't too far apart
-        assert 2 in calls_per_resident_by_year, "PGY2 year not found"
-        assert 3 in calls_per_resident_by_year, "PGY3 year not found"
-        self.problem.add_constraint(maxs[2] - mins[3] <= pgy2_3_gap)
+    @abstractmethod
+    def get_day_vars(self) -> dict[str, list[Variable]]:
+        pass
 
-        if buddy_period:
-            buddy_start, buddy_end = buddy_period
+    @abstractmethod
+    def get_qn_vars(self, n: int = 2) -> Mapping[str, Sequence[Variable]]:
+        pass
 
-            buddy_start_index = (buddy_start - self.start_date).days
-            buddy_end_index = (buddy_end - self.start_date).days  # inclusive
-            assert (
-                buddy_start_index >= 0 and buddy_start_index < self.num_days
-            ), "Invalid buddy call start date"
-            assert (
-                buddy_end_index >= 0 and buddy_end_index < self.num_days
-            ), "Invalid buddy call end date"
+    @abstractmethod
+    def get_vars_for_weekday(self, resident: str, weekday: Weekday) -> list[Variable]:
+        pass
 
-            self._ensure_one_resident_per_day(range(buddy_start_index))
-            for day in range(buddy_start_index, buddy_end_index + 1):
-                # Ensure one PGY2 and either one PGY3 or PGY4 is assigned to each day
-                vars_by_pgy = self._vars_for_day_by_pgy(day)
-                self.problem.add_constraint(sum(vars_by_pgy[2]) == 1)
-                self.problem.add_constraint(sum(vars_by_pgy[3] + vars_by_pgy[4]) == 1)
-                remaining_vars = [
-                    v
-                    for pgy, vs in vars_by_pgy.items()
-                    if pgy != 2 and pgy != 3
-                    for v in vs
-                ]
-                if remaining_vars != []:
-                    self.problem.add_constraint(sum(remaining_vars) == 0)
-            self._ensure_one_resident_per_day(range(buddy_end_index + 1, self.num_days))
-        else:
-            self._ensure_one_resident_per_day(range(self.num_days))
+    @abstractmethod
+    def get_va_vars(self) -> list[Variable]:
+        pass
 
-        # Ensure a resident doesn't work two days in a row
-        for days_for_resident in self.day_vars.values():
-            for i in range(len(days_for_resident) - 1):
-                self.problem.add_constraint(
-                    days_for_resident[i] + days_for_resident[i + 1] <= 1
-                )
-
-        # Cache of q2s, q3s, etc
-        self.qns: dict[int, dict[str, List[Variable]]] = {}
-        self.va_vars: list[Variable] | None = None
-
-    def _ensure_one_resident_per_day(self, indices: range) -> None:
-        # Ensure exactly one resident is assigned to each day in the given range
-        for day in indices:
-            all_residents_for_day = [
-                days_for_resident[day] for days_for_resident in self.day_vars.values()
-            ]
-            self.problem.add_constraint(sum(all_residents_for_day) == 1)
-
-    def _vars_for_day_by_pgy(self, day: int) -> Mapping[int, List[Variable]]:
-        result = defaultdict(list)
-        for name, days_for_resident in self.day_vars.items():
-            result[self.residents[name].pgy].append(days_for_resident[day])
-        return result
-
-    def evenly_distribute_weekday(self, weekday: Weekday) -> None:
-        num_weekdays = num_weekdays_in_time_period(
-            self.start_date, self.num_days, weekday
-        )
-        min_weekdays_per_resident = math.floor(num_weekdays / float(self.num_residents))
-        max_weekdays_per_resident = math.ceil(num_weekdays / float(self.num_residents))
-        for days_for_resident in self.day_vars.values():
-            day_of_week_vars = []
-            next_day = days_until_next_weekday(self.start_date, weekday)
-            while next_day < self.num_days:
-                day_of_week_vars.append(days_for_resident[next_day])
-                next_day += 7
-            self.problem.add_constraint(
-                sum(day_of_week_vars) >= min_weekdays_per_resident
-            )
-            self.problem.add_constraint(
-                sum(day_of_week_vars) <= max_weekdays_per_resident
-            )
-
-    def evenly_distribute_weekends(self) -> None:
-        num_saturdays = num_weekdays_in_time_period(
-            self.start_date, self.num_days, Weekday.SATURDAY
-        )
-        num_sundays = num_weekdays_in_time_period(
-            self.start_date, self.num_days, Weekday.SUNDAY
-        )
-        num_weekend_days = num_saturdays + num_sundays
-        min_per_resident = math.floor(num_weekend_days / float(self.num_residents))
-        max_per_resident = math.ceil(num_weekend_days / float(self.num_residents))
-
-        first_saturday = days_until_next_weekday(self.start_date, Weekday.SATURDAY)
-        first_sunday = days_until_next_weekday(self.start_date, Weekday.SUNDAY)
-        assert (
-            first_saturday < first_sunday
-        ), "Starting on a sunday is not yet supported"
-
-        for days_for_resident in self.day_vars.values():
-            day_of_week_vars = []
-            next_day = first_saturday
-            while next_day < self.num_days:
-                day_of_week_vars.append(days_for_resident[next_day])
-                if next_day + 1 < self.num_days:
-                    day_of_week_vars.append(days_for_resident[next_day + 1])
-                next_day += 7
-            self.problem.add_constraint(sum(day_of_week_vars) >= min_per_resident)
-            self.problem.add_constraint(sum(day_of_week_vars) <= max_per_resident)
-
-    def limit_weekday_for_all(self, weekday: Weekday, count: int) -> None:
-        for days_for_resident in self.day_vars.values():
-            day = days_until_next_weekday(self.start_date, weekday)
-            day_vars = []
-            while day < self.num_days:
-                day_vars.append(days_for_resident[day])
-                day += 7
-            self.problem.add_constraint(sum(day_vars) <= count)
-
-    def _vars_for_weekday(self, resident: str, weekday: Weekday) -> list[Variable]:
-        day = days_until_next_weekday(self.start_date, weekday)
-        day_vars = []
-        while day < self.num_days:
-            day_vars.append(self.day_vars[resident][day])
-            day += 7
-        return day_vars
-
-    def limit_weekday(self, resident: str, weekday: Weekday, count: int) -> None:
-        day_vars = self._vars_for_weekday(resident, weekday)
-        self.problem.add_constraint(sum(day_vars) <= count)
-
-    def set_minimum_for_weekdays(
-        self, resident: str, weekdays: list[Weekday], count: int
-    ) -> None:
-        day_varss = [self._vars_for_weekday(resident, weekday) for weekday in weekdays]
-        day_vars = [dv for sublist in day_varss for dv in sublist]
-        self.problem.add_constraint(sum(day_vars) >= count)
-
-    def eliminate_adjacent_weekends(self) -> None:
-        """
-        Ensure no resident works two weekends in a row.
-        """
-        for days_for_resident in self.day_vars.values():
-            first_saturday = days_until_next_weekday(self.start_date, Weekday.SATURDAY)
-            first_sunday = days_until_next_weekday(self.start_date, Weekday.SUNDAY)
-            assert (
-                first_saturday < first_sunday
-            ), "Starting on a sunday is not yet supported"
-            if first_saturday + 1 >= self.num_days:
-                # No full weekends in call period
-                return
-
-            last_saturday = days_for_resident[first_saturday]
-            last_sunday = days_for_resident[first_saturday + 1]
-            next_saturday = first_saturday + 7
-            while next_saturday < self.num_days:
-                curr_saturday = days_for_resident[next_saturday]
-                if next_saturday + 1 < self.num_days:
-                    curr_sunday = days_for_resident[next_saturday + 1]
-                    self.problem.add_constraint(
-                        last_saturday + last_sunday + curr_saturday + curr_sunday <= 1
-                    )
-
-                    last_saturday = curr_saturday
-                    last_sunday = curr_sunday
-                else:
-                    self.problem.add_constraint(
-                        last_saturday + last_sunday + curr_saturday <= 1
-                    )
-                    break  # should be redundant, but just in case
-                next_saturday += 7
-
-    def limit_calls_for_year(self, pgy: int, limit: int) -> None:
-        """
-        Limit the number of calls for residents in a given year.
-        """
-        for resident, days_for_resident in self.day_vars.items():
-            if self.residents[resident].pgy != pgy:
-                continue
-            self.problem.add_constraint(sum(days_for_resident) <= limit)
-
-    def _get_va_vars(self) -> list[Variable]:
-        if self.va_vars is not None:
-            return self.va_vars
-        self.va_vars = []
-        for name, days_for_resident in self.day_vars.items():
-            for i, v in enumerate(days_for_resident):
-                if self.residents[name].va[i]:
-                    self.va_vars.append(v)
-        return self.va_vars
-
-    def limit_va_coverage(self, global_limit: int) -> None:
-        self.problem.add_constraint(sum(self._get_va_vars()) <= global_limit)
-
-    def _get_qn_vars(self, n: int = 2) -> Mapping[str, Sequence[Variable]]:
-        assert n >= 2, f"Invalid value for n: {n}"
-        if n in self.qns:
-            return self.qns[n]
-
-        result = {}
-        for resident, days_for_resident in self.day_vars.items():
-            result[resident] = []
-            for i in range(len(days_for_resident) - n):
-                var = self.problem.new_binary_variable(f"q{n}_{resident}_{i}")
-                var_slack = self.problem.new_continuous_variable(
-                    f"q{n}_{resident}_{i}_cont", 0, 0.9
-                )
-                self.problem.add_constraint(
-                    0.5 * days_for_resident[i] + 0.5 * days_for_resident[i + n]
-                    == var + var_slack
-                )
-                result[resident].append(var)
-        self.qns[n] = result
-        return result
-
-    def get_q2s_objective(self) -> Objective:
-        q2s_dict = self._get_qn_vars(2)
-        q2s = sum(v for vs in q2s_dict.values() for v in vs)
-        assert isinstance(q2s, VariableLike)
-        return Objective(q2s, math.ceil(self.num_days / 2.0) * len(self.residents))
-
-    def _get_is_changed_vars(self, previous_result: list[list[str]]) -> list[Variable]:
-        is_changed_vars = []
-        for i, previous in enumerate(previous_result):
-            if len(previous) != 1:
-                raise ValueError(
-                    "Minimizing changes from previous not yet supported for buddy call"
-                )
-            is_changed_vars.append(1 - self.day_vars[previous[0]][i])
-        return is_changed_vars
-
-    def get_changes_from_previous_solution_objective(
-        self, previous_result: list[list[str]]
-    ) -> Objective:
-        is_changed_vars = sum(self._get_is_changed_vars(previous_result))
-        assert isinstance(is_changed_vars, VariableLike)
-        return Objective(is_changed_vars, self.num_days)
-
-    def get_va_coverage_objective(self) -> Objective:
-        va_vars = sum(self._get_va_vars())
-        assert isinstance(va_vars, VariableLike)
-        return Objective(va_vars, self.num_days * len(self.residents))
-
-    def get_weariness_objective(self) -> Objective:
-        # resident -> qn -> count of that qn
-        qns_per_resident: dict[str, dict[int, VariableLike]] = defaultdict(dict)
-        for n, incr in self.weariness_map.items():
-            qn_dict = self._get_qn_vars(n)
-            for resident, qns in qn_dict.items():
-                qns_per_resident[resident][n] = sum(qns)
-
-        weariness_scores: list[VariableLike] = []
-        for resident, qns_by_n in qns_per_resident.items():
-            weariness_scores.append(
-                sum(qns * self.weariness_map[n] for n, qns in qns_by_n.items())
-            )
-
-        max_possible_weariness = sum(
-            math.ceil(self.num_days / n) * incr
-            for n, incr in self.weariness_map.items()
-        )
-        max_weariness = self.problem.max_of(
-            weariness_scores, max_possible_weariness, "max_weariness"
-        )
-        return Objective(max_weariness, max_possible_weariness)
-
-    def set_objective(self, objective: Objective) -> None:
-        assert (
-            self.soft_unavailable_days == []
-        ), "Cannot set objective when using soft availability"
-        self.problem.set_objective(objective.value)
-
-    def check_unavailability(self) -> None:
-        assert (
-            self.soft_unavailable_days != []
-        ), "Must specify soft_availability=True to use check_unavailability"
-        self.problem.set_objective(sum(self.soft_unavailable_days))
-
-    def evenly_distribute_q2s(self, tolerance: int = 0) -> None:
-        q2s_dict = self._get_qn_vars(2)
-        q2s_per_resident = [sum(q2_vars) for q2_vars in q2s_dict.values()]
-        max_q2s = self.problem.max_of(q2s_per_resident, self.num_days, "max_q2s")
-        min_q2s = self.problem.min_of(q2s_per_resident, self.num_days, "min_q2s")
-        self.problem.add_constraint(max_q2s - min_q2s <= tolerance)
-
-    def limit_q2s(self, limit: int) -> None:
-        q2s_dict = self._get_qn_vars(2)
-        for q2_vars in q2s_dict.values():
-            self.problem.add_constraint(sum(q2_vars) <= limit)
-
-    def limit_total_q2s(self, limit: int) -> None:
-        q2s_dict = self._get_qn_vars(2)
-        q2s = [v for vs in q2s_dict.values() for v in vs]
-        self.problem.add_constraint(sum(q2s) <= limit)
-
-    def solve(self) -> Solution | str:
-        solution = self.problem.solve()
-        if not solution.was_successful():
-            return solution.get_status()
-
-        return Solution(
-            solution.get_objective_value(),
-            solution.get_variables(),
-            self.start_date,
-            self.num_days,
-            self.residents,
-            self.weariness_map,
-        )

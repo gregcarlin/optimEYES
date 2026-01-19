@@ -238,8 +238,10 @@ def get_availability() -> AvailabilityBuilder:
     return input
 
 
+"""
 def special_handling_for_this_round(builder: CallProblemBuilder) -> None:
     builder.limit_calls_for_year(2, 25)
     builder.limit_calls_for_year(3, 21)
     builder.limit_weekday_for_all(Weekday.SATURDAY, 4)
     builder.limit_weekday_for_all(Weekday.SUNDAY, 4)
+"""

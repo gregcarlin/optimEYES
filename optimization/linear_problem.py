@@ -92,7 +92,7 @@ class PulpProblem:
 
     def max_of(
         self, variables: Sequence[VariableLike], max_possible_val: int, var_name: str
-    ) -> VariableLike:
+    ) -> Variable:
         """
         Returns a new variable that will be set to the maximum of all the given variables
         See https://math.stackexchange.com/a/3568461
@@ -106,7 +106,7 @@ class PulpProblem:
 
     def min_of(
         self, variables: Sequence[VariableLike], max_possible_val: int, var_name: str
-    ) -> VariableLike:
+    ) -> Variable:
         """
         Same as above, but for min.
         """
@@ -137,3 +137,9 @@ class PulpProblem:
             options = [f"RandomS {self.seed}"]
         lp_problem.solve(pulp.PULP_CBC_CMD(msg=False, options=options))
         return PulpSolution(lp_problem)
+
+def var_sum(data: Sequence[Variable]) -> Variable:
+    result = sum(data)
+    # Not sure why this is needed
+    assert isinstance(result, Variable)
+    return result

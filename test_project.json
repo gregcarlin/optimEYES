@@ -1,0 +1,19 @@
+{
+  "start_date": "2025-12-29",
+  "end_date": "2026-06-30",
+  "pgy_2_3_gap": 4,
+  "seed": 1761842917,
+  "constraints": [
+    {"name": "distribute_weekends"},
+    {"name": "no_adjacent_weekends"},
+    {"name": "limit_for_pgy", "data": {"pgy": 2, "limit": 25}},
+    {"name": "limit_for_pgy", "data": {"pgy": 3, "limit": 21}},
+    {"name": "limit_weekday", "data": {"weekday": 5, "limit": 4}},
+    {"name": "limit_weekday", "data": {"weekday": 6, "limit": 4}}
+  ],
+  "objectives": [
+    {"name": "q2s"},
+    {"name": "va_coverage"},
+    {"name": "weariness", "data": {"map": "3=10,4=5,5=3,6=2,7=1"}}
+  ]
+}

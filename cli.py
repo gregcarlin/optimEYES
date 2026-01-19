@@ -1,14 +1,16 @@
 from typing import Mapping, Sequence, AbstractSet
 
 import os
+import json
 from datetime import timedelta
 import argparse
 
 from dateutil import Weekday
-from optimization.call_problem import CallProblemBuilder
+from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.solution import Solution
 from structs.output_mode import OutputMode
 from structs.resident import Resident
+from project import Project
 from inputs import (
     START_DATE,
     BUDDY_PERIOD,
@@ -16,7 +18,7 @@ from inputs import (
     WEARINESS_MAP,
     SEED,
     get_availability,
-    special_handling_for_this_round,
+    #special_handling_for_this_round,
 )
 
 
@@ -39,6 +41,7 @@ def print_availability(availability: AbstractSet[Resident]) -> None:
         print(f"\t{day:%a %m-%d}: {available_residents}")
 
 
+"""
 def _setup_problem(
     availability: AbstractSet[Resident],
     soft_availability: bool,
@@ -110,17 +113,16 @@ def distribute_q2s_attempt(
     problem.limit_q2s(max_q2s)
 
     return problem.solve()
+"""
 
 
+"""
 def find_alternatives(
     base: Solution,
     availability: AbstractSet[Resident],
     previous_attempt: list[list[str]] | None,
     prioritize_va: bool,
 ) -> list[SolutionWithInfo]:
-    """
-    Given an initial solution, attempt to find alternatives
-    """
     solutions: list[Solution] = [base]
     unfairness = base.get_q2_unfairness()
     for tolerance in range(unfairness - 1, -1, -1):
@@ -140,10 +142,12 @@ def find_alternatives(
         else:
             solutions.append(attempt)
     return [SolutionWithInfo(solution, prioritize_va) for solution in solutions]
+"""
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("project")
     parser.add_argument(
         "--output",
         type=OutputMode,
@@ -174,6 +178,13 @@ def main() -> None:
         with open(args.previous) as f:
             previous_attempt = [line.strip().split(",") for line in f.readlines()]
 
+    with open(args.project, 'r') as project_file:
+        project_data = json.loads(project_file.read())
+        project = Project.deserialize(project_data)
+
+    builder = CallProblemBuilderImpl(project, availability)
+    # TODO add constraints and objectives, then solve
+    """
     if args.output == OutputMode.INTERACTIVE:
         print("Solving for base result")
     base_q2 = common_attempt(availability, previous_attempt, False, False).solve()
@@ -241,6 +252,7 @@ def main() -> None:
         buffer = int((width - len(text)) / 2) * "="
         print(f"{buffer}{text}{buffer}")
         solution.solution.print(OutputMode.INTERACTIVE, previous_attempt)
+    """
 
 
 if __name__ == "__main__":
