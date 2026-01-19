@@ -9,6 +9,7 @@ from dateutil import Weekday
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.solution import Solution
 from optimization.availability import AvailabilityConstraint, AvailabilityObjective
+from optimization.objective import ChangesFromPreviousSolutionObjective, WearinessObjective
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 from project import Project
@@ -190,6 +191,15 @@ def main() -> None:
     builder.apply_constraints(project.constraints)
     builder.set_objectives(project.objectives)
 
+    # TODO generalize into objective with metric
+    weariness_objs = [obj for obj in project.objectives if isinstance(obj, WearinessObjective)]
+    assert len(weariness_objs) <= 1, "Multiple weariness objectives not yet supported"
+    weariness_map = None if weariness_objs == [] else weariness_objs[0].weariness_map
+
+    previous_objs = [obj for obj in project.objectives if isinstance(obj, ChangesFromPreviousSolutionObjective)]
+    assert len(previous_objs) <= 1, "Multiple previous result objectives not supported"
+    previous_data = None if previous_objs == [] else previous_objs[0].read_data()
+
     if args.output == OutputMode.INTERACTIVE:
         print("Solving for base result")
     base_result = builder.solve()
@@ -218,7 +228,7 @@ def main() -> None:
                 print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
-    base_result.print(OutputMode.INTERACTIVE, None)
+    base_result.print(OutputMode.INTERACTIVE, previous_data, weariness_map)
     """
     if args.output == OutputMode.INTERACTIVE:
         print("Considering alternative solutions")

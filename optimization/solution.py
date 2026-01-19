@@ -19,14 +19,12 @@ class Solution:
         start_date: date,
         num_days: int,
         residents: dict[str, Resident],
-        weariness_map: dict[int, int],
     ) -> None:
         self.objective_value = objective_value
         self.values = values
         self.start_date = start_date
         self.num_days = num_days
         self.residents = residents
-        self.weariness_map = weariness_map
         self.assignments = None
 
     def __getitem__(self, key: str) -> float:
@@ -69,16 +67,21 @@ class Solution:
                 result[resident] += 1
         return result
 
-    def get_weariness_per_resident(self) -> dict[str, tuple[int, dict[int, int]]]:
+    def get_weariness_per_resident(
+        self, weariness_map: dict[int, int] | None
+    ) -> dict[str, tuple[int, dict[int, int]]] | None:
         """
         For each resident, returns total weariness score and breakdown of count
         of each qn.
         """
+        if weariness_map is None:
+            return None
+
         scores: dict[str, int] = {resident: 0 for resident in self.residents.keys()}
         breakdown: dict[str, dict[int, int]] = {
             resident: {} for resident in self.residents.keys()
         }
-        for n, incr in self.weariness_map.items():
+        for n, incr in weariness_map.items():
             for resident, qns in self.get_qns_per_resident(n).items():
                 scores[resident] += qns * incr
                 breakdown[resident][n] = qns
@@ -187,7 +190,12 @@ class Solution:
             else:
                 return f" (covering for {name} due to {reason})"
 
-    def print(self, mode: OutputMode, previous: list[list[str]] | None) -> None:
+    def print(
+        self,
+        mode: OutputMode,
+        previous: list[list[str]] | None,
+        weariness_map: dict[int, int] | None,
+    ) -> None:
         if mode == OutputMode.LIST:
             print(
                 "\n".join(
@@ -233,11 +241,12 @@ class Solution:
         saturdays = self.get_saturdays()
         sundays = self.get_sundays()
         q2s = self.get_qns_per_resident(2)
-        weariness = self.get_weariness_per_resident()
+        weariness = self.get_weariness_per_resident(weariness_map)
         for resident in self.residents.keys():
             print(f"\t{resident}")
             print(f"\t\tCalls = {calls[resident]}")
             print(f"\t\tSaturdays = {saturdays[resident]}")
             print(f"\t\tSundays = {sundays[resident]}")
             print(f"\t\tQ2s = {q2s[resident]}")
-            print(f"\t\tWeariness = {self.fmt_weariness(weariness[resident])}")
+            if weariness is not None:
+                print(f"\t\tWeariness = {self.fmt_weariness(weariness[resident])}")

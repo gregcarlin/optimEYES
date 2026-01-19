@@ -80,12 +80,13 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective):
     def serialize(self) -> dict[str, Any]:
         return {"path": self.path}
 
+    def read_data(self) -> list[list[str]]:
+        with open(self.path, "r") as result_file:
+            return [line.strip().split(",") for line in result_file.readlines()]
+
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
-        with open(self.path, "r") as result_file:
-            previous_result: list[list[str]] = [
-                line.strip().split(",") for line in result_file.readlines()
-            ]
+        previous_result = self.read_data()
 
         is_changed_vars = []
         for i, previous in enumerate(previous_result):

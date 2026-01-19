@@ -216,5 +216,4 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             self.start_date,
             self.num_days,
             self.residents,
-            {},  # TODO
         )
