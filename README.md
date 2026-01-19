@@ -18,6 +18,11 @@ Run code:
 python3 optimeyes.py
 ```
 
+Build standalone app:
+```
+python3 setup.py py2app
+```
+
 Links:
 
 - [Pulp documentation](https://coin-or.github.io/pulp/index.html)
