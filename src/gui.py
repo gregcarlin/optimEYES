@@ -33,6 +33,22 @@ class MyWidget(QtWidgets.QWidget):
 """
 
 
+class IntroWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+
+        text = QtWidgets.QLabel(
+            "Welcome to OptimEYES", alignment=QtCore.Qt.AlignmentFlag.AlignCenter
+        )
+        new_button = QtWidgets.QPushButton("New Project")
+        open_button = QtWidgets.QPushButton("Open Existing")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(text)
+        layout.addWidget(new_button)
+        layout.addWidget(open_button)
+
+
 class AvailabilityWidget(QtWidgets.QTableWidget):
     def __init__(self, project: Project) -> None:
         super().__init__()
@@ -88,11 +104,25 @@ class AvailabilityWidget(QtWidgets.QTableWidget):
             self.setColumnWidth(i, column_width)
 
 
+def center_on_screen(widget: QtWidgets.QWidget) -> None:
+    # Widget must already be visible
+    screen_geometry = widget.screen().availableGeometry()
+    widget.move(
+        (screen_geometry.width() - widget.width()) / 2,
+        (screen_geometry.height() - widget.height()) / 2,
+    )
+
+
 def main() -> int:
     app = QtWidgets.QApplication([])
     app.setApplicationName("OptimEYES")
     app.setApplicationDisplayName("OptimEYES")
 
+    intro = IntroWidget()
+    intro.show()
+    center_on_screen(intro)
+
+    """
     with open("test_project.json", "r") as project_file:
         project_data = json.loads(project_file.read())
         project = Project.deserialize(project_data)
@@ -100,6 +130,7 @@ def main() -> int:
     availability_widget = AvailabilityWidget(project)
     availability_widget.resize(800, 600)
     availability_widget.show()
+    """
 
     return app.exec()
 
