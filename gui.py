@@ -33,56 +33,59 @@ class MyWidget(QtWidgets.QWidget):
 """
 
 
-def make_availability_widget(project: Project) -> QtWidgets.QTableWidget:
-    num_days = (
-        0 if project.availability == [] else len(project.availability[0].availability)
-    )
+class AvailabilityWidget(QtWidgets.QTableWidget):
+    def __init__(self, project: Project) -> None:
+        super().__init__()
+        num_days = (
+            0
+            if project.availability == []
+            else len(project.availability[0].availability)
+        )
 
-    table = QtWidgets.QTableWidget()
-    table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
-    table.setRowCount(0 if project.availability == [] else num_days)
-    table.setColumnCount(len(project.availability))
-    table.setHorizontalHeaderLabels(
-        [resident.name for resident in project.availability]
-    )
-    table.setVerticalHeaderLabels(
-        []
-        if project.availability == []
-        else [
-            f"{project.start_date + timedelta(days=i):%a %m-%d}"
-            for i in range(num_days)
-        ]
-    )
-    for resident_index, resident in enumerate(project.availability):
-        for day_index, (available, va) in enumerate(
-            zip(resident.availability, resident.va)
-        ):
-            check = QtWidgets.QCheckBox()
-            check.setChecked(available != 0)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        self.setRowCount(0 if project.availability == [] else num_days)
+        self.setColumnCount(len(project.availability))
+        self.setHorizontalHeaderLabels(
+            [resident.name for resident in project.availability]
+        )
+        self.setVerticalHeaderLabels(
+            []
+            if project.availability == []
+            else [
+                f"{project.start_date + timedelta(days=i):%a %m-%d}"
+                for i in range(num_days)
+            ]
+        )
+        for resident_index, resident in enumerate(project.availability):
+            for day_index, (available, va) in enumerate(
+                zip(resident.availability, resident.va)
+            ):
+                check = QtWidgets.QCheckBox()
+                check.setChecked(available != 0)
 
-            # Magic needed to center check box
-            widget = QtWidgets.QWidget()
-            layout = QtWidgets.QHBoxLayout(widget)
-            layout.addWidget(check)
-            layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            layout.setContentsMargins(0, 0, 0, 0)
-            widget.setLayout(layout)
+                # Magic needed to center check box
+                widget = QtWidgets.QWidget()
+                layout = QtWidgets.QHBoxLayout(widget)
+                layout.addWidget(check)
+                layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                layout.setContentsMargins(0, 0, 0, 0)
+                widget.setLayout(layout)
 
-            if va != 0:
-                p = widget.palette()
-                p.setColor(QtGui.QPalette.ColorRole.Base, QtGui.QColor(255, 0, 0))
-                widget.setAutoFillBackground(True)
-                widget.setPalette(p)
+                if va != 0:
+                    p = widget.palette()
+                    p.setColor(QtGui.QPalette.ColorRole.Base, QtGui.QColor(255, 0, 0))
+                    widget.setAutoFillBackground(True)
+                    widget.setPalette(p)
 
-            table.setCellWidget(day_index, resident_index, widget)
+                self.setCellWidget(day_index, resident_index, widget)
 
-    # Set all columns to the width of the longest resident's name
-    table.resizeColumnsToContents()
-    column_width = max(table.columnWidth(i) for i in range(len(project.availability)))
-    for i in range(len(project.availability)):
-        table.setColumnWidth(i, column_width)
-
-    return table
+        # Set all columns to the width of the longest resident's name
+        self.resizeColumnsToContents()
+        column_width = max(
+            self.columnWidth(i) for i in range(len(project.availability))
+        )
+        for i in range(len(project.availability)):
+            self.setColumnWidth(i, column_width)
 
 
 def main() -> int:
@@ -94,7 +97,7 @@ def main() -> int:
         project_data = json.loads(project_file.read())
         project = Project.deserialize(project_data)
 
-    availability_widget = make_availability_widget(project)
+    availability_widget = AvailabilityWidget(project)
     availability_widget.resize(800, 600)
     availability_widget.show()
 
