@@ -54,15 +54,26 @@ def make_availability_widget(project: Project) -> QtWidgets.QTableWidget:
         ]
     )
     for resident_index, resident in enumerate(project.availability):
-        for day_index, available in enumerate(resident.availability):
+        for day_index, (available, va) in enumerate(
+            zip(resident.availability, resident.va)
+        ):
             check = QtWidgets.QCheckBox()
             check.setChecked(available != 0)
+
+            # Magic needed to center check box
             widget = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout(widget)
             layout.addWidget(check)
             layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
             layout.setContentsMargins(0, 0, 0, 0)
             widget.setLayout(layout)
+
+            if va != 0:
+                p = widget.palette()
+                p.setColor(QtGui.QPalette.ColorRole.Base, QtGui.QColor(255, 0, 0))
+                widget.setAutoFillBackground(True)
+                widget.setPalette(p)
+
             table.setCellWidget(day_index, resident_index, widget)
 
     # Set all columns to the width of the longest resident's name
