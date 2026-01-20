@@ -15,7 +15,7 @@ from optimization.objective import (
 )
 from structs.output_mode import OutputMode
 from structs.resident import Resident
-from project import Project
+from structs.project import Project
 from inputs import (
     START_DATE,
     BUDDY_PERIOD,

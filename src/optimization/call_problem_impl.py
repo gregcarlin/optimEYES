@@ -8,8 +8,8 @@ from optimization.call_problem import CallProblemBuilder
 from optimization.solution import Solution, key_for_day
 from optimization.constraint import Constraint, SerializableConstraint
 from optimization.objective import combine_objectives, Objective, SerializableObjective
-from project import Project
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
+from structs.project import Project
 from structs.resident import Resident
 from optimization.linear_problem import (
     PulpProblem,

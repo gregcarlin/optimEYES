@@ -5,7 +5,7 @@ from datetime import timedelta
 from PySide6 import QtCore, QtWidgets, QtGui
 from cli import main as cli_main
 
-from project import Project
+from structs.project import Project
 
 
 """
