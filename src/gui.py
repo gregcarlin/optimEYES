@@ -1,36 +1,45 @@
 import sys
 import json
 from datetime import timedelta
+from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from cli import main as cli_main
 
 from structs.project import Project
 
 
-"""
-class MyWidget(QtWidgets.QWidget):
-    def __init__(self):
+class AlertMessage(QtWidgets.QMessageBox):
+    def __init__(self, text: str, parent: QtWidgets.QWidget) -> None:
+        super().__init__(parent)
+
+        self.setText(text)
+
+
+def show_alert(message: str, parent: QtWidgets.QWidget) -> None:
+    alert = AlertMessage(message, parent)
+    alert.show()
+
+
+class OpenProjectDialog(QtWidgets.QFileDialog):
+    def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__()
 
-        self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
+        self.setNameFilter("*.json")
+        self.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
 
-        self.button = QtWidgets.QPushButton("Click me!")
-        self.text = QtWidgets.QLabel("Hello world", alignment=QtCore.Qt.AlignCenter)
 
-        self.layout2 = QtWidgets.QVBoxLayout(self)
-        self.layout2.addWidget(self.text)
-        self.layout2.addWidget(self.button)
+class EditProjectWidget(QtWidgets.QWidget):
+    def __init__(self, project_path: str, project: Project) -> None:
+        super().__init__(None, QtCore.Qt.WindowType.Window)
 
-        self.button.clicked.connect(self.magic)
+        self.project_path = Path(project_path)
+        self.project = project
 
-    @QtCore.Slot()
-    def magic(self):
-        self.text.setText("loading num...")
-        solution = cli_main()[0]
-        v = solution.solution.get_objective_value()
-        self.text.setText(f"the num is: {v}")
-"""
+        self.setWindowTitle(self.project_path.name)
+
+        text = QtWidgets.QLabel("test", alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(text)
 
 
 class IntroWidget(QtWidgets.QWidget):
@@ -47,6 +56,33 @@ class IntroWidget(QtWidgets.QWidget):
         layout.addWidget(text)
         layout.addWidget(new_button)
         layout.addWidget(open_button)
+
+        new_button.clicked.connect(self.new_project_clicked)
+        open_button.clicked.connect(self.open_project_clicked)
+
+    @QtCore.Slot()
+    def new_project_clicked(self):
+        # TODO implement (needs availability builder)
+        pass
+
+    @QtCore.Slot()
+    def open_project_clicked(self):
+        dialog = OpenProjectDialog(self)
+        result = dialog.exec()
+        if not result:
+            return
+
+        selected_file = dialog.selectedFiles()[0]
+        try:
+            project = Project.read_from_file(selected_file)
+            # Make it a property of self so it doesn't get garbage collected
+            self.edit = EditProjectWidget(selected_file, project)
+            self.edit.show()
+            self.close()
+            center_on_screen(self.edit)
+        except Exception as e:
+            print(e)
+            show_alert(f"Unable to read file {selected_file}", self)
 
 
 class AvailabilityWidget(QtWidgets.QTableWidget):
@@ -107,10 +143,9 @@ class AvailabilityWidget(QtWidgets.QTableWidget):
 def center_on_screen(widget: QtWidgets.QWidget) -> None:
     # Widget must already be visible
     screen_geometry = widget.screen().availableGeometry()
-    widget.move(
-        (screen_geometry.width() - widget.width()) / 2,
-        (screen_geometry.height() - widget.height()) / 2,
-    )
+    x = int((screen_geometry.width() - widget.width()) / 2)
+    y = int((screen_geometry.height() - widget.height()) / 2)
+    widget.move(x, y)
 
 
 def main() -> int:
@@ -118,15 +153,19 @@ def main() -> int:
     app.setApplicationName("OptimEYES")
     app.setApplicationDisplayName("OptimEYES")
 
-    intro = IntroWidget()
-    intro.show()
-    center_on_screen(intro)
+    if len(sys.argv) >= 2:
+        # Convenience for running program directly in edit mode
+        project_path = sys.argv[1]
+        project = Project.read_from_file(project_path)
+        edit = EditProjectWidget(project_path, project)
+        edit.show()
+        center_on_screen(edit)
+    else:
+        intro = IntroWidget()
+        intro.show()
+        center_on_screen(intro)
 
     """
-    with open("test_project.json", "r") as project_file:
-        project_data = json.loads(project_file.read())
-        project = Project.deserialize(project_data)
-
     availability_widget = AvailabilityWidget(project)
     availability_widget.resize(800, 600)
     availability_widget.show()

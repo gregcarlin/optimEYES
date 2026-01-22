@@ -1,3 +1,4 @@
+import json
 from typing import Any, AbstractSet
 from datetime import date
 from dataclasses import dataclass
@@ -57,6 +58,12 @@ class Project:
             constraints,
             objectives,
         )
+
+    @staticmethod
+    def read_from_file(path: str) -> "Project":
+        with open(path, "r") as project_file:
+            project_data = json.loads(project_file.read())
+            return Project.deserialize(project_data)
 
     def serialize(self) -> dict[str, Any]:
         data: dict[str, Any] = {
