@@ -30,6 +30,10 @@ class SerializableConstraint(Constraint):
     def serialize(self) -> dict[str, Any]:
         pass
 
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
 
 class DistributeDayOfWeekConstraint(SerializableConstraint):
     def __init__(self, weekday: Weekday) -> None:
@@ -48,6 +52,10 @@ class DistributeDayOfWeekConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"weekday": int(self.weekday)}
+
+    @override
+    def description(self) -> str:
+        return f"Evenly distribute {self.weekday.human_name()}s"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -86,6 +94,10 @@ class DistributeWeekendsConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
+    @override
+    def description(self) -> str:
+        return f"Evenly distribute weekend days (combined Saturdays and Sundays)"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -145,6 +157,10 @@ class LimitWeekdayConstraint(SerializableConstraint):
         return {"weekday": int(self.weekday), "limit": self.limit}
 
     @override
+    def description(self) -> str:
+        return f"Limit {self.weekday.human_name()}s to {self.limit}"
+
+    @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         constraints: list[pulp.LpConstraint] = []
         for days_for_resident in builder.get_day_vars().values():
@@ -184,6 +200,10 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
         }
 
     @override
+    def description(self) -> str:
+        return f"Limit {self.weekday.human_name()}s for {self.resident} to {self.limit}"
+
+    @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         day_vars = builder.get_vars_for_weekday(self.resident, self.weekday)
         return [var_sum(day_vars) <= self.limit]
@@ -218,6 +238,14 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
         }
 
     @override
+    def description(self) -> str:
+        if len(self.weekdays) == 1:
+            return f"Ensure {self.resident} has at least {self.minimum} {self.weekdays[0].human_name()}s"
+        else:
+            weekdays_str = ", ".join([w.human_name() for w in self.weekdays])
+            return f"Ensure {self.resident} has at least {self.minimum} of days: {weekdays_str}"
+
+    @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         day_varss = [
             builder.get_vars_for_weekday(self.resident, weekday)
@@ -228,10 +256,6 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
 
 
 class NoAdjacentWeekendsConstraint(SerializableConstraint):
-    """
-    Ensure no resident works two weekends in a row.
-    """
-
     @staticmethod
     @override
     def get_name() -> str:
@@ -245,6 +269,10 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
+    @override
+    def description(self) -> str:
+        return f"Ensure no resident works two weekends in a row"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -285,10 +313,6 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
 
 
 class LimitForPGYConstraint(SerializableConstraint):
-    """
-    Limit the number of calls for residents in a given year.
-    """
-
     def __init__(self, pgy: int, limit: int) -> None:
         self.pgy = pgy
         self.limit = limit
@@ -306,6 +330,10 @@ class LimitForPGYConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"pgy": self.pgy, "limit": self.limit}
+
+    @override
+    def description(self) -> str:
+        return f"Limit calls for PGY{self.pgy}s to {self.limit}"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -336,6 +364,10 @@ class LimitVACoverageConstraint(SerializableConstraint):
         return {"limit": self.limit}
 
     @override
+    def description(self) -> str:
+        return f"Limit VA coverage days to {self.limit}"
+
+    @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         return [var_sum(builder.get_va_vars()) <= self.limit]
 
@@ -357,6 +389,10 @@ class DistributeQ2sConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"tolerance": self.tolerance}
+
+    @override
+    def description(self) -> str:
+        return f"Keep the difference between the most and least Q2s to {self.tolerance}"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -390,6 +426,10 @@ class LimitQ2sConstraint(SerializableConstraint):
         return {"limit": self.limit}
 
     @override
+    def description(self) -> str:
+        return f"Limit the number of Q2s per resident to {self.limit}"
+
+    @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         constraints: list[pulp.LpConstraint] = []
         q2s_dict = builder.get_qn_vars(2)
@@ -415,6 +455,10 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"limit": self.limit}
+
+    @override
+    def description(self) -> str:
+        return f"Limit the total Q2s to {self.limit}"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:

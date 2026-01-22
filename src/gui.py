@@ -28,6 +28,24 @@ class OpenProjectDialog(QtWidgets.QFileDialog):
         self.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
 
 
+class ConstraintsWidget(QtWidgets.QTableWidget):
+    def __init__(self, project: Project) -> None:
+        super().__init__()
+
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+
+        self.setRowCount(len(project.constraints))
+        self.setColumnCount(1)
+        self.horizontalHeader().setVisible(False)
+        self.verticalHeader().setVisible(False)
+
+        for i, constraint in enumerate(project.constraints):
+            text = QtWidgets.QLabel(constraint.description())
+            self.setCellWidget(i, 0, text)
+
+        self.resizeColumnsToContents()
+
+
 class EditProjectWidget(QtWidgets.QWidget):
     def __init__(self, project_path: str, project: Project) -> None:
         super().__init__(None, QtCore.Qt.WindowType.Window)
@@ -37,9 +55,23 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         self.setWindowTitle(self.project_path.name)
 
-        text = QtWidgets.QLabel("test", alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        availability_button = QtWidgets.QPushButton("Edit Availability")
+        constraints_label = QtWidgets.QLabel(
+            "Constraints", alignment=QtCore.Qt.AlignmentFlag.AlignLeft
+        )
+        self.constraints = ConstraintsWidget(self.project)
+
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(text)
+        layout.addWidget(availability_button)
+        layout.addWidget(constraints_label)
+        layout.addWidget(self.constraints)
+
+        availability_button.clicked.connect(self.edit_availability_clicked)
+
+    @QtCore.Slot()
+    def edit_availability_clicked(self):
+        # TODO implement
+        pass
 
 
 class IntroWidget(QtWidgets.QWidget):
