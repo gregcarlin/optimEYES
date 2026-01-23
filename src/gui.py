@@ -1,5 +1,6 @@
 import sys
 import json
+from typing import override
 from datetime import timedelta
 from pathlib import Path
 
@@ -28,6 +29,25 @@ class OpenProjectDialog(QtWidgets.QFileDialog):
         self.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
 
 
+class ConstraintsHeaderWidget(QtWidgets.QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+
+        constraints_label = QtWidgets.QLabel(
+            "Constraints", alignment=QtCore.Qt.AlignmentFlag.AlignLeft
+        )
+        constraints_label.setContentsMargins(0, 4, 0, 0)
+        new_constraint_button = QtWidgets.QPushButton("+")
+        new_constraint_button.setFixedWidth(20)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addWidget(constraints_label)
+        layout.addWidget(new_constraint_button)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+
+
 class ConstraintsWidget(QtWidgets.QTableWidget):
     def __init__(self, project: Project) -> None:
         super().__init__()
@@ -37,13 +57,23 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
         self.setRowCount(len(project.constraints))
         self.setColumnCount(1)
         self.horizontalHeader().setVisible(False)
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
         self.verticalHeader().setVisible(False)
+        self.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
 
         for i, constraint in enumerate(project.constraints):
             text = QtWidgets.QLabel(constraint.description())
+            text.setMargin(5)
+            text.setWordWrap(True)
             self.setCellWidget(i, 0, text)
 
-        self.resizeColumnsToContents()
+    @override
+    def sizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(400, 600)
 
 
 class EditProjectWidget(QtWidgets.QWidget):
@@ -56,14 +86,13 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.setWindowTitle(self.project_path.name)
 
         availability_button = QtWidgets.QPushButton("Edit Availability")
-        constraints_label = QtWidgets.QLabel(
-            "Constraints", alignment=QtCore.Qt.AlignmentFlag.AlignLeft
-        )
+
+        self.constraints_header = ConstraintsHeaderWidget()
         self.constraints = ConstraintsWidget(self.project)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(availability_button)
-        layout.addWidget(constraints_label)
+        layout.addWidget(self.constraints_header)
         layout.addWidget(self.constraints)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
