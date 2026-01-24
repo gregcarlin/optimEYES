@@ -2,6 +2,7 @@ import sys
 import json
 from typing import override
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -48,17 +49,45 @@ class ConstraintsHeaderWidget(QtWidgets.QWidget):
         layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
 
 
-class ConstraintsWidget(QtWidgets.QTableWidget):
-    def __init__(self, project: Project) -> None:
+class EditConstraintWidget(QtWidgets.QWidget):
+    def __init__(
+        self, project: Project, constraint_index: int, root: "EditProjectWidget"
+    ) -> None:
         super().__init__()
+
+        self.project = project
+        self.constraint_index = constraint_index
+        self.root = root
+
+        self.setWindowTitle("Edit Constraint")
+        self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+
+        save_button = QtWidgets.QPushButton("Save")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(save_button)
+
+    @override
+    def closeEvent(self, event) -> None:
+        # TODO ask for user confirmation if changes have been made, use event.ignore() if they decline to close
+        self.root.setEnabled(True)
+        event.accept()
+
+
+class ConstraintsWidget(QtWidgets.QTableWidget):
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
+        super().__init__()
+
+        self.project = project
+        self.edit_parent = parent
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
 
         self.setRowCount(len(project.constraints))
-        self.setColumnCount(1)
+        self.setColumnCount(2)
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeMode.Stretch
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setSectionResizeMode(
@@ -70,15 +99,29 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
             text.setMargin(5)
             text.setWordWrap(True)
             self.setCellWidget(i, 0, text)
+            edit_button = QtWidgets.QPushButton("Edit")
+            edit_button.setFixedHeight(40)
+            edit_button.clicked.connect(partial(self.edit_constraint, index=i))
+            self.setCellWidget(i, 1, edit_button)
+
+        self.setColumnWidth(1, 50)
+
+        self.edit_widget = None
 
     @override
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(400, 600)
 
+    def edit_constraint(self, index: int) -> None:
+        self.edit_widget = EditConstraintWidget(self.project, index, self.edit_parent)
+        self.edit_widget.show()
+        center_on_screen(self.edit_widget)
+        self.edit_parent.setEnabled(False)
+
 
 class EditProjectWidget(QtWidgets.QWidget):
     def __init__(self, project_path: str, project: Project) -> None:
-        super().__init__(None, QtCore.Qt.WindowType.Window)
+        super().__init__()
 
         self.project_path = Path(project_path)
         self.project = project
@@ -88,7 +131,7 @@ class EditProjectWidget(QtWidgets.QWidget):
         availability_button = QtWidgets.QPushButton("Edit Availability")
 
         self.constraints_header = ConstraintsHeaderWidget()
-        self.constraints = ConstraintsWidget(self.project)
+        self.constraints = ConstraintsWidget(self.project, self)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(availability_button)
