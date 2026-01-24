@@ -10,11 +10,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from dateutil import Weekday
 from structs.project import Project
 from structs.field import (
-    Field,
-    WeekdayField,
-    WeekdayListField,
-    IntField,
-    StringField,
+    OptionField,
     TextInputField,
     IntermediateSentinel,
 )
@@ -77,8 +73,12 @@ class TextFieldValidator(QtGui.QValidator):
 
 
 class TextFieldEdit(QtWidgets.QLineEdit):
-    def __init__(self, field: TextInputField) -> None:
+    def __init__(
+        self, field: TextInputField, save_button: QtWidgets.QPushButton
+    ) -> None:
         super().__init__()
+
+        self.save_button = save_button
 
         self.setValidator(TextFieldValidator(field))
         self.setText(str(field.value))
@@ -88,8 +88,10 @@ class TextFieldEdit(QtWidgets.QLineEdit):
     def check_state(self, text: str) -> None:
         result = self.validator().validate(text, 0)
         if result == QtGui.QValidator.State.Acceptable:
+            self.save_button.setEnabled(True)
             color = QtGui.QColor(255, 255, 255)
         else:
+            self.save_button.setEnabled(False)
             color = QtGui.QColor(255, 100, 100)
         p = self.palette()
         p.setColor(QtGui.QPalette.ColorRole.Base, color)
@@ -117,26 +119,28 @@ class EditConstraintWidget(QtWidgets.QWidget):
         self.setWindowTitle("Edit Constraint")
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
+        save_button = QtWidgets.QPushButton("Save")
+        save_button.clicked.connect(self.save_clicked)
+
         layout = QtWidgets.QGridLayout(self)
 
-        self.fields = project.constraints[constraint_index].fields()
-        for i, field in enumerate(self.fields):
+        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+        fields = project.constraints[constraint_index].fields()
+        for i, field in enumerate(fields):
             label = QtWidgets.QLabel(field.name)
             layout.addWidget(label, i, 0)
             match field:
-                case WeekdayField():
-                    edit = DropDownEdit([w.human_name() for w in Weekday], field.value)
-                case StringField() if field.allowed_values is not None:
+                case OptionField():
                     edit = DropDownEdit(
-                        field.allowed_values, field.allowed_values.index(field.value)
+                        field.allowed_value_labels,
+                        field.allowed_values.index(field.value),
                     )
                 case TextInputField():
-                    edit = TextFieldEdit(field)
+                    edit = TextFieldEdit(field, save_button)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             layout.addWidget(edit, i, 1)
-
-        save_button = QtWidgets.QPushButton("Save")
+            self.field_widgets.append(edit)
 
         layout.addWidget(save_button)
 
@@ -145,6 +149,31 @@ class EditConstraintWidget(QtWidgets.QWidget):
         # TODO ask for user confirmation if changes have been made, use event.ignore() if they decline to close
         self.root.setEnabled(True)
         event.accept()
+
+    @staticmethod
+    def _rebuild_field(
+        field: OptionField | TextInputField, widget: DropDownEdit | TextFieldEdit
+    ) -> OptionField | TextInputField:
+        if isinstance(field, OptionField):
+            assert isinstance(widget, DropDownEdit)
+            return field.parse(widget.currentIndex())
+        else:
+            assert isinstance(widget, TextFieldEdit)
+            new_field = field.parse(widget.text())
+            assert isinstance(new_field, TextInputField)
+            return new_field
+
+    def save_clicked(self) -> None:
+        constraint = self.project.constraints[self.constraint_index]
+        old_fields = constraint.fields()
+        new_fields = tuple(
+            EditConstraintWidget._rebuild_field(old_field, widget)
+            for old_field, widget in zip(old_fields, self.field_widgets)
+        )
+        new_constraint = constraint.from_fields(new_fields)
+        self.project.constraints[self.constraint_index] = new_constraint
+        self.root.update_project(self.project)
+        self.close()
 
 
 class ConstraintsWidget(QtWidgets.QTableWidget):
@@ -207,12 +236,17 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.constraints_header = ConstraintsHeaderWidget()
         self.constraints = ConstraintsWidget(self.project, self)
 
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(availability_button)
-        layout.addWidget(self.constraints_header)
-        layout.addWidget(self.constraints)
+        self._layout = QtWidgets.QVBoxLayout(self)
+        self._layout.addWidget(availability_button)
+        self._layout.addWidget(self.constraints_header)
+        self._layout.addWidget(self.constraints)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
+
+    def update_project(self, project: Project) -> None:
+        old_constraints = self.constraints
+        self.constraints = ConstraintsWidget(self.project, self)
+        self._layout.replaceWidget(old_constraints, self.constraints)
 
     @QtCore.Slot()
     def edit_availability_clicked(self):

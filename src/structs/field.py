@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, override, Any
+from typing import Generic, TypeVar, override, Any, Self
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import IntEnum
@@ -26,13 +26,34 @@ class TextInputField(Generic[TVal], Field[TVal]):
 
 
 @dataclass
-class WeekdayField(Field[Weekday]):
-    pass
+class OptionField(Generic[TVal], Field[TVal]):
+    allowed_values: list[TVal]
+    allowed_value_labels: list[str]
+
+    def parse(self, index: int) -> Self:
+        return self.__class__(
+            self.allowed_values[index],
+            self.name,
+            self.allowed_values,
+            self.allowed_value_labels,
+        )
+
+
+@dataclass
+class WeekdayField(OptionField[Weekday]):
+    def __init__(self, value: Weekday, name: str) -> None:
+        super().__init__(
+            value, name, [w for w in Weekday], [w.human_name() for w in Weekday]
+        )
+
+    @override
+    def parse(self, index: int) -> "WeekdayField":
+        return WeekdayField(self.allowed_values[index], self.name)
 
 
 @dataclass
 class WeekdayListField(Field[list[Weekday]]):
-    pass
+    pass  # TODO
 
 
 @dataclass
@@ -48,19 +69,22 @@ class IntField(TextInputField[int]):
             i_val = int(val)
         except ValueError:
             return None
-        if not (self.minimum is None or i_val >= self.minimum) and (
-            self.maximum is None or i_val <= self.maximum
-        ):
+        if self.minimum is not None and i_val < self.minimum:
+            return IntermediateSentinel.VAL
+        if self.maximum is not None and i_val > self.maximum:
             return IntermediateSentinel.VAL
         return IntField(i_val, self.name, self.minimum, self.maximum)
 
 
 @dataclass
 class StringField(TextInputField[str]):
-    allowed_values: list[str] | None = None
-
     @override
     def parse(self, val: str) -> "StringField | IntermediateSentinel | None":
-        if self.allowed_values is not None and self.value not in self.allowed_values:
+        if val == "":
             return IntermediateSentinel.VAL
-        return StringField(val, self.name, self.allowed_values)
+        return StringField(val, self.name)
+
+
+@dataclass
+class LimitedStringField(OptionField[str]):
+    pass
