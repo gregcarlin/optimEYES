@@ -1,6 +1,6 @@
 import sys
 import json
-from typing import override
+from typing import override, Any
 from datetime import timedelta
 from functools import partial
 from pathlib import Path
@@ -21,6 +21,18 @@ class AlertMessage(QtWidgets.QMessageBox):
         super().__init__(parent)
 
         self.setText(text)
+
+
+class BinaryMessage(QtWidgets.QMessageBox):
+    def __init__(self, question: str, parent: QtWidgets.QWidget) -> None:
+        super().__init__(parent)
+
+        self.setInformativeText(question)
+        self.setStandardButtons(
+            QtWidgets.QMessageBox.StandardButton.Cancel
+            | QtWidgets.QMessageBox.StandardButton.Discard
+        )
+        self.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Cancel)
 
 
 def show_alert(message: str, parent: QtWidgets.QWidget) -> None:
@@ -145,10 +157,27 @@ class EditConstraintWidget(QtWidgets.QWidget):
         layout.addWidget(save_button)
 
     @override
-    def closeEvent(self, event) -> None:
-        # TODO ask for user confirmation if changes have been made, use event.ignore() if they decline to close
-        self.root.setEnabled(True)
-        event.accept()
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        old_fields = self.project.constraints[self.constraint_index].fields(
+            self.project
+        )
+        try:
+            new_fields = self._rebuild_fields()
+        except AssertionError:
+            # Fields are dirty, and invalid
+            new_fields = None
+        if new_fields == old_fields:
+            # Fields are unchanged, close
+            self.root.setEnabled(True)
+            event.accept()
+        else:
+            message = BinaryMessage("Discard unsaved changes?", self)
+            result = message.exec()
+            if result == QtWidgets.QMessageBox.StandardButton.Discard:
+                self.root.setEnabled(True)
+                event.accept()
+            else:
+                event.ignore()
 
     @staticmethod
     def _rebuild_field(
@@ -163,13 +192,17 @@ class EditConstraintWidget(QtWidgets.QWidget):
             assert isinstance(new_field, TextInputField)
             return new_field
 
-    def save_clicked(self) -> None:
+    def _rebuild_fields(self) -> tuple[Any, ...]:
         constraint = self.project.constraints[self.constraint_index]
         old_fields = constraint.fields(self.project)
-        new_fields = tuple(
+        return tuple(
             EditConstraintWidget._rebuild_field(old_field, widget)
             for old_field, widget in zip(old_fields, self.field_widgets)
         )
+
+    def save_clicked(self) -> None:
+        new_fields = self._rebuild_fields()
+        constraint = self.project.constraints[self.constraint_index]
         new_constraint = constraint.from_fields(new_fields)
         self.project.constraints[self.constraint_index] = new_constraint
         self.root.update_project(self.project)
