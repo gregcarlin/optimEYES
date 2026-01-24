@@ -125,14 +125,14 @@ class EditConstraintWidget(QtWidgets.QWidget):
         layout = QtWidgets.QGridLayout(self)
 
         self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
-        fields = project.constraints[constraint_index].fields()
+        fields = project.constraints[constraint_index].fields(self.project)
         for i, field in enumerate(fields):
             label = QtWidgets.QLabel(field.name)
             layout.addWidget(label, i, 0)
             match field:
                 case OptionField():
                     edit = DropDownEdit(
-                        field.allowed_value_labels,
+                        field.allowed_value_labels(),
                         field.allowed_values.index(field.value),
                     )
                 case TextInputField():
@@ -165,7 +165,7 @@ class EditConstraintWidget(QtWidgets.QWidget):
 
     def save_clicked(self) -> None:
         constraint = self.project.constraints[self.constraint_index]
-        old_fields = constraint.fields()
+        old_fields = constraint.fields(self.project)
         new_fields = tuple(
             EditConstraintWidget._rebuild_field(old_field, widget)
             for old_field, widget in zip(old_fields, self.field_widgets)
@@ -201,7 +201,7 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
             text.setMargin(5)
             text.setWordWrap(True)
             self.setCellWidget(i, 0, text)
-            if constraint.fields() != ():
+            if constraint.fields(self.project) != ():
                 edit_button = QtWidgets.QPushButton("Edit")
                 edit_button.setFixedHeight(40)
                 edit_button.clicked.connect(partial(self.edit_constraint, index=i))

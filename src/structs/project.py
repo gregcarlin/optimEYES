@@ -1,15 +1,16 @@
 import json
-from typing import Any, AbstractSet
+from typing import Any, AbstractSet, override
 from datetime import date
 from dataclasses import dataclass
 
 from optimization.constraint import SerializableConstraint, ConstraintRegistry
 from optimization.objective import SerializableObjective, ObjectiveRegistry
+from structs.project_info import ProjectInfo
 from structs.resident import Resident
 
 
 @dataclass
-class Project:
+class Project(ProjectInfo):
     start_date: date
     end_date: date
     buddy_period: tuple[date, date] | None
@@ -18,6 +19,18 @@ class Project:
     seed: int
     constraints: list[SerializableConstraint]
     objectives: list[SerializableObjective]
+
+    @override
+    def get_residents(self) -> list[str]:
+        return [r.name for r in self.availability]
+
+    @override
+    def get_min_pgy(self) -> int:
+        return min(r.pgy for r in self.availability)
+
+    @override
+    def get_max_pgy(self) -> int:
+        return max(r.pgy for r in self.availability)
 
     @staticmethod
     def deserialize(data: dict[str, Any]) -> "Project":

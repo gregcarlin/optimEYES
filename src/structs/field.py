@@ -28,27 +28,31 @@ class TextInputField(Generic[TVal], Field[TVal]):
 @dataclass
 class OptionField(Generic[TVal], Field[TVal]):
     allowed_values: list[TVal]
-    allowed_value_labels: list[str]
 
     def parse(self, index: int) -> Self:
         return self.__class__(
             self.allowed_values[index],
             self.name,
             self.allowed_values,
-            self.allowed_value_labels,
         )
+
+    @abstractmethod
+    def allowed_value_labels(self) -> list[str]:
+        pass
 
 
 @dataclass
 class WeekdayField(OptionField[Weekday]):
     def __init__(self, value: Weekday, name: str) -> None:
-        super().__init__(
-            value, name, [w for w in Weekday], [w.human_name() for w in Weekday]
-        )
+        super().__init__(value, name, [w for w in Weekday])
 
     @override
     def parse(self, index: int) -> "WeekdayField":
         return WeekdayField(self.allowed_values[index], self.name)
+
+    @override
+    def allowed_value_labels(self) -> list[str]:
+        return [w.human_name() for w in self.allowed_values]
 
 
 @dataclass
@@ -87,4 +91,15 @@ class StringField(TextInputField[str]):
 
 @dataclass
 class LimitedStringField(OptionField[str]):
-    pass
+    """
+    def __init__(self, value: str, name: str, allowed_values: list[str]) -> None:
+        super().__init__(value, name, allowed_values, allowed_values)
+
+    @override
+    def parse(self, index: int) -> "LimitedStringField":
+        return LimitedStringField(self.allowed_values[index], self.name)
+    """
+
+    @override
+    def allowed_value_labels(self) -> list[str]:
+        return self.allowed_values
