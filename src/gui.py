@@ -172,10 +172,11 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
             text.setMargin(5)
             text.setWordWrap(True)
             self.setCellWidget(i, 0, text)
-            edit_button = QtWidgets.QPushButton("Edit")
-            edit_button.setFixedHeight(40)
-            edit_button.clicked.connect(partial(self.edit_constraint, index=i))
-            self.setCellWidget(i, 1, edit_button)
+            if constraint.fields() != ():
+                edit_button = QtWidgets.QPushButton("Edit")
+                edit_button.setFixedHeight(40)
+                edit_button.clicked.connect(partial(self.edit_constraint, index=i))
+                self.setCellWidget(i, 1, edit_button)
 
         self.setColumnWidth(1, 50)
 
