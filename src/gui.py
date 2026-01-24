@@ -9,7 +9,14 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from dateutil import Weekday
 from structs.project import Project
-from structs.field import Field, WeekdayField, WeekdayListField, IntField, StringField
+from structs.field import (
+    Field,
+    WeekdayField,
+    WeekdayListField,
+    IntField,
+    StringField,
+    TextInputField,
+)
 
 
 class AlertMessage(QtWidgets.QMessageBox):
@@ -51,20 +58,27 @@ class ConstraintsHeaderWidget(QtWidgets.QWidget):
         layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
 
 
-class FieldValidator(QtGui.QValidator):
-    def __init__(self, field: Field) -> None:
+class TextFieldValidator(QtGui.QValidator):
+    def __init__(self, field: TextInputField) -> None:
         super().__init__()
+
+        self.field = field
 
     @override
     def validate(self, input: str, pos: int) -> QtGui.QValidator.State:
-        return QtGui.QValidator.State.Acceptable
+        new_field = self.field.parse(input)
+        return (
+            QtGui.QValidator.State.Acceptable
+            if new_field is not None
+            else QtGui.QValidator.State.Invalid
+        )
 
 
 class TextFieldEdit(QtWidgets.QLineEdit):
-    def __init__(self, field: Field) -> None:
+    def __init__(self, field: TextInputField) -> None:
         super().__init__()
 
-        self.setValidator(FieldValidator(field))
+        self.setValidator(TextFieldValidator(field))
         self.setText(str(field.value))
 
         self.textChanged.connect(self.check_state)
@@ -112,8 +126,10 @@ class EditConstraintWidget(QtWidgets.QWidget):
                     edit = DropDownEdit(
                         field.allowed_values, field.allowed_values.index(field.value)
                     )
-                case _:
+                case TextInputField():
                     edit = TextFieldEdit(field)
+                case _:
+                    raise ValueError(f"Unknown field type: {field}")
             layout.addWidget(edit)
 
         save_button = QtWidgets.QPushButton("Save")
