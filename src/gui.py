@@ -7,7 +7,9 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
+from dateutil import Weekday
 from structs.project import Project
+from structs.field import Field, WeekdayField, WeekdayListField, IntField, StringField
 
 
 class AlertMessage(QtWidgets.QMessageBox):
@@ -49,6 +51,43 @@ class ConstraintsHeaderWidget(QtWidgets.QWidget):
         layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
 
 
+class FieldValidator(QtGui.QValidator):
+    def __init__(self, field: Field) -> None:
+        super().__init__()
+
+    @override
+    def validate(self, input: str, pos: int) -> QtGui.QValidator.State:
+        return QtGui.QValidator.State.Acceptable
+
+
+class TextFieldEdit(QtWidgets.QLineEdit):
+    def __init__(self, field: Field) -> None:
+        super().__init__()
+
+        self.setValidator(FieldValidator(field))
+        self.setText(str(field.value))
+
+        self.textChanged.connect(self.check_state)
+
+    def check_state(self, text: str) -> None:
+        result = self.validator().validate(text, 0)
+        if result == QtGui.QValidator.State.Acceptable:
+            color = QtGui.QColor(255, 255, 255)
+        else:
+            color = QtGui.QColor(255, 100, 100)
+        p = self.palette()
+        p.setColor(QtGui.QPalette.ColorRole.Base, color)
+        self.setPalette(p)
+
+
+class DropDownEdit(QtWidgets.QComboBox):
+    def __init__(self, items: list[str], selected: int) -> None:
+        super().__init__()
+
+        self.addItems(items)
+        self.setCurrentIndex(selected)
+
+
 class EditConstraintWidget(QtWidgets.QWidget):
     def __init__(
         self, project: Project, constraint_index: int, root: "EditProjectWidget"
@@ -62,9 +101,23 @@ class EditConstraintWidget(QtWidgets.QWidget):
         self.setWindowTitle("Edit Constraint")
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.fields = project.constraints[constraint_index].fields()
+        for field in self.fields:
+            match field:
+                case WeekdayField():
+                    edit = DropDownEdit([w.human_name() for w in Weekday], field.value)
+                case StringField() if field.allowed_values is not None:
+                    edit = DropDownEdit(
+                        field.allowed_values, field.allowed_values.index(field.value)
+                    )
+                case _:
+                    edit = TextFieldEdit(field)
+            layout.addWidget(edit)
+
         save_button = QtWidgets.QPushButton("Save")
 
-        layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(save_button)
 
     @override

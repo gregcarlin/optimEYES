@@ -1,11 +1,12 @@
 import math
-from typing import override, Any
+from typing import override, Any, Generic, TypeVar
 from abc import ABC, abstractmethod
 
 import pulp as pulp
 
 from optimization.call_problem import CallProblemBuilder
 from optimization.linear_problem import PulpProblem, var_sum
+from structs.field import Field, WeekdayField, WeekdayListField, IntField, StringField
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
 
 
@@ -15,7 +16,10 @@ class Constraint(ABC):
         pass
 
 
-class SerializableConstraint(Constraint):
+TFields = TypeVar("TFields", bound="tuple[Field]")
+
+
+class SerializableConstraint(Constraint, Generic[TFields]):
     @staticmethod
     @abstractmethod
     def get_name() -> str:
@@ -34,8 +38,17 @@ class SerializableConstraint(Constraint):
     def description(self) -> str:
         pass
 
+    @abstractmethod
+    def fields(self) -> TFields:
+        pass
 
-class DistributeDayOfWeekConstraint(SerializableConstraint):
+    @staticmethod
+    @abstractmethod
+    def from_fields(fields: TFields) -> Constraint:
+        pass
+
+
+class DistributeDayOfWeekConstraint(SerializableConstraint[tuple[WeekdayField]]):
     def __init__(self, weekday: Weekday) -> None:
         self.weekday = weekday
 
@@ -52,6 +65,16 @@ class DistributeDayOfWeekConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"weekday": int(self.weekday)}
+
+    @override
+    def fields(self) -> tuple[WeekdayField]:
+        return (WeekdayField(self.weekday),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[WeekdayField]) -> Constraint:
+        weekday = fields[0]
+        return DistributeDayOfWeekConstraint(weekday.value)
 
     @override
     def description(self) -> str:
@@ -94,6 +117,15 @@ class DistributeWeekendsConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
+    @override
+    def fields(self) -> tuple[()]:
+        return ()
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[()]) -> Constraint:
+        return DistributeWeekendsConstraint()
 
     @override
     def description(self) -> str:
@@ -157,6 +189,15 @@ class LimitWeekdayConstraint(SerializableConstraint):
         return {"weekday": int(self.weekday), "limit": self.limit}
 
     @override
+    def fields(self) -> tuple[WeekdayField, IntField]:
+        return (WeekdayField(self.weekday), IntField(self.limit))
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[WeekdayField, IntField]) -> Constraint:
+        return LimitWeekdayConstraint(fields[0].value, fields[1].value)
+
+    @override
     def description(self) -> str:
         return f"Limit {self.weekday.human_name()}s to {self.limit}"
 
@@ -200,6 +241,22 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
         }
 
     @override
+    def fields(self) -> tuple[WeekdayField, IntField, StringField]:
+        # TODO limit resident field to resident names
+        return (
+            WeekdayField(self.weekday),
+            IntField(self.limit),
+            StringField(self.resident),
+        )
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[WeekdayField, IntField, StringField]) -> Constraint:
+        return LimitWeekdayForResidentConstraint(
+            fields[0].value, fields[1].value, fields[2].value
+        )
+
+    @override
     def description(self) -> str:
         return f"Limit {self.weekday.human_name()}s for {self.resident} to {self.limit}"
 
@@ -238,6 +295,23 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
         }
 
     @override
+    def fields(self) -> tuple[WeekdayListField, IntField, StringField]:
+        return (
+            WeekdayListField(self.weekdays),
+            IntField(self.minimum),
+            StringField(self.resident),
+        )
+
+    @override
+    @staticmethod
+    def from_fields(
+        fields: tuple[WeekdayListField, IntField, StringField],
+    ) -> Constraint:
+        return SetMinimumForDaysOfWeekForResidentConstraint(
+            fields[0].value, fields[1].value, fields[2].value
+        )
+
+    @override
     def description(self) -> str:
         if len(self.weekdays) == 1:
             return f"Ensure {self.resident} has at least {self.minimum} {self.weekdays[0].human_name()}s"
@@ -269,6 +343,15 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
+    @override
+    def fields(self) -> tuple[()]:
+        return ()
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[()]) -> Constraint:
+        return NoAdjacentWeekendsConstraint()
 
     @override
     def description(self) -> str:
@@ -332,6 +415,16 @@ class LimitForPGYConstraint(SerializableConstraint):
         return {"pgy": self.pgy, "limit": self.limit}
 
     @override
+    def fields(self) -> tuple[IntField, IntField]:
+        # TODO get min/max from actual project
+        return (IntField(self.pgy, minimum=2, maximum=4), IntField(self.limit))
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField, IntField]) -> Constraint:
+        return LimitForPGYConstraint(fields[0].value, fields[1].value)
+
+    @override
     def description(self) -> str:
         return f"Limit calls for PGY{self.pgy}s to {self.limit}"
 
@@ -364,6 +457,15 @@ class LimitVACoverageConstraint(SerializableConstraint):
         return {"limit": self.limit}
 
     @override
+    def fields(self) -> tuple[IntField]:
+        return (IntField(self.limit),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField]) -> Constraint:
+        return LimitVACoverageConstraint(fields[0].value)
+
+    @override
     def description(self) -> str:
         return f"Limit VA coverage days to {self.limit}"
 
@@ -389,6 +491,15 @@ class DistributeQ2sConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"tolerance": self.tolerance}
+
+    @override
+    def fields(self) -> tuple[IntField]:
+        return (IntField(self.tolerance),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField]) -> Constraint:
+        return DistributeQ2sConstraint(fields[0].value)
 
     @override
     def description(self) -> str:
@@ -426,6 +537,15 @@ class LimitQ2sConstraint(SerializableConstraint):
         return {"limit": self.limit}
 
     @override
+    def fields(self) -> tuple[IntField]:
+        return (IntField(self.limit),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField]) -> Constraint:
+        return LimitQ2sConstraint(fields[0].value)
+
+    @override
     def description(self) -> str:
         return f"Limit the number of Q2s per resident to {self.limit}"
 
@@ -455,6 +575,15 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"limit": self.limit}
+
+    @override
+    def fields(self) -> tuple[IntField]:
+        return (IntField(self.limit),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField]) -> Constraint:
+        return LimitTotalQ2sConstraint(fields[0].value)
 
     @override
     def description(self) -> str:
