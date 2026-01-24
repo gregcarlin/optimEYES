@@ -1,10 +1,15 @@
 from typing import Generic, TypeVar, override, Any
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from enum import IntEnum
 
 from dateutil import Weekday
 
 TVal = TypeVar("TVal")
+
+
+class IntermediateSentinel(IntEnum):
+    VAL = 0
 
 
 @dataclass
@@ -15,7 +20,7 @@ class Field(Generic[TVal], ABC):
 @dataclass
 class TextInputField(Generic[TVal], Field[TVal]):
     @abstractmethod
-    def parse(self, val: str) -> "TextInputField | None":
+    def parse(self, val: str) -> "TextInputField | IntermediateSentinel | None":
         pass
 
 
@@ -35,7 +40,9 @@ class IntField(TextInputField[int]):
     maximum: int | None = None
 
     @override
-    def parse(self, val: str) -> "IntField | None":
+    def parse(self, val: str) -> "IntField | IntermediateSentinel | None":
+        if val == "":
+            return IntermediateSentinel.VAL
         try:
             i_val = int(val)
         except ValueError:
@@ -43,8 +50,8 @@ class IntField(TextInputField[int]):
         if not (self.minimum is None or i_val >= self.minimum) and (
             self.maximum is None or i_val <= self.maximum
         ):
-            return None
-        return IntField(int(val), self.minimum, self.maximum)
+            return IntermediateSentinel.VAL
+        return IntField(i_val, self.minimum, self.maximum)
 
 
 @dataclass
@@ -52,7 +59,7 @@ class StringField(TextInputField[str]):
     allowed_values: list[str] | None = None
 
     @override
-    def parse(self, val: str) -> "StringField | None":
+    def parse(self, val: str) -> "StringField | IntermediateSentinel | None":
         if self.allowed_values is not None and self.value not in self.allowed_values:
-            return None
+            return IntermediateSentinel.VAL
         return StringField(val, self.allowed_values)

@@ -16,6 +16,7 @@ from structs.field import (
     IntField,
     StringField,
     TextInputField,
+    IntermediateSentinel,
 )
 
 
@@ -66,12 +67,13 @@ class TextFieldValidator(QtGui.QValidator):
 
     @override
     def validate(self, input: str, pos: int) -> QtGui.QValidator.State:
-        new_field = self.field.parse(input)
-        return (
-            QtGui.QValidator.State.Acceptable
-            if new_field is not None
-            else QtGui.QValidator.State.Invalid
-        )
+        match self.field.parse(input):
+            case None:
+                return QtGui.QValidator.State.Invalid
+            case IntermediateSentinel.VAL:
+                return QtGui.QValidator.State.Intermediate
+            case _:
+                return QtGui.QValidator.State.Acceptable
 
 
 class TextFieldEdit(QtWidgets.QLineEdit):
