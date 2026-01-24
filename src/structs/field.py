@@ -15,6 +15,7 @@ class IntermediateSentinel(IntEnum):
 @dataclass
 class Field(Generic[TVal], ABC):
     value: TVal
+    name: str
 
 
 @dataclass
@@ -51,7 +52,7 @@ class IntField(TextInputField[int]):
             self.maximum is None or i_val <= self.maximum
         ):
             return IntermediateSentinel.VAL
-        return IntField(i_val, self.minimum, self.maximum)
+        return IntField(i_val, self.name, self.minimum, self.maximum)
 
 
 @dataclass
@@ -62,4 +63,4 @@ class StringField(TextInputField[str]):
     def parse(self, val: str) -> "StringField | IntermediateSentinel | None":
         if self.allowed_values is not None and self.value not in self.allowed_values:
             return IntermediateSentinel.VAL
-        return StringField(val, self.allowed_values)
+        return StringField(val, self.name, self.allowed_values)

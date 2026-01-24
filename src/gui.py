@@ -117,10 +117,12 @@ class EditConstraintWidget(QtWidgets.QWidget):
         self.setWindowTitle("Edit Constraint")
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
-        layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QGridLayout(self)
 
         self.fields = project.constraints[constraint_index].fields()
-        for field in self.fields:
+        for i, field in enumerate(self.fields):
+            label = QtWidgets.QLabel(field.name)
+            layout.addWidget(label, i, 0)
             match field:
                 case WeekdayField():
                     edit = DropDownEdit([w.human_name() for w in Weekday], field.value)
@@ -132,7 +134,7 @@ class EditConstraintWidget(QtWidgets.QWidget):
                     edit = TextFieldEdit(field)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
-            layout.addWidget(edit)
+            layout.addWidget(edit, i, 1)
 
         save_button = QtWidgets.QPushButton("Save")
 

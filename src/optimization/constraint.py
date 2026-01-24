@@ -68,7 +68,7 @@ class DistributeDayOfWeekConstraint(SerializableConstraint[tuple[WeekdayField]])
 
     @override
     def fields(self) -> tuple[WeekdayField]:
-        return (WeekdayField(self.weekday),)
+        return (WeekdayField(self.weekday, "Day of the week"),)
 
     @override
     @staticmethod
@@ -190,7 +190,10 @@ class LimitWeekdayConstraint(SerializableConstraint):
 
     @override
     def fields(self) -> tuple[WeekdayField, IntField]:
-        return (WeekdayField(self.weekday), IntField(self.limit))
+        return (
+            WeekdayField(self.weekday, "Day of the week"),
+            IntField(self.limit, "Limit"),
+        )
 
     @override
     @staticmethod
@@ -244,9 +247,9 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
     def fields(self) -> tuple[WeekdayField, IntField, StringField]:
         # TODO limit resident field to resident names
         return (
-            WeekdayField(self.weekday),
-            IntField(self.limit),
-            StringField(self.resident),
+            WeekdayField(self.weekday, "Day of the week"),
+            IntField(self.limit, "Limit"),
+            StringField(self.resident, "Resident"),
         )
 
     @override
@@ -297,9 +300,9 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def fields(self) -> tuple[WeekdayListField, IntField, StringField]:
         return (
-            WeekdayListField(self.weekdays),
-            IntField(self.minimum),
-            StringField(self.resident),
+            WeekdayListField(self.weekdays, "Days of the week"),
+            IntField(self.minimum, "Minimum"),
+            StringField(self.resident, "Resident"),
         )
 
     @override
@@ -417,7 +420,10 @@ class LimitForPGYConstraint(SerializableConstraint):
     @override
     def fields(self) -> tuple[IntField, IntField]:
         # TODO get min/max from actual project
-        return (IntField(self.pgy, minimum=2, maximum=4), IntField(self.limit))
+        return (
+            IntField(self.pgy, name="PGY", minimum=2, maximum=4),
+            IntField(self.limit, "Limit"),
+        )
 
     @override
     @staticmethod
@@ -458,7 +464,7 @@ class LimitVACoverageConstraint(SerializableConstraint):
 
     @override
     def fields(self) -> tuple[IntField]:
-        return (IntField(self.limit),)
+        return (IntField(self.limit, "Limit"),)
 
     @override
     @staticmethod
@@ -494,7 +500,7 @@ class DistributeQ2sConstraint(SerializableConstraint):
 
     @override
     def fields(self) -> tuple[IntField]:
-        return (IntField(self.tolerance),)
+        return (IntField(self.tolerance, "Tolerance"),)
 
     @override
     @staticmethod
@@ -538,7 +544,7 @@ class LimitQ2sConstraint(SerializableConstraint):
 
     @override
     def fields(self) -> tuple[IntField]:
-        return (IntField(self.limit),)
+        return (IntField(self.limit, "Limit"),)
 
     @override
     @staticmethod
@@ -578,7 +584,7 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
 
     @override
     def fields(self) -> tuple[IntField]:
-        return (IntField(self.limit),)
+        return (IntField(self.limit, "Q2s"),)
 
     @override
     @staticmethod
