@@ -91,15 +91,6 @@ class StringField(TextInputField[str]):
 
 @dataclass
 class LimitedStringField(OptionField[str]):
-    """
-    def __init__(self, value: str, name: str, allowed_values: list[str]) -> None:
-        super().__init__(value, name, allowed_values, allowed_values)
-
-    @override
-    def parse(self, index: int) -> "LimitedStringField":
-        return LimitedStringField(self.allowed_values[index], self.name)
-    """
-
     @override
     def allowed_value_labels(self) -> list[str]:
         return self.allowed_values

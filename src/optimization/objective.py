@@ -1,10 +1,16 @@
 import math
-from typing import Literal, Any, override
+from typing import Literal, Any, override, TypeVar, Generic
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from pathlib import Path
 
 from optimization.linear_problem import VariableLike
 from optimization.call_problem import CallProblemBuilder
+from structs.field import (
+    Field,
+    StringField,
+)
+from structs.project_info import ProjectInfo
 
 
 class Objective(ABC):
@@ -17,7 +23,10 @@ class Objective(ABC):
         pass
 
 
-class SerializableObjective(Objective):
+TFields = TypeVar("TFields", bound="tuple[Field, ...]")
+
+
+class SerializableObjective(Objective, Generic[TFields]):
     @staticmethod
     @abstractmethod
     def get_name() -> str:
@@ -36,8 +45,17 @@ class SerializableObjective(Objective):
     def description(self) -> str:
         pass
 
+    @abstractmethod
+    def fields(self, project: ProjectInfo) -> TFields:
+        pass
 
-class NoArgSerializableObjective(SerializableObjective):
+    @classmethod
+    @abstractmethod
+    def from_fields(cls, fields: TFields) -> "SerializableObjective":
+        pass
+
+
+class NoArgSerializableObjective(SerializableObjective[tuple[()]]):
     @classmethod
     @override
     def deserialize(cls, data: dict[str, Any]) -> Objective:
@@ -46,6 +64,15 @@ class NoArgSerializableObjective(SerializableObjective):
     @override
     def serialize(self) -> dict[str, Any]:
         return {}
+
+    @override
+    def fields(self, project: ProjectInfo) -> tuple[()]:
+        return ()
+
+    @classmethod
+    @override
+    def from_fields(cls, fields: tuple[()]) -> "SerializableObjective":
+        return cls()
 
 
 class Q2Objective(NoArgSerializableObjective):
@@ -70,7 +97,7 @@ class Q2Objective(NoArgSerializableObjective):
         return math.ceil(builder.get_num_days() / 2.0) * builder.get_num_residents()
 
 
-class ChangesFromPreviousSolutionObjective(SerializableObjective):
+class ChangesFromPreviousSolutionObjective(SerializableObjective[tuple[StringField]]):
     def __init__(self, path: str) -> None:
         self.path = path
 
@@ -81,7 +108,7 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective):
 
     @override
     def description(self) -> str:
-        return "Minimize changes from a different solution"
+        return f"Minimize changes from the solution in {Path(self.path).name}"
 
     @classmethod
     @override
@@ -91,6 +118,15 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective):
     @override
     def serialize(self) -> dict[str, Any]:
         return {"path": self.path}
+
+    @override
+    def fields(self, project: ProjectInfo) -> tuple[StringField]:
+        return (StringField(self.path, "Path to solution file"),)
+
+    @classmethod
+    @override
+    def from_fields(cls, fields: tuple[StringField]) -> "SerializableObjective":
+        return ChangesFromPreviousSolutionObjective(fields[0].value)
 
     def read_data(self) -> list[list[str]]:
         with open(self.path, "r") as result_file:
@@ -138,7 +174,7 @@ class VACoverageObjective(NoArgSerializableObjective):
         return builder.get_num_days() * builder.get_num_residents()
 
 
-class WearinessObjective(SerializableObjective):
+class WearinessObjective(SerializableObjective[tuple[StringField]]):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map
 
@@ -166,6 +202,24 @@ class WearinessObjective(SerializableObjective):
             f"{k}={self.weariness_map[k]}" for k in sorted(self.weariness_map.keys())
         )
         return {"map": map_str}
+
+    @override
+    def fields(self, project: ProjectInfo) -> tuple[StringField]:
+        return (
+            StringField(
+                ",".join(f"{k}={v}" for k, v in self.weariness_map.items()),
+                "Weariness map",
+            ),
+        )
+
+    @classmethod
+    @override
+    def from_fields(cls, fields: tuple[StringField]) -> "SerializableObjective":
+        weariness_map: dict[int, int] = {}
+        for entry in fields[0].value.split(","):
+            k, v = entry.split("=")
+            weariness_map[int(k)] = int(v)
+        return WearinessObjective(weariness_map)
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:

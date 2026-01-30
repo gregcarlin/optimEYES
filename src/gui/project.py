@@ -1,13 +1,15 @@
 from pathlib import Path
 from typing import override, Any
+from abc import ABC, abstractmethod
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
 from gui.table import TableWidget, SectionHeaderWidget
-from gui.common import center_on_screen, BinaryMessage
+from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
 from gui.field import TextFieldEdit, DropDownEdit
 from structs.field import (
+    Field,
     OptionField,
     TextInputField,
 )
@@ -35,17 +37,14 @@ class ObjectivesHeaderWidget(SectionHeaderWidget):
         pass
 
 
-class EditConstraintWidget(QtWidgets.QWidget):
-    def __init__(
-        self, project: Project, constraint_index: int, root: "EditProjectWidget"
-    ) -> None:
+class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, project: Project, index: int, root: "EditProjectWidget") -> None:
         super().__init__()
 
         self.project = project
-        self.constraint_index = constraint_index
+        self.index = index
         self.root = root
 
-        self.setWindowTitle("Edit Constraint")
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
         save_button = QtWidgets.QPushButton("Save")
@@ -54,7 +53,7 @@ class EditConstraintWidget(QtWidgets.QWidget):
         layout = QtWidgets.QGridLayout(self)
 
         self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
-        fields = project.constraints[constraint_index].fields(self.project)
+        fields = self.get_current_fields()
         for i, field in enumerate(fields):
             label = QtWidgets.QLabel(field.name)
             layout.addWidget(label, i, 0)
@@ -71,13 +70,33 @@ class EditConstraintWidget(QtWidgets.QWidget):
             layout.addWidget(edit, i, 1)
             self.field_widgets.append(edit)
 
-        layout.addWidget(save_button)
+        layout.addWidget(save_button, len(fields), 0, 1, 2)
+
+    @staticmethod
+    def _rebuild_field(
+        field: Field, widget: DropDownEdit | TextFieldEdit
+    ) -> OptionField | TextInputField:
+        if isinstance(field, OptionField):
+            assert isinstance(widget, DropDownEdit)
+            return field.parse(widget.currentIndex())
+        elif isinstance(field, TextInputField):
+            assert isinstance(widget, TextFieldEdit)
+            new_field = field.parse(widget.text())
+            assert isinstance(new_field, TextInputField)
+            return new_field
+        else:
+            raise ValueError(f"Unsupported field type: {type(field)}")
+
+    def _rebuild_fields(self) -> tuple[Any, ...]:
+        old_fields = self.get_current_fields()
+        return tuple(
+            EditWidget._rebuild_field(old_field, widget)
+            for old_field, widget in zip(old_fields, self.field_widgets)
+        )
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        old_fields = self.project.constraints[self.constraint_index].fields(
-            self.project
-        )
+        old_fields = self.get_current_fields()
         try:
             new_fields = self._rebuild_fields()
         except AssertionError:
@@ -96,32 +115,55 @@ class EditConstraintWidget(QtWidgets.QWidget):
             else:
                 event.ignore()
 
-    @staticmethod
-    def _rebuild_field(
-        field: OptionField | TextInputField, widget: DropDownEdit | TextFieldEdit
-    ) -> OptionField | TextInputField:
-        if isinstance(field, OptionField):
-            assert isinstance(widget, DropDownEdit)
-            return field.parse(widget.currentIndex())
-        else:
-            assert isinstance(widget, TextFieldEdit)
-            new_field = field.parse(widget.text())
-            assert isinstance(new_field, TextInputField)
-            return new_field
+    @abstractmethod
+    def get_current_fields(self) -> tuple[Field, ...]:
+        pass
 
-    def _rebuild_fields(self) -> tuple[Any, ...]:
-        constraint = self.project.constraints[self.constraint_index]
-        old_fields = constraint.fields(self.project)
-        return tuple(
-            EditConstraintWidget._rebuild_field(old_field, widget)
-            for old_field, widget in zip(old_fields, self.field_widgets)
-        )
+    @abstractmethod
+    def save_clicked(self) -> None:
+        pass
 
+
+class EditConstraintWidget(EditWidget):
+    def __init__(
+        self, project: Project, constraint_index: int, root: "EditProjectWidget"
+    ) -> None:
+        super().__init__(project, constraint_index, root)
+
+        self.setWindowTitle("Edit Constraint")
+
+    @override
+    def get_current_fields(self) -> tuple[Field, ...]:
+        return self.project.constraints[self.index].fields(self.project)
+
+    @override
     def save_clicked(self) -> None:
         new_fields = self._rebuild_fields()
-        constraint = self.project.constraints[self.constraint_index]
+        constraint = self.project.constraints[self.index]
         new_constraint = constraint.from_fields(new_fields)
-        self.project.constraints[self.constraint_index] = new_constraint
+        self.project.constraints[self.index] = new_constraint
+        self.root.update_project(self.project)
+        self.close()
+
+
+class EditObjectiveWidget(EditWidget):
+    def __init__(
+        self, project: Project, objective_index: int, root: "EditProjectWidget"
+    ) -> None:
+        super().__init__(project, objective_index, root)
+
+        self.setWindowTitle("Edit Objective")
+
+    @override
+    def get_current_fields(self) -> tuple[Field, ...]:
+        return self.project.objectives[self.index].fields(self.project)
+
+    @override
+    def save_clicked(self) -> None:
+        new_fields = self._rebuild_fields()
+        objective = self.project.objectives[self.index]
+        new_objective = objective.from_fields(new_fields)
+        self.project.objectives[self.index] = new_objective
         self.root.update_project(self.project)
         self.close()
 
@@ -157,11 +199,16 @@ class ObjectivesWidget(TableWidget):
         self.edit_parent = parent
 
         for i, objective in enumerate(project.objectives):
-            self.setRow(i, objective.description(), False)
+            self.setRow(
+                i, objective.description(), objective.fields(self.project) != ()
+            )
 
     @override
     def edit_clicked(self, index: int) -> None:
-        pass  # TODO
+        self.edit_widget = EditObjectiveWidget(self.project, index, self.edit_parent)
+        self.edit_widget.show()
+        center_on_screen(self.edit_widget)
+        self.edit_parent.setEnabled(False)
 
     @override
     def delete_clicked(self, index: int) -> None:

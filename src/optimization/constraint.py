@@ -24,7 +24,7 @@ class Constraint(ABC):
         pass
 
 
-TFields = TypeVar("TFields", bound="tuple[Field]")
+TFields = TypeVar("TFields", bound="tuple[Field, ...]")
 
 
 class SerializableConstraint(Constraint, Generic[TFields]):
