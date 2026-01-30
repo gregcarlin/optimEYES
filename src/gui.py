@@ -244,14 +244,14 @@ class EditConstraintWidget(QtWidgets.QWidget):
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
-    def __init__(self, project: Project, rows: int, parent: "EditProjectWidget") -> None:
+    def __init__(self, project: Project, rows: int, buttons: int, parent: "EditProjectWidget") -> None:
         super().__init__()
 
         self.project = project
         self.edit_parent = parent
 
         self.setRowCount(rows)
-        self.setColumnCount(2)
+        self.setColumnCount(buttons + 1)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(
@@ -262,7 +262,8 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
             QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
-        self.setColumnWidth(1, 50)
+        for i in range(buttons):
+            self.setColumnWidth(i + 1, 50)
 
         self.edit_widget = None
 
@@ -270,50 +271,64 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(400, 600)
 
+    def setRow(self, index: int, label: str, editable: bool) -> None:
+        text = QtWidgets.QLabel(label)
+        text.setMargin(5)
+        text.setWordWrap(True)
+        self.setCellWidget(index, 0, text)
+        if editable:
+            edit_button = QtWidgets.QPushButton("Edit")
+            edit_button.setFixedHeight(40)
+            edit_button.clicked.connect(partial(self.edit_clicked, index=index))
+            self.setCellWidget(index, 1, edit_button)
+        delete_button = QtWidgets.QPushButton("Delete")
+        delete_button.setFixedHeight(40)
+        delete_button.clicked.connect(partial(self.delete_clicked, index=index))
+        self.setCellWidget(index, 2, delete_button)
+
+    @abstractmethod
+    def edit_clicked(self, index: int) -> None:
+        pass
+
+    @abstractmethod
+    def delete_clicked(self, index: int) -> None:
+        pass
+
 class ConstraintsWidget(TableWidget):
     def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
-        super().__init__(project, len(project.constraints), parent)
+        super().__init__(project, len(project.constraints), 2, parent)
 
         for i, constraint in enumerate(project.constraints):
-            text = QtWidgets.QLabel(constraint.description())
-            text.setMargin(5)
-            text.setWordWrap(True)
-            self.setCellWidget(i, 0, text)
-            if constraint.fields(self.project) != ():
-                edit_button = QtWidgets.QPushButton("Edit")
-                edit_button.setFixedHeight(40)
-                edit_button.clicked.connect(partial(self.edit_constraint, index=i))
-                self.setCellWidget(i, 1, edit_button)
+            self.setRow(i, constraint.description(), constraint.fields(self.project) != ())
 
-    def edit_constraint(self, index: int) -> None:
+    @override
+    def edit_clicked(self, index: int) -> None:
         self.edit_widget = EditConstraintWidget(self.project, index, self.edit_parent)
         self.edit_widget.show()
         center_on_screen(self.edit_widget)
         self.edit_parent.setEnabled(False)
+
+    @override
+    def delete_clicked(self, index: int) -> None:
+        self.project.constraints.pop(index)
+        self.edit_parent.update_project(self.project)
 
 
 class ObjectivesWidget(TableWidget):
     def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
-        super().__init__(project, len(project.objectives), parent)
+        super().__init__(project, len(project.objectives), 4, parent)
 
         for i, objective in enumerate(project.objectives):
-            text = QtWidgets.QLabel(objective.description())
-            text.setMargin(5)
-            text.setWordWrap(True)
-            self.setCellWidget(i, 0, text)
-            """
-            if constraint.fields(self.project) != ():
-                edit_button = QtWidgets.QPushButton("Edit")
-                edit_button.setFixedHeight(40)
-                edit_button.clicked.connect(partial(self.edit_constraint, index=i))
-                self.setCellWidget(i, 1, edit_button)
+            self.setRow(i, objective.description(), False)
 
-    def edit_constraint(self, index: int) -> None:
-        self.edit_widget = EditConstraintWidget(self.project, index, self.edit_parent)
-        self.edit_widget.show()
-        center_on_screen(self.edit_widget)
-        self.edit_parent.setEnabled(False)
-            """
+    @override
+    def edit_clicked(self, index: int) -> None:
+        pass
+
+    @override
+    def delete_clicked(self, index: int) -> None:
+        self.project.objectives.pop(index)
+        self.edit_parent.update_project(self.project)
 
 
 class EditProjectWidget(QtWidgets.QWidget):
@@ -345,6 +360,10 @@ class EditProjectWidget(QtWidgets.QWidget):
         old_constraints = self.constraints
         self.constraints = ConstraintsWidget(self.project, self)
         self._layout.replaceWidget(old_constraints, self.constraints)
+
+        old_objectives = self.objectives
+        self.objectives = ObjectivesWidget(self.project, self)
+        self._layout.replaceWidget(old_objectives, self.objectives)
 
     @QtCore.Slot()
     def edit_availability_clicked(self):
