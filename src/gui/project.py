@@ -12,6 +12,7 @@ from structs.field import (
     TextInputField,
 )
 
+
 class ConstraintsHeaderWidget(SectionHeaderWidget):
     def __init__(self) -> None:
         super().__init__("Constraints")
@@ -32,6 +33,7 @@ class ObjectivesHeaderWidget(SectionHeaderWidget):
     def add_new_clicked(self):
         # TODO implement
         pass
+
 
 class EditConstraintWidget(QtWidgets.QWidget):
     def __init__(
@@ -131,7 +133,9 @@ class ConstraintsWidget(TableWidget):
         self.edit_parent = parent
 
         for i, constraint in enumerate(project.constraints):
-            self.setRow(i, constraint.description(), constraint.fields(self.project) != ())
+            self.setRow(
+                i, constraint.description(), constraint.fields(self.project) != ()
+            )
 
     @override
     def edit_clicked(self, index: int) -> None:
@@ -157,12 +161,13 @@ class ObjectivesWidget(TableWidget):
 
     @override
     def edit_clicked(self, index: int) -> None:
-        pass # TODO
+        pass  # TODO
 
     @override
     def delete_clicked(self, index: int) -> None:
         self.project.objectives.pop(index)
         self.edit_parent.update_project(self.project)
+
 
 class EditProjectWidget(QtWidgets.QWidget):
     def __init__(self, project_path: str, project: Project) -> None:
@@ -202,4 +207,3 @@ class EditProjectWidget(QtWidgets.QWidget):
     def edit_availability_clicked(self):
         # TODO implement
         pass
-

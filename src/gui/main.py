@@ -74,4 +74,3 @@ def main(args: list[str]) -> int:
         center_on_screen(intro)
 
     return app.exec()
-

@@ -7,6 +7,7 @@ from structs.field import (
     IntermediateSentinel,
 )
 
+
 class TextFieldValidator(QtGui.QValidator):
     def __init__(self, field: TextInputField) -> None:
         super().__init__()

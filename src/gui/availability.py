@@ -4,6 +4,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
 
+
 class AvailabilityWidget(QtWidgets.QTableWidget):
     def __init__(self, project: Project) -> None:
         super().__init__()

@@ -7,6 +7,7 @@ from PySide6 import QtCore, QtWidgets
 from structs.project import Project
 from gui.common import AbstractQWidgetMeta
 
+
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
     def __init__(self, project: Project, rows: int, buttons: int) -> None:
         super().__init__()
@@ -56,6 +57,7 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
     @abstractmethod
     def delete_clicked(self, index: int) -> None:
         pass
+
 
 class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     def __init__(self, label: str) -> None:

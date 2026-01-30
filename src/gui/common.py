@@ -2,8 +2,10 @@ from abc import ABC
 
 from PySide6 import QtWidgets
 
+
 class AbstractQWidgetMeta(type(ABC), type(QtWidgets.QWidget)):
     pass
+
 
 class AlertMessage(QtWidgets.QMessageBox):
     def __init__(self, text: str, parent: QtWidgets.QWidget) -> None:
@@ -28,10 +30,10 @@ def show_alert(message: str, parent: QtWidgets.QWidget) -> None:
     alert = AlertMessage(message, parent)
     alert.show()
 
+
 def center_on_screen(widget: QtWidgets.QWidget) -> None:
     # Widget must already be visible
     screen_geometry = widget.screen().availableGeometry()
     x = int((screen_geometry.width() - widget.width()) / 2)
     y = int((screen_geometry.height() - widget.height()) / 2)
     widget.move(x, y)
-
