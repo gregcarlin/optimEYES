@@ -4,6 +4,7 @@ from typing import override, Any
 from datetime import timedelta
 from functools import partial
 from pathlib import Path
+from abc import ABC, ABCMeta, abstractmethod
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -48,23 +49,45 @@ class OpenProjectDialog(QtWidgets.QFileDialog):
         self.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
 
 
-class ConstraintsHeaderWidget(QtWidgets.QWidget):
-    def __init__(self) -> None:
+class AbstractQWidgetMeta(type(ABC), type(QtWidgets.QWidget)):
+    pass
+
+
+class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, label: str) -> None:
         super().__init__()
 
-        constraints_label = QtWidgets.QLabel(
-            "Constraints", alignment=QtCore.Qt.AlignmentFlag.AlignLeft
+        label_widget = QtWidgets.QLabel(
+            label, alignment=QtCore.Qt.AlignmentFlag.AlignLeft
         )
-        constraints_label.setContentsMargins(0, 4, 0, 0)
-        new_constraint_button = QtWidgets.QPushButton("+")
-        new_constraint_button.setFixedWidth(20)
+        label_widget.setContentsMargins(0, 4, 0, 0)
+        new_button = QtWidgets.QPushButton("+")
+        new_button.setFixedWidth(20)
 
         layout = QtWidgets.QHBoxLayout(self)
-        layout.addWidget(constraints_label)
-        layout.addWidget(new_constraint_button)
+        layout.addWidget(label_widget)
+        layout.addWidget(new_button)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+
+        new_button.clicked.connect(self.add_new_clicked)
+
+    @QtCore.Slot()
+    @abstractmethod
+    def add_new_clicked(self):
+        pass
+
+
+class ConstraintsHeaderWidget(SectionHeaderWidget):
+    def __init__(self) -> None:
+        super().__init__("Constraints")
+
+    @QtCore.Slot()
+    @override
+    def add_new_clicked(self):
+        # TODO implement
+        pass
 
 
 class TextFieldValidator(QtGui.QValidator):
