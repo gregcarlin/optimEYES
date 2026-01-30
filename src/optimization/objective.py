@@ -97,6 +97,7 @@ class Q2Objective(NoArgSerializableObjective):
         return math.ceil(builder.get_num_days() / 2.0) * builder.get_num_residents()
 
 
+# TODO improve field spec
 class ChangesFromPreviousSolutionObjective(SerializableObjective[tuple[StringField]]):
     def __init__(self, path: str) -> None:
         self.path = path
@@ -174,6 +175,7 @@ class VACoverageObjective(NoArgSerializableObjective):
         return builder.get_num_days() * builder.get_num_residents()
 
 
+# TODO improve field spec
 class WearinessObjective(SerializableObjective[tuple[StringField]]):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map

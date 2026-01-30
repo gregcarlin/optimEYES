@@ -1,18 +1,22 @@
 from pathlib import Path
 from typing import override, Any
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
-from gui.table import TableWidget, SectionHeaderWidget
-from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
-from gui.field import TextFieldEdit, DropDownEdit
 from structs.field import (
     Field,
     OptionField,
     TextInputField,
 )
+from optimization.call_problem_impl import CallProblemBuilderImpl
+from optimization.availability import AvailabilityConstraint
+from optimization.solution import Solution
+from gui.table import TableWidget, SectionHeaderWidget
+from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
+from gui.field import TextFieldEdit, DropDownEdit
 
 
 class ConstraintsHeaderWidget(SectionHeaderWidget):
@@ -202,6 +206,7 @@ class ObjectivesWidget(TableWidget):
             self.setRow(
                 i, objective.description(), objective.fields(self.project) != ()
             )
+            # TODO add buttons to reorder objectives
 
     @override
     def edit_clicked(self, index: int) -> None:
@@ -214,6 +219,30 @@ class ObjectivesWidget(TableWidget):
     def delete_clicked(self, index: int) -> None:
         self.project.objectives.pop(index)
         self.edit_parent.update_project(self.project)
+
+
+@dataclass
+class SolveResult:
+    result: Solution | str
+
+
+class SolveThread(QtCore.QThread):
+    done_signal = QtCore.Signal(SolveResult)
+
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
+        super().__init__(parent)
+
+        self.project = project
+        self.result: Solution | str | None = None
+
+    @override
+    def run(self) -> None:
+        builder = CallProblemBuilderImpl(self.project)
+        builder.apply_constraints([AvailabilityConstraint()])
+        builder.apply_constraints(self.project.constraints)
+        builder.set_objectives(self.project.objectives)
+        result = builder.solve()
+        self.done_signal.emit(SolveResult(result))
 
 
 class EditProjectWidget(QtWidgets.QWidget):
@@ -232,25 +261,58 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.objectives_header = ObjectivesHeaderWidget()
         self.objectives = ObjectivesWidget(self.project, self)
 
+        generate_button = QtWidgets.QPushButton("Generate schedule")
+
         self._layout = QtWidgets.QGridLayout(self)
         self._layout.addWidget(availability_button, 0, 0, 1, 2)
         self._layout.addWidget(self.constraints_header, 1, 0)
         self._layout.addWidget(self.constraints, 2, 0)
         self._layout.addWidget(self.objectives_header, 1, 1)
         self._layout.addWidget(self.objectives, 2, 1)
+        self._layout.addWidget(generate_button, 3, 0, 1, 2)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
+        generate_button.clicked.connect(self.generate_clicked)
+
+        self.result = None
 
     def update_project(self, project: Project) -> None:
         old_constraints = self.constraints
         self.constraints = ConstraintsWidget(self.project, self)
-        self._layout.replaceWidget(old_constraints, self.constraints)
+        old = self._layout.replaceWidget(old_constraints, self.constraints)
+        old.widget().deleteLater()
 
         old_objectives = self.objectives
         self.objectives = ObjectivesWidget(self.project, self)
-        self._layout.replaceWidget(old_objectives, self.objectives)
+        old = self._layout.replaceWidget(old_objectives, self.objectives)
+        old.widget().deleteLater()
 
     @QtCore.Slot()
-    def edit_availability_clicked(self):
+    def edit_availability_clicked(self) -> None:
         # TODO implement
         pass
+
+    @QtCore.Slot()
+    def generate_clicked(self) -> None:
+        new_result = QtWidgets.QLabel("Loading...")
+        if self.result is None:
+            self.result = new_result
+            self._layout.addWidget(self.result, 4, 0, 1, 2)
+        else:
+            old_result = self.result
+            self.result = new_result
+            old = self._layout.replaceWidget(old_result, self.result)
+            old.widget().deleteLater()
+        solver = SolveThread(self.project, self)
+        solver.done_signal.connect(self.result_ready)
+        solver.start()
+
+    @QtCore.Slot()
+    def result_ready(self, result: SolveResult) -> None:
+        if isinstance(result.result, str):
+            # TODO display failure text
+            # TODO attempt to generate hint to source of failure
+            print("Failed")
+        else:
+            # TODO display result
+            print("Succeeded")
