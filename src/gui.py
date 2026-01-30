@@ -243,17 +243,16 @@ class EditConstraintWidget(QtWidgets.QWidget):
         self.close()
 
 
-class ConstraintsWidget(QtWidgets.QTableWidget):
-    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
+class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, project: Project, rows: int, parent: "EditProjectWidget") -> None:
         super().__init__()
 
         self.project = project
         self.edit_parent = parent
 
-        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
-
-        self.setRowCount(len(project.constraints))
+        self.setRowCount(rows)
         self.setColumnCount(2)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.Stretch
@@ -262,6 +261,18 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
         self.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
+
+        self.setColumnWidth(1, 50)
+
+        self.edit_widget = None
+
+    @override
+    def sizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(400, 600)
+
+class ConstraintsWidget(TableWidget):
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
+        super().__init__(project, len(project.constraints), parent)
 
         for i, constraint in enumerate(project.constraints):
             text = QtWidgets.QLabel(constraint.description())
@@ -274,19 +285,35 @@ class ConstraintsWidget(QtWidgets.QTableWidget):
                 edit_button.clicked.connect(partial(self.edit_constraint, index=i))
                 self.setCellWidget(i, 1, edit_button)
 
-        self.setColumnWidth(1, 50)
+    def edit_constraint(self, index: int) -> None:
+        self.edit_widget = EditConstraintWidget(self.project, index, self.edit_parent)
+        self.edit_widget.show()
+        center_on_screen(self.edit_widget)
+        self.edit_parent.setEnabled(False)
 
-        self.edit_widget = None
 
-    @override
-    def sizeHint(self) -> QtCore.QSize:
-        return QtCore.QSize(400, 600)
+class ObjectivesWidget(TableWidget):
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
+        super().__init__(project, len(project.objectives), parent)
+
+        for i, objective in enumerate(project.objectives):
+            text = QtWidgets.QLabel(objective.description())
+            text.setMargin(5)
+            text.setWordWrap(True)
+            self.setCellWidget(i, 0, text)
+            """
+            if constraint.fields(self.project) != ():
+                edit_button = QtWidgets.QPushButton("Edit")
+                edit_button.setFixedHeight(40)
+                edit_button.clicked.connect(partial(self.edit_constraint, index=i))
+                self.setCellWidget(i, 1, edit_button)
 
     def edit_constraint(self, index: int) -> None:
         self.edit_widget = EditConstraintWidget(self.project, index, self.edit_parent)
         self.edit_widget.show()
         center_on_screen(self.edit_widget)
         self.edit_parent.setEnabled(False)
+            """
 
 
 class EditProjectWidget(QtWidgets.QWidget):
@@ -303,12 +330,14 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.constraints_header = ConstraintsHeaderWidget()
         self.constraints = ConstraintsWidget(self.project, self)
         self.objectives_header = ObjectivesHeaderWidget()
+        self.objectives = ObjectivesWidget(self.project, self)
 
         self._layout = QtWidgets.QGridLayout(self)
         self._layout.addWidget(availability_button, 0, 0, 1, 2)
         self._layout.addWidget(self.constraints_header, 1, 0)
         self._layout.addWidget(self.constraints, 2, 0)
         self._layout.addWidget(self.objectives_header, 1, 1)
+        self._layout.addWidget(self.objectives, 2, 1)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
 

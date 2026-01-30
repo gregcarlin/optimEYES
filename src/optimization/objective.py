@@ -32,6 +32,10 @@ class SerializableObjective(Objective):
     def serialize(self) -> dict[str, Any]:
         pass
 
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
 
 class NoArgSerializableObjective(SerializableObjective):
     @classmethod
@@ -49,6 +53,10 @@ class Q2Objective(NoArgSerializableObjective):
     @override
     def get_name() -> str:
         return "q2s"
+
+    @override
+    def description(self) -> str:
+        return f"Minimize Q2s"
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
@@ -70,6 +78,10 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective):
     @override
     def get_name() -> str:
         return "changes_from_previous_solution"
+
+    @override
+    def description(self) -> str:
+        return "Minimize changes from a different solution"
 
     @classmethod
     @override
@@ -112,6 +124,10 @@ class VACoverageObjective(NoArgSerializableObjective):
         return "va_coverage"
 
     @override
+    def description(self) -> str:
+        return "Minimize VA coverage"
+
+    @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
         va_vars = sum(builder.get_va_vars())
         assert isinstance(va_vars, VariableLike)
@@ -130,6 +146,10 @@ class WearinessObjective(SerializableObjective):
     @override
     def get_name() -> str:
         return "weariness"
+
+    @override
+    def description(self) -> str:
+        return "Minimize the maximum weariness score across residents"
 
     @classmethod
     @override
