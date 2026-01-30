@@ -90,6 +90,17 @@ class ConstraintsHeaderWidget(SectionHeaderWidget):
         pass
 
 
+class ObjectivesHeaderWidget(SectionHeaderWidget):
+    def __init__(self) -> None:
+        super().__init__("Objectives")
+
+    @QtCore.Slot()
+    @override
+    def add_new_clicked(self):
+        # TODO implement
+        pass
+
+
 class TextFieldValidator(QtGui.QValidator):
     def __init__(self, field: TextInputField) -> None:
         super().__init__()
@@ -291,11 +302,13 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         self.constraints_header = ConstraintsHeaderWidget()
         self.constraints = ConstraintsWidget(self.project, self)
+        self.objectives_header = ObjectivesHeaderWidget()
 
-        self._layout = QtWidgets.QVBoxLayout(self)
-        self._layout.addWidget(availability_button)
-        self._layout.addWidget(self.constraints_header)
-        self._layout.addWidget(self.constraints)
+        self._layout = QtWidgets.QGridLayout(self)
+        self._layout.addWidget(availability_button, 0, 0, 1, 2)
+        self._layout.addWidget(self.constraints_header, 1, 0)
+        self._layout.addWidget(self.constraints, 2, 0)
+        self._layout.addWidget(self.objectives_header, 1, 1)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
 
