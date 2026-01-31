@@ -286,6 +286,7 @@ class ResultDetail(QtWidgets.QTableWidget):
         for i, assigned in enumerate(solution.get_assignments()):
             assignment_widget = QtWidgets.QLabel(", ".join(sorted(assigned)))
             self.setCellWidget(i, 0, assignment_widget)
+            # TODO no coverage shown, fix
             coverage_widget = QtWidgets.QLabel(solution._coverage_msg_for(i, True))
             self.setCellWidget(i, 1, coverage_widget)
         

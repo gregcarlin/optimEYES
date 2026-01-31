@@ -191,13 +191,6 @@ def main() -> None:
     builder.apply_constraints(project.constraints)
     builder.set_objectives(project.objectives)
 
-    # TODO generalize into objective with metric
-    weariness_objs = [
-        obj for obj in project.objectives if isinstance(obj, WearinessObjective)
-    ]
-    assert len(weariness_objs) <= 1, "Multiple weariness objectives not yet supported"
-    weariness_map = None if weariness_objs == [] else weariness_objs[0].weariness_map
-
     previous_objs = [
         obj
         for obj in project.objectives
@@ -234,7 +227,7 @@ def main() -> None:
                 print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
-    base_result.print(args.output, previous_data, weariness_map)
+    base_result.print(args.output, previous_data)
     """
     if args.output == OutputMode.INTERACTIVE:
         print("Considering alternative solutions")

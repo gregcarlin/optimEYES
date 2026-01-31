@@ -1,11 +1,12 @@
 import math
-from typing import Literal, Any, override, TypeVar, Generic
+from typing import Literal, Any, override, TypeVar, Generic, Sequence
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
 
 from optimization.linear_problem import VariableLike
 from optimization.call_problem import CallProblemBuilder
+from optimization.metric import SolutionMetric
 from structs.field import (
     Field,
     StringField,
@@ -176,7 +177,7 @@ class VACoverageObjective(NoArgSerializableObjective):
 
 
 # TODO improve field spec
-class WearinessObjective(SerializableObjective[tuple[StringField]]):
+class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetric):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map
 
@@ -249,6 +250,38 @@ class WearinessObjective(SerializableObjective[tuple[StringField]]):
             math.ceil(builder.get_num_days() / n) * incr
             for n, incr in self.weariness_map.items()
         )
+
+    def _get_qns_per_resident(self, assignments: Sequence[Sequence[str]], n: int) -> dict[str, int]:
+        all_residents = set([r for rs in assignments for r in rs])
+        result = {resident: 0 for resident in all_residents}
+        for day in range(len(assignments) - n):
+            for resident in set(assignments[day]).intersection(
+                set(assignments[day + n])
+            ):
+                result[resident] += 1
+        return result
+
+    @staticmethod
+    def _fmt_weariness(score: int, breakdown: dict[int, int]) -> str:
+        breakdown_str = ", ".join(
+            f"{breakdown[n]}x Q{n}"
+            for n in sorted(breakdown.keys())
+            if breakdown[n] > 0
+        )
+        return f"{score} ({breakdown_str})"
+
+    @override
+    def solution_metric(self, assignments: Sequence[Sequence[str]]) -> dict[str, str]:
+        all_residents = set([r for rs in assignments for r in rs])
+        scores: dict[str, int] = {resident: 0 for resident in all_residents}
+        breakdown: dict[str, dict[int, int]] = {
+            resident: {} for resident in all_residents
+        }
+        for n, incr in self.weariness_map.items():
+            for resident, qns in self._get_qns_per_resident(assignments, n).items():
+                scores[resident] += qns * incr
+                breakdown[resident][n] = qns
+        return {r: WearinessObjective._fmt_weariness(scores[r], breakdown[r]) for r in all_residents}
 
 
 class ObjectiveRegistry:

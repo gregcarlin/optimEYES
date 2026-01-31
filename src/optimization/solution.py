@@ -67,35 +67,6 @@ class Solution:
                 result[resident] += 1
         return result
 
-    def get_weariness_per_resident(
-        self, weariness_map: dict[int, int] | None
-    ) -> dict[str, tuple[int, dict[int, int]]] | None:
-        """
-        For each resident, returns total weariness score and breakdown of count
-        of each qn.
-        """
-        if weariness_map is None:
-            return None
-
-        scores: dict[str, int] = {resident: 0 for resident in self.residents.keys()}
-        breakdown: dict[str, dict[int, int]] = {
-            resident: {} for resident in self.residents.keys()
-        }
-        for n, incr in weariness_map.items():
-            for resident, qns in self.get_qns_per_resident(n).items():
-                scores[resident] += qns * incr
-                breakdown[resident][n] = qns
-        return {r: (scores[r], breakdown[r]) for r in self.residents.keys()}
-
-    def fmt_weariness(self, score_and_breakdown: tuple[int, dict[int, int]]) -> str:
-        score, breakdown = score_and_breakdown
-        breakdown_str = ", ".join(
-            f"{breakdown[n]}x Q{n}"
-            for n in sorted(breakdown.keys())
-            if breakdown[n] > 0
-        )
-        return f"{score} ({breakdown_str})"
-
     def get_q2_unfairness(self) -> int:
         """
         Calculate the difference between the maximum number of q2s and the minimum.
@@ -194,7 +165,6 @@ class Solution:
         self,
         mode: OutputMode,
         previous: list[list[str]] | None,
-        weariness_map: dict[int, int] | None,
     ) -> None:
         if mode == OutputMode.LIST:
             print(
@@ -241,12 +211,9 @@ class Solution:
         saturdays = self.get_saturdays()
         sundays = self.get_sundays()
         q2s = self.get_qns_per_resident(2)
-        weariness = self.get_weariness_per_resident(weariness_map)
         for resident in self.residents.keys():
             print(f"\t{resident}")
             print(f"\t\tCalls = {calls[resident]}")
             print(f"\t\tSaturdays = {saturdays[resident]}")
             print(f"\t\tSundays = {sundays[resident]}")
             print(f"\t\tQ2s = {q2s[resident]}")
-            if weariness is not None:
-                print(f"\t\tWeariness = {self.fmt_weariness(weariness[resident])}")
