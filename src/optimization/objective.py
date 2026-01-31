@@ -251,7 +251,9 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetr
             for n, incr in self.weariness_map.items()
         )
 
-    def _get_qns_per_resident(self, assignments: Sequence[Sequence[str]], n: int) -> dict[str, int]:
+    def _get_qns_per_resident(
+        self, assignments: Sequence[Sequence[str]], n: int
+    ) -> dict[str, int]:
         all_residents = set([r for rs in assignments for r in rs])
         result = {resident: 0 for resident in all_residents}
         for day in range(len(assignments) - n):
@@ -281,7 +283,10 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetr
             for resident, qns in self._get_qns_per_resident(assignments, n).items():
                 scores[resident] += qns * incr
                 breakdown[resident][n] = qns
-        return {r: WearinessObjective._fmt_weariness(scores[r], breakdown[r]) for r in all_residents}
+        return {
+            r: WearinessObjective._fmt_weariness(scores[r], breakdown[r])
+            for r in all_residents
+        }
 
 
 class ObjectiveRegistry:

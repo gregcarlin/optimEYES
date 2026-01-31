@@ -269,6 +269,7 @@ class ResultSummary(QtWidgets.QTableWidget):
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(400, 600)
 
+
 class ResultDetail(QtWidgets.QTableWidget):
     def __init__(self, solution: Solution) -> None:
         super().__init__()
@@ -277,7 +278,10 @@ class ResultDetail(QtWidgets.QTableWidget):
         self.setRowCount(solution.num_days)
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["Resident", "Coverage"])
-        dates = [solution.start_date + timedelta(days=day) for day in range(solution.num_days)]
+        dates = [
+            solution.start_date + timedelta(days=day)
+            for day in range(solution.num_days)
+        ]
         self.setVerticalHeaderLabels([f"{date:%A %m/%d/%Y}" for date in dates])
         self.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch
@@ -289,7 +293,8 @@ class ResultDetail(QtWidgets.QTableWidget):
             # TODO no coverage shown, fix
             coverage_widget = QtWidgets.QLabel(solution._coverage_msg_for(i, True))
             self.setCellWidget(i, 1, coverage_widget)
-        
+
+
 class ScheduleResult(QtWidgets.QWidget):
     def __init__(self, solution: Solution) -> None:
         super().__init__()
@@ -303,6 +308,7 @@ class ScheduleResult(QtWidgets.QWidget):
         layout.addWidget(schedule_header, 0, 1)
         self.schedule = ResultDetail(solution)
         layout.addWidget(self.schedule, 1, 1)
+
 
 class EditProjectWidget(QtWidgets.QWidget):
     def __init__(self, project_path: str, project: Project) -> None:

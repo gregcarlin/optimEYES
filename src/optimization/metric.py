@@ -1,6 +1,7 @@
 from typing import Sequence
 from abc import ABC, abstractmethod
 
+
 class SolutionMetric(ABC):
     @abstractmethod
     def solution_metric(self, assignments: Sequence[Sequence[str]]) -> dict[str, str]:
