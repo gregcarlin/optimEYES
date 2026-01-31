@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import override, Any
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import timedelta
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -245,6 +246,63 @@ class SolveThread(QtCore.QThread):
         self.done_signal.emit(SolveResult(result))
 
 
+class ResultSummary(QtWidgets.QTableWidget):
+    def __init__(self, solution: Solution) -> None:
+        super().__init__()
+
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        self.setRowCount(len(solution.residents))
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(["one", "two"])
+        resident_names = list(sorted(solution.residents.keys()))
+        self.setVerticalHeaderLabels(resident_names)
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+
+        for i, name in enumerate(resident_names):
+            text = QtWidgets.QLabel("hi")
+            self.setCellWidget(i, 0, text)
+            self.setCellWidget(i, 1, text)
+
+    @override
+    def sizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(400, 600)
+
+class ResultDetail(QtWidgets.QTableWidget):
+    def __init__(self, solution: Solution) -> None:
+        super().__init__()
+
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        self.setRowCount(solution.num_days)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(["Resident", "Coverage"])
+        dates = [solution.start_date + timedelta(days=day) for day in range(solution.num_days)]
+        self.setVerticalHeaderLabels([f"{date:%A %m/%d/%Y}" for date in dates])
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+
+        for i, assigned in enumerate(solution.get_assignments()):
+            assignment_widget = QtWidgets.QLabel(", ".join(sorted(assigned)))
+            self.setCellWidget(i, 0, assignment_widget)
+            coverage_widget = QtWidgets.QLabel(solution._coverage_msg_for(i, True))
+            self.setCellWidget(i, 1, coverage_widget)
+        
+class ScheduleResult(QtWidgets.QWidget):
+    def __init__(self, solution: Solution) -> None:
+        super().__init__()
+
+        layout = QtWidgets.QGridLayout(self)
+        summary_header = QtWidgets.QLabel("Summary")
+        layout.addWidget(summary_header, 0, 0)
+        self.summary = ResultSummary(solution)
+        layout.addWidget(self.summary, 1, 0)
+        schedule_header = QtWidgets.QLabel("Schedule")
+        layout.addWidget(schedule_header, 0, 1)
+        self.schedule = ResultDetail(solution)
+        layout.addWidget(self.schedule, 1, 1)
+
 class EditProjectWidget(QtWidgets.QWidget):
     def __init__(self, project_path: str, project: Project) -> None:
         super().__init__()
@@ -261,7 +319,7 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.objectives_header = ObjectivesHeaderWidget()
         self.objectives = ObjectivesWidget(self.project, self)
 
-        generate_button = QtWidgets.QPushButton("Generate schedule")
+        self.generate_button = QtWidgets.QPushButton("Generate schedule")
 
         self._layout = QtWidgets.QGridLayout(self)
         self._layout.addWidget(availability_button, 0, 0, 1, 2)
@@ -269,10 +327,10 @@ class EditProjectWidget(QtWidgets.QWidget):
         self._layout.addWidget(self.constraints, 2, 0)
         self._layout.addWidget(self.objectives_header, 1, 1)
         self._layout.addWidget(self.objectives, 2, 1)
-        self._layout.addWidget(generate_button, 3, 0, 1, 2)
+        self._layout.addWidget(self.generate_button, 3, 0, 1, 2)
 
         availability_button.clicked.connect(self.edit_availability_clicked)
-        generate_button.clicked.connect(self.generate_clicked)
+        self.generate_button.clicked.connect(self.generate_clicked)
 
         self.result = None
 
@@ -292,9 +350,7 @@ class EditProjectWidget(QtWidgets.QWidget):
         # TODO implement
         pass
 
-    @QtCore.Slot()
-    def generate_clicked(self) -> None:
-        new_result = QtWidgets.QLabel("Loading...")
+    def _set_result(self, new_result: QtWidgets.QWidget) -> None:
         if self.result is None:
             self.result = new_result
             self._layout.addWidget(self.result, 4, 0, 1, 2)
@@ -303,16 +359,21 @@ class EditProjectWidget(QtWidgets.QWidget):
             self.result = new_result
             old = self._layout.replaceWidget(old_result, self.result)
             old.widget().deleteLater()
+
+    @QtCore.Slot()
+    def generate_clicked(self) -> None:
+        self.generate_button.setEnabled(False)
+        self._set_result(QtWidgets.QLabel("Loading..."))
         solver = SolveThread(self.project, self)
         solver.done_signal.connect(self.result_ready)
         solver.start()
 
     @QtCore.Slot()
     def result_ready(self, result: SolveResult) -> None:
+        self.generate_button.setEnabled(True)
         if isinstance(result.result, str):
-            # TODO display failure text
+            self._set_result(QtWidgets.QLabel("Failed"))
             # TODO attempt to generate hint to source of failure
             print("Failed")
         else:
-            # TODO display result
-            print("Succeeded")
+            self._set_result(ScheduleResult(result.result))
