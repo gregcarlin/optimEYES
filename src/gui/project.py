@@ -4,22 +4,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets
 
 from structs.project import Project
 from structs.field import (
     Field,
-    OptionField,
-    TextInputField,
 )
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from typeutil import none_throws
-from gui.table import TableWidget, SectionHeaderWidget
-from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
-from gui.field import TextFieldEdit, DropDownEdit
+from gui.table import TableWidget, SectionHeaderWidget, EditWidget
+from gui.common import center_on_screen
 
 
 class ConstraintsHeaderWidget(SectionHeaderWidget):
@@ -44,99 +41,13 @@ class ObjectivesHeaderWidget(SectionHeaderWidget):
         pass
 
 
-class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
-    def __init__(self, project: Project, index: int, root: "EditProjectWidget") -> None:
-        super().__init__()
-
-        self.project = project
-        self.index = index
-        self.root = root
-
-        self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
-
-        save_button = QtWidgets.QPushButton("Save")
-        save_button.clicked.connect(self.save_clicked)
-
-        layout = QtWidgets.QGridLayout(self)
-
-        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
-        fields = self.get_current_fields()
-        for i, field in enumerate(fields):
-            label = QtWidgets.QLabel(field.name)
-            layout.addWidget(label, i, 0)
-            match field:
-                case OptionField():
-                    edit = DropDownEdit(
-                        field.allowed_value_labels(),
-                        field.allowed_values.index(field.value),
-                    )
-                case TextInputField():
-                    edit = TextFieldEdit(field, save_button)
-                case _:
-                    raise ValueError(f"Unknown field type: {field}")
-            layout.addWidget(edit, i, 1)
-            self.field_widgets.append(edit)
-
-        layout.addWidget(save_button, len(fields), 0, 1, 2)
-
-    @staticmethod
-    def _rebuild_field(
-        field: Field, widget: DropDownEdit | TextFieldEdit
-    ) -> OptionField | TextInputField:
-        if isinstance(field, OptionField):
-            assert isinstance(widget, DropDownEdit)
-            return field.parse(widget.currentIndex())
-        elif isinstance(field, TextInputField):
-            assert isinstance(widget, TextFieldEdit)
-            new_field = field.parse(widget.text())
-            assert isinstance(new_field, TextInputField)
-            return new_field
-        else:
-            raise ValueError(f"Unsupported field type: {type(field)}")
-
-    def _rebuild_fields(self) -> tuple[Any, ...]:
-        old_fields = self.get_current_fields()
-        return tuple(
-            EditWidget._rebuild_field(old_field, widget)
-            for old_field, widget in zip(old_fields, self.field_widgets)
-        )
-
-    @override
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        old_fields = self.get_current_fields()
-        try:
-            new_fields = self._rebuild_fields()
-        except AssertionError:
-            # Fields are dirty, and invalid
-            new_fields = None
-        if new_fields == old_fields:
-            # Fields are unchanged, close
-            self.root.setEnabled(True)
-            event.accept()
-        else:
-            message = BinaryMessage("Discard unsaved changes?", self)
-            result = message.exec()
-            if result == QtWidgets.QMessageBox.StandardButton.Discard:
-                self.root.setEnabled(True)
-                event.accept()
-            else:
-                event.ignore()
-
-    @abstractmethod
-    def get_current_fields(self) -> tuple[Field, ...]:
-        pass
-
-    @abstractmethod
-    def save_clicked(self) -> None:
-        pass
-
-
 class EditConstraintWidget(EditWidget):
     def __init__(
         self, project: Project, constraint_index: int, root: "EditProjectWidget"
     ) -> None:
         super().__init__(project, constraint_index, root)
 
+        self.root = root
         self.setWindowTitle("Edit Constraint")
 
     @override
@@ -159,6 +70,7 @@ class EditObjectiveWidget(EditWidget):
     ) -> None:
         super().__init__(project, objective_index, root)
 
+        self.root = root
         self.setWindowTitle("Edit Objective")
 
     @override
@@ -320,7 +232,7 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
         )
         self.verticalHeader().setDefaultSectionSize(20)
         self.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeMode.Stretch
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
         calls = solution.get_calls_per_resident()

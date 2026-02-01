@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import override
+from typing import override, Any
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
-from gui.common import AbstractQWidgetMeta
+from structs.field import (
+    Field,
+    OptionField,
+    TextInputField,
+)
+from gui.common import AbstractQWidgetMeta, BinaryMessage
+from gui.field import TextFieldEdit, DropDownEdit
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -82,4 +88,91 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
     @QtCore.Slot()
     @abstractmethod
     def add_new_clicked(self):
+        pass
+
+
+class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, project: Project, index: int, root: QtWidgets.QWidget) -> None:
+        super().__init__()
+
+        self.project = project
+        self.index = index
+        self.root = root
+
+        self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+
+        save_button = QtWidgets.QPushButton("Save")
+        save_button.clicked.connect(self.save_clicked)
+
+        layout = QtWidgets.QGridLayout(self)
+
+        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+        fields = self.get_current_fields()
+        for i, field in enumerate(fields):
+            label = QtWidgets.QLabel(field.name)
+            layout.addWidget(label, i, 0)
+            match field:
+                case OptionField():
+                    edit = DropDownEdit(
+                        field.allowed_value_labels(),
+                        field.allowed_values.index(field.value),
+                    )
+                case TextInputField():
+                    edit = TextFieldEdit(field, save_button)
+                case _:
+                    raise ValueError(f"Unknown field type: {field}")
+            layout.addWidget(edit, i, 1)
+            self.field_widgets.append(edit)
+
+        layout.addWidget(save_button, len(fields), 0, 1, 2)
+
+    @staticmethod
+    def _rebuild_field(
+        field: Field, widget: DropDownEdit | TextFieldEdit
+    ) -> OptionField | TextInputField:
+        if isinstance(field, OptionField):
+            assert isinstance(widget, DropDownEdit)
+            return field.parse(widget.currentIndex())
+        elif isinstance(field, TextInputField):
+            assert isinstance(widget, TextFieldEdit)
+            new_field = field.parse(widget.text())
+            assert isinstance(new_field, TextInputField)
+            return new_field
+        else:
+            raise ValueError(f"Unsupported field type: {type(field)}")
+
+    def _rebuild_fields(self) -> tuple[Any, ...]:
+        old_fields = self.get_current_fields()
+        return tuple(
+            EditWidget._rebuild_field(old_field, widget)
+            for old_field, widget in zip(old_fields, self.field_widgets)
+        )
+
+    @override
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        old_fields = self.get_current_fields()
+        try:
+            new_fields = self._rebuild_fields()
+        except AssertionError:
+            # Fields are dirty, and invalid
+            new_fields = None
+        if new_fields == old_fields:
+            # Fields are unchanged, close
+            self.root.setEnabled(True)
+            event.accept()
+        else:
+            message = BinaryMessage("Discard unsaved changes?", self)
+            result = message.exec()
+            if result == QtWidgets.QMessageBox.StandardButton.Discard:
+                self.root.setEnabled(True)
+                event.accept()
+            else:
+                event.ignore()
+
+    @abstractmethod
+    def get_current_fields(self) -> tuple[Field, ...]:
+        pass
+
+    @abstractmethod
+    def save_clicked(self) -> None:
         pass
