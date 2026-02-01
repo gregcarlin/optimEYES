@@ -191,14 +191,6 @@ def main() -> None:
     builder.apply_constraints(project.constraints)
     builder.set_objectives(project.objectives)
 
-    previous_objs = [
-        obj
-        for obj in project.objectives
-        if isinstance(obj, ChangesFromPreviousSolutionObjective)
-    ]
-    assert len(previous_objs) <= 1, "Multiple previous result objectives not supported"
-    previous_data = None if previous_objs == [] else previous_objs[0].read_data()
-
     if args.output == OutputMode.INTERACTIVE:
         print("Solving for base result")
     base_result = builder.solve()
@@ -227,7 +219,7 @@ def main() -> None:
                 print(f"\t{date:%a %m-%d}: {residents_str}")
         return
 
-    base_result.print(args.output, previous_data)
+    base_result.print(args.output)
     """
     if args.output == OutputMode.INTERACTIVE:
         print("Considering alternative solutions")

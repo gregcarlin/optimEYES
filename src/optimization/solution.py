@@ -118,17 +118,6 @@ class Solution:
                 result.append(self.start_date + timedelta(days=day))
         return result
 
-    def get_changes_from_previous(self, previous: list[list[str]]) -> list[str]:
-        changed = []
-        for day, data in enumerate(zip(self.get_assignments(), previous)):
-            current, prev = data
-            if sorted(current) != sorted(prev):
-                d = self.start_date + timedelta(days=day)
-                changed.append(
-                    f"{d:%m/%d/%Y} ({', '.join(prev)} -> {', '.join(current)})"
-                )
-        return changed
-
     def get_availability_violations(self) -> dict[int, list[str]]:
         # index of day violated -> residents now assigned to that day
         results: dict[int, list[str]] = {}
@@ -164,7 +153,6 @@ class Solution:
     def print(
         self,
         mode: OutputMode,
-        previous: list[list[str]] | None,
     ) -> None:
         if mode == OutputMode.LIST:
             print(
@@ -195,11 +183,6 @@ class Solution:
         print(
             f"Calls taken by PGY3s =  {calls_by_year[3]}  ({calls_by_year[3] / self.num_days * 100:.2f}%)"
         )
-        if previous is None:
-            print("Changes from previous: N/A")
-        else:
-            changed = self.get_changes_from_previous(previous)
-            print(f"Changes from previous ({len(changed)}): ", ", ".join(changed))
         va_covered = self.get_va_covered_days()
         print(
             f"VA coverage dates ({len(va_covered)}): ",

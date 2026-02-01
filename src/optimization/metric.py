@@ -15,3 +15,12 @@ class SummaryMetric(ABC):
         summary value to display.
         """
         pass
+
+class DetailMetric(ABC):
+    @abstractmethod
+    def detail_metric_header(self) -> str:
+        pass
+
+    @abstractmethod
+    def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:
+        pass

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from optimization.linear_problem import VariableLike
 from optimization.call_problem import CallProblemBuilder
-from optimization.metric import SummaryMetric
+from optimization.metric import SummaryMetric, DetailMetric
 from structs.field import (
     Field,
     StringField,
@@ -99,7 +99,7 @@ class Q2Objective(NoArgSerializableObjective):
 
 
 # TODO improve field spec
-class ChangesFromPreviousSolutionObjective(SerializableObjective[tuple[StringField]]):
+class ChangesFromPreviousSolutionObjective(SerializableObjective[tuple[StringField]], DetailMetric):
     def __init__(self, path: str) -> None:
         self.path = path
 
@@ -153,6 +153,14 @@ class ChangesFromPreviousSolutionObjective(SerializableObjective[tuple[StringFie
     @override
     def get_max_value(self, builder: CallProblemBuilder) -> int:
         return builder.get_num_days()
+
+    @override
+    def detail_metric_header(self) -> str:
+        return "Previously assigned"
+
+    @override
+    def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:
+        return ["" if sorted(current) == sorted(prev) else ", ".join(prev) for day, (current, prev) in enumerate(zip(assignments, self.read_data()))]
 
 
 class VACoverageObjective(NoArgSerializableObjective):
