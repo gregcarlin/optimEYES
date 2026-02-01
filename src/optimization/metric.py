@@ -33,5 +33,9 @@ class DetailMetric(ABC):
         pass
 
     @abstractmethod
+    def detail_metric_tooltip(self) -> str:
+        pass
+
+    @abstractmethod
     def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:
         pass

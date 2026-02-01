@@ -176,6 +176,10 @@ class ChangesFromPreviousSolutionObjective(
         return "Previous"
 
     @override
+    def detail_metric_tooltip(self) -> str:
+        return f"Resident(s) assigned in {Path(self.path).name}, if different"
+
+    @override
     def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:
         return [
             "" if sorted(current) == sorted(prev) else ", ".join(prev)

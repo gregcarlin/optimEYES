@@ -16,6 +16,7 @@ from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
+from typeutil import none_throws
 from gui.table import TableWidget, SectionHeaderWidget
 from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
 from gui.field import TextFieldEdit, DropDownEdit
@@ -274,7 +275,7 @@ class ResultSummary(QtWidgets.QWidget):
         if va_coverage == []:
             layout.addWidget(QtWidgets.QLabel(f"VA covered days: None"), 0, 2)
         else:
-            days_str = ", ".join(f"{d:%m/%d/%y}" for d in va_coverage)
+            days_str = ", ".join(f"{d:%-m/%d/%y}" for d in va_coverage)
             layout.addWidget(
                 QtWidgets.QLabel(f"VA covered days ({len(va_coverage)}): {days_str}"),
                 0,
@@ -314,6 +315,10 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
         )
         resident_names = list(sorted(solution.residents.keys()))
         self.setVerticalHeaderLabels(resident_names)
+        self.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Fixed
+        )
+        self.verticalHeader().setDefaultSectionSize(20)
         self.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch
         )
@@ -352,14 +357,28 @@ class ResultDetail(QtWidgets.QTableWidget):
         self.setHorizontalHeaderLabels(
             ["Resident", "Coverage"] + [m.detail_metric_header() for m in metrics]
         )
+        none_throws(self.horizontalHeaderItem(0)).setToolTip(
+            "Resident(s) assigned to be on call"
+        )
+        none_throws(self.horizontalHeaderItem(1)).setToolTip(
+            "Who they're covering for, if any"
+        )
+        for i, metric in enumerate(metrics):
+            none_throws(self.horizontalHeaderItem(2 + i)).setToolTip(
+                metric.detail_metric_tooltip()
+            )
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
         dates = [
             solution.start_date + timedelta(days=day)
             for day in range(solution.num_days)
         ]
-        self.setVerticalHeaderLabels([f"{date:%a %m/%d/%y}" for date in dates])
-        self.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeMode.Stretch
+        self.setVerticalHeaderLabels([f"{date:%a %-m/%d/%y}" for date in dates])
+        self.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Fixed
         )
+        self.verticalHeader().setDefaultSectionSize(20)
 
         assignments = solution.get_assignments()
         metric_vals = [m.detail_metric(assignments) for m in metrics]
