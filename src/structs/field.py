@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, override, Any, Self
+from typing import Generic, TypeVar, override, Self
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import IntEnum

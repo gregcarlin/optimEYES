@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import pulp as pulp
 
 from optimization.call_problem import CallProblemBuilder
-from optimization.linear_problem import PulpProblem, var_sum
+from optimization.linear_problem import var_sum
 from structs.field import (
     Field,
     WeekdayField,

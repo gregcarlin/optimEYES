@@ -13,6 +13,11 @@ Run autoformatter:
 black .
 ```
 
+Remove unused imports:
+```
+autoflake --remove-all-unused-imports --ignore-pass-statements -i src/**/*
+```
+
 Run code:
 ```
 python3 optimeyes.py

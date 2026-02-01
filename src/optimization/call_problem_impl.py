@@ -1,20 +1,18 @@
-from typing import Mapping, Sequence, List, AbstractSet, override
+from typing import Mapping, Sequence, List, override
 
-import math
-from datetime import date, timedelta
+from datetime import date
 from collections import defaultdict
 
 from optimization.call_problem import CallProblemBuilder
 from optimization.solution import Solution, key_for_day
 from optimization.constraint import Constraint, SerializableConstraint
 from optimization.objective import combine_objectives, Objective, SerializableObjective
-from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
+from dateutil import days_until_next_weekday, Weekday
 from structs.project import Project
 from structs.resident import Resident
 from optimization.linear_problem import (
     PulpProblem,
     Variable,
-    VariableLike,
 )
 
 

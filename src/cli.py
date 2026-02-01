@@ -1,18 +1,11 @@
-from typing import Mapping, Sequence, AbstractSet
+from typing import Sequence
 
-import os
 import json
 from datetime import timedelta
 import argparse
 
-from dateutil import Weekday
 from optimization.call_problem_impl import CallProblemBuilderImpl
-from optimization.solution import Solution
 from optimization.availability import AvailabilityConstraint, AvailabilityObjective
-from optimization.objective import (
-    ChangesFromPreviousSolutionObjective,
-    WearinessObjective,
-)
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 from structs.project import Project

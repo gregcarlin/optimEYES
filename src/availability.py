@@ -1,4 +1,4 @@
-from typing import Mapping, Sequence, AbstractSet, List
+from typing import AbstractSet
 
 import itertools
 

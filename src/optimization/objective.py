@@ -1,5 +1,5 @@
 import math
-from typing import Literal, Any, override, TypeVar, Generic, Sequence
+from typing import Any, override, TypeVar, Generic, Sequence
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
