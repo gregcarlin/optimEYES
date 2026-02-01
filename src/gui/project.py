@@ -15,7 +15,7 @@ from structs.field import (
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
-from optimization.metric import SummaryMetric, DetailMetric
+from optimization.metric import ResidentMetric, DetailMetric
 from gui.table import TableWidget, SectionHeaderWidget
 from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
 from gui.field import TextFieldEdit, DropDownEdit
@@ -256,12 +256,12 @@ class ResultSummary(QtWidgets.QTableWidget):
         metrics = [
             m
             for m in project.constraints + project.objectives
-            if isinstance(m, SummaryMetric)
+            if isinstance(m, ResidentMetric)
         ]
         self.setColumnCount(4 + len(metrics))
         self.setHorizontalHeaderLabels(
             ["Calls", "Saturdays", "Sundays", "Q2s"]
-            + [m.summary_metric_header() for m in metrics]
+            + [m.resident_metric_header() for m in metrics]
         )
         resident_names = list(sorted(solution.residents.keys()))
         self.setVerticalHeaderLabels(resident_names)
@@ -274,7 +274,7 @@ class ResultSummary(QtWidgets.QTableWidget):
         sundays = solution.get_sundays()
         q2s = solution.get_qns_per_resident(2)
         assignments = solution.get_assignments()
-        other = [m.summary_metric(assignments) for m in metrics]
+        other = [m.resident_metric(assignments) for m in metrics]
         for i, name in enumerate(resident_names):
             self.setCellWidget(i, 0, QtWidgets.QLabel(str(calls[name])))
             self.setCellWidget(i, 1, QtWidgets.QLabel(str(saturdays[name])))
