@@ -15,6 +15,7 @@ from structs.field import (
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
+from optimization.metric import SummaryMetric
 from gui.table import TableWidget, SectionHeaderWidget
 from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
 from gui.field import TextFieldEdit, DropDownEdit
@@ -247,23 +248,33 @@ class SolveThread(QtCore.QThread):
 
 
 class ResultSummary(QtWidgets.QTableWidget):
-    def __init__(self, solution: Solution) -> None:
+    def __init__(self, project: Project, solution: Solution) -> None:
         super().__init__()
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(len(solution.residents))
-        self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["one", "two"])
+        metrics = [m for m in project.constraints + project.objectives if isinstance(m, SummaryMetric)]
+        self.setColumnCount(4 + len(metrics))
+        self.setHorizontalHeaderLabels(["Calls", "Saturdays", "Sundays", "Q2s"] + [m.summary_metric_header() for m in metrics])
         resident_names = list(sorted(solution.residents.keys()))
         self.setVerticalHeaderLabels(resident_names)
         self.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch
         )
 
+        calls = solution.get_calls_per_resident()
+        saturdays = solution.get_saturdays()
+        sundays = solution.get_sundays()
+        q2s = solution.get_qns_per_resident(2)
+        assignments = solution.get_assignments()
+        other = [m.summary_metric(assignments) for m in metrics]
         for i, name in enumerate(resident_names):
-            text = QtWidgets.QLabel("hi")
-            self.setCellWidget(i, 0, text)
-            self.setCellWidget(i, 1, text)
+            self.setCellWidget(i, 0, QtWidgets.QLabel(str(calls[name])))
+            self.setCellWidget(i, 1, QtWidgets.QLabel(str(saturdays[name])))
+            self.setCellWidget(i, 2, QtWidgets.QLabel(str(sundays[name])))
+            self.setCellWidget(i, 3, QtWidgets.QLabel(str(q2s[name])))
+            for j, metric in enumerate(other):
+                self.setCellWidget(i, 4 + j, QtWidgets.QLabel(metric[name]))
 
     @override
     def sizeHint(self) -> QtCore.QSize:
@@ -296,13 +307,13 @@ class ResultDetail(QtWidgets.QTableWidget):
 
 
 class ScheduleResult(QtWidgets.QWidget):
-    def __init__(self, solution: Solution) -> None:
+    def __init__(self, project: Project, solution: Solution) -> None:
         super().__init__()
 
         layout = QtWidgets.QGridLayout(self)
         summary_header = QtWidgets.QLabel("Summary")
         layout.addWidget(summary_header, 0, 0)
-        self.summary = ResultSummary(solution)
+        self.summary = ResultSummary(project, solution)
         layout.addWidget(self.summary, 1, 0)
         schedule_header = QtWidgets.QLabel("Schedule")
         layout.addWidget(schedule_header, 0, 1)
@@ -383,4 +394,4 @@ class EditProjectWidget(QtWidgets.QWidget):
             # TODO attempt to generate hint to source of failure
             print("Failed")
         else:
-            self._set_result(ScheduleResult(result.result))
+            self._set_result(ScheduleResult(self.project, result.result))

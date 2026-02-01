@@ -6,7 +6,7 @@ from pathlib import Path
 
 from optimization.linear_problem import VariableLike
 from optimization.call_problem import CallProblemBuilder
-from optimization.metric import SolutionMetric
+from optimization.metric import SummaryMetric
 from structs.field import (
     Field,
     StringField,
@@ -177,7 +177,7 @@ class VACoverageObjective(NoArgSerializableObjective):
 
 
 # TODO improve field spec
-class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetric):
+class WearinessObjective(SerializableObjective[tuple[StringField]], SummaryMetric):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map
 
@@ -251,6 +251,10 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetr
             for n, incr in self.weariness_map.items()
         )
 
+    @override
+    def summary_metric_header(self) -> str:
+        return "Weariness"
+
     def _get_qns_per_resident(
         self, assignments: Sequence[Sequence[str]], n: int
     ) -> dict[str, int]:
@@ -273,7 +277,7 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], SolutionMetr
         return f"{score} ({breakdown_str})"
 
     @override
-    def solution_metric(self, assignments: Sequence[Sequence[str]]) -> dict[str, str]:
+    def summary_metric(self, assignments: Sequence[Sequence[str]]) -> dict[str, str]:
         all_residents = set([r for rs in assignments for r in rs])
         scores: dict[str, int] = {resident: 0 for resident in all_residents}
         breakdown: dict[str, dict[int, int]] = {
