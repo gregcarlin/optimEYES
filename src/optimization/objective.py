@@ -6,7 +6,7 @@ from pathlib import Path
 
 from optimization.linear_problem import VariableLike
 from optimization.call_problem import CallProblemBuilder
-from optimization.metric import ResidentMetric, DetailMetric
+from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from structs.field import (
     Field,
     StringField,
@@ -100,7 +100,7 @@ class Q2Objective(NoArgSerializableObjective):
 
 # TODO improve field spec
 class ChangesFromPreviousSolutionObjective(
-    SerializableObjective[tuple[StringField]], DetailMetric
+    SerializableObjective[tuple[StringField]], SummaryMetric, DetailMetric
 ):
     def __init__(self, path: str) -> None:
         self.path = path
@@ -157,8 +157,19 @@ class ChangesFromPreviousSolutionObjective(
         return builder.get_num_days()
 
     @override
+    def summary_metric_header(self) -> str:
+        return "Changes from previous"
+
+    @override
+    def summary_metric(self, assignments: Sequence[Sequence[str]]) -> str:
+        return str(sum(
+            0 if sorted(current) == sorted(prev) else 1
+            for day, (current, prev) in enumerate(zip(assignments, self.read_data()))
+        ))
+
+    @override
     def detail_metric_header(self) -> str:
-        return "Previously assigned"
+        return "Previous"
 
     @override
     def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:

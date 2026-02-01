@@ -15,7 +15,7 @@ from structs.field import (
 from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
-from optimization.metric import ResidentMetric, DetailMetric
+from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from gui.table import TableWidget, SectionHeaderWidget
 from gui.common import center_on_screen, BinaryMessage, AbstractQWidgetMeta
 from gui.field import TextFieldEdit, DropDownEdit
@@ -247,7 +247,29 @@ class SolveThread(QtCore.QThread):
         self.done_signal.emit(SolveResult(result))
 
 
-class ResultSummary(QtWidgets.QTableWidget):
+class ResultSummary(QtWidgets.QWidget):
+    def __init__(self, project: Project, solution: Solution) -> None:
+        super().__init__()
+
+        layout = QtWidgets.QGridLayout(self)
+
+        layout.addWidget(QtWidgets.QLabel(f"Total Q2 Calls: {solution.get_total_q2s()}"), 0, 0)
+        layout.addWidget(QtWidgets.QLabel(f"Q2 Unfairness: {solution.get_q2_unfairness()}"), 1, 0)
+
+        calls_by_year = solution.get_calls_taken_by_year()
+        for i, year in enumerate(sorted(calls_by_year.keys())):
+            layout.addWidget(QtWidgets.QLabel(f"Calls taken by PGY{year}s: {calls_by_year[year]} ({calls_by_year[year] / solution.num_days * 100:.2f}%)"), i, 1)
+
+        metrics = [
+            m
+            for m in project.constraints + project.objectives
+            if isinstance(m, SummaryMetric)
+        ]
+        assignments = solution.get_assignments()
+        for i, m in enumerate(metrics):
+            layout.addWidget(QtWidgets.QLabel(f"{m.summary_metric_header()}: {m.summary_metric(assignments)}"), i, 2)
+
+class ResultResidentSummary(QtWidgets.QTableWidget):
     def __init__(self, project: Project, solution: Solution) -> None:
         super().__init__()
 
@@ -329,14 +351,16 @@ class ScheduleResult(QtWidgets.QWidget):
         super().__init__()
 
         layout = QtWidgets.QGridLayout(self)
-        summary_header = QtWidgets.QLabel("Summary")
-        layout.addWidget(summary_header, 0, 0)
         self.summary = ResultSummary(project, solution)
-        layout.addWidget(self.summary, 1, 0)
+        layout.addWidget(self.summary, 0, 0, 1, 2)
+        resident_header = QtWidgets.QLabel("Resident Breakdown")
+        layout.addWidget(resident_header, 1, 0)
+        self.resident_summary = ResultResidentSummary(project, solution)
+        layout.addWidget(self.resident_summary, 2, 0)
         schedule_header = QtWidgets.QLabel("Schedule")
-        layout.addWidget(schedule_header, 0, 1)
+        layout.addWidget(schedule_header, 1, 1)
         self.schedule = ResultDetail(project, solution)
-        layout.addWidget(self.schedule, 1, 1)
+        layout.addWidget(self.schedule, 2, 1)
 
 
 class EditProjectWidget(QtWidgets.QWidget):

@@ -2,6 +2,16 @@ from typing import Sequence
 from abc import ABC, abstractmethod
 
 
+class SummaryMetric(ABC):
+    @abstractmethod
+    def summary_metric_header(self) -> str:
+        pass
+
+    @abstractmethod
+    def summary_metric(self, assignments: Sequence[Sequence[str]]) -> str:
+        pass
+
+
 class ResidentMetric(ABC):
     @abstractmethod
     def resident_metric_header(self) -> str:
