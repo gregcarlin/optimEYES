@@ -253,19 +253,33 @@ class ResultSummary(QtWidgets.QWidget):
 
         layout = QtWidgets.QGridLayout(self)
 
-        layout.addWidget(QtWidgets.QLabel(f"Total Q2 Calls: {solution.get_total_q2s()}"), 0, 0)
-        layout.addWidget(QtWidgets.QLabel(f"Q2 Unfairness: {solution.get_q2_unfairness()}"), 1, 0)
+        layout.addWidget(
+            QtWidgets.QLabel(f"Total Q2 Calls: {solution.get_total_q2s()}"), 0, 0
+        )
+        layout.addWidget(
+            QtWidgets.QLabel(f"Q2 Unfairness: {solution.get_q2_unfairness()}"), 1, 0
+        )
 
         calls_by_year = solution.get_calls_taken_by_year()
         for i, year in enumerate(sorted(calls_by_year.keys())):
-            layout.addWidget(QtWidgets.QLabel(f"Calls taken by PGY{year}s: {calls_by_year[year]} ({calls_by_year[year] / solution.num_days * 100:.2f}%)"), i, 1)
+            layout.addWidget(
+                QtWidgets.QLabel(
+                    f"Calls taken by PGY{year}s: {calls_by_year[year]} ({calls_by_year[year] / solution.num_days * 100:.2f}%)"
+                ),
+                i,
+                1,
+            )
 
         va_coverage = solution.get_va_covered_days()
         if va_coverage == []:
             layout.addWidget(QtWidgets.QLabel(f"VA covered days: None"), 0, 2)
         else:
             days_str = ", ".join(f"{d:%m/%d/%y}" for d in va_coverage)
-            layout.addWidget(QtWidgets.QLabel(f"VA covered days ({len(va_coverage)}): {days_str}"), 0, 2)
+            layout.addWidget(
+                QtWidgets.QLabel(f"VA covered days ({len(va_coverage)}): {days_str}"),
+                0,
+                2,
+            )
         metrics = [
             m
             for m in project.constraints + project.objectives
@@ -273,7 +287,14 @@ class ResultSummary(QtWidgets.QWidget):
         ]
         assignments = solution.get_assignments()
         for i, m in enumerate(metrics):
-            layout.addWidget(QtWidgets.QLabel(f"{m.summary_metric_header()}: {m.summary_metric(assignments)}"), 1 + i, 2)
+            layout.addWidget(
+                QtWidgets.QLabel(
+                    f"{m.summary_metric_header()}: {m.summary_metric(assignments)}"
+                ),
+                1 + i,
+                2,
+            )
+
 
 class ResultResidentSummary(QtWidgets.QTableWidget):
     def __init__(self, project: Project, solution: Solution) -> None:

@@ -162,10 +162,14 @@ class ChangesFromPreviousSolutionObjective(
 
     @override
     def summary_metric(self, assignments: Sequence[Sequence[str]]) -> str:
-        return str(sum(
-            0 if sorted(current) == sorted(prev) else 1
-            for day, (current, prev) in enumerate(zip(assignments, self.read_data()))
-        ))
+        return str(
+            sum(
+                0 if sorted(current) == sorted(prev) else 1
+                for day, (current, prev) in enumerate(
+                    zip(assignments, self.read_data())
+                )
+            )
+        )
 
     @override
     def detail_metric_header(self) -> str:
