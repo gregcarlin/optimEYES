@@ -260,6 +260,12 @@ class ResultSummary(QtWidgets.QWidget):
         for i, year in enumerate(sorted(calls_by_year.keys())):
             layout.addWidget(QtWidgets.QLabel(f"Calls taken by PGY{year}s: {calls_by_year[year]} ({calls_by_year[year] / solution.num_days * 100:.2f}%)"), i, 1)
 
+        va_coverage = solution.get_va_covered_days()
+        if va_coverage == []:
+            layout.addWidget(QtWidgets.QLabel(f"VA covered days: None"), 0, 2)
+        else:
+            days_str = ", ".join(f"{d:%m/%d/%y}" for d in va_coverage)
+            layout.addWidget(QtWidgets.QLabel(f"VA covered days ({len(va_coverage)}): {days_str}"), 0, 2)
         metrics = [
             m
             for m in project.constraints + project.objectives
@@ -267,7 +273,7 @@ class ResultSummary(QtWidgets.QWidget):
         ]
         assignments = solution.get_assignments()
         for i, m in enumerate(metrics):
-            layout.addWidget(QtWidgets.QLabel(f"{m.summary_metric_header()}: {m.summary_metric(assignments)}"), i, 2)
+            layout.addWidget(QtWidgets.QLabel(f"{m.summary_metric_header()}: {m.summary_metric(assignments)}"), 1 + i, 2)
 
 class ResultResidentSummary(QtWidgets.QTableWidget):
     def __init__(self, project: Project, solution: Solution) -> None:
@@ -329,7 +335,7 @@ class ResultDetail(QtWidgets.QTableWidget):
             solution.start_date + timedelta(days=day)
             for day in range(solution.num_days)
         ]
-        self.setVerticalHeaderLabels([f"{date:%a %m/%d/%Y}" for date in dates])
+        self.setVerticalHeaderLabels([f"{date:%a %m/%d/%y}" for date in dates])
         self.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch
         )
