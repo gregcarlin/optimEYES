@@ -16,6 +16,7 @@ class SummaryMetric(ABC):
         """
         pass
 
+
 class DetailMetric(ABC):
     @abstractmethod
     def detail_metric_header(self) -> str:

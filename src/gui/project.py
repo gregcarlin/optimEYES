@@ -253,9 +253,16 @@ class ResultSummary(QtWidgets.QTableWidget):
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(len(solution.residents))
-        metrics = [m for m in project.constraints + project.objectives if isinstance(m, SummaryMetric)]
+        metrics = [
+            m
+            for m in project.constraints + project.objectives
+            if isinstance(m, SummaryMetric)
+        ]
         self.setColumnCount(4 + len(metrics))
-        self.setHorizontalHeaderLabels(["Calls", "Saturdays", "Sundays", "Q2s"] + [m.summary_metric_header() for m in metrics])
+        self.setHorizontalHeaderLabels(
+            ["Calls", "Saturdays", "Sundays", "Q2s"]
+            + [m.summary_metric_header() for m in metrics]
+        )
         resident_names = list(sorted(solution.residents.keys()))
         self.setVerticalHeaderLabels(resident_names)
         self.horizontalHeader().setSectionResizeMode(
@@ -287,9 +294,15 @@ class ResultDetail(QtWidgets.QTableWidget):
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(solution.num_days)
-        metrics = [m for m in project.constraints + project.objectives if isinstance(m, DetailMetric)]
+        metrics = [
+            m
+            for m in project.constraints + project.objectives
+            if isinstance(m, DetailMetric)
+        ]
         self.setColumnCount(2 + len(metrics))
-        self.setHorizontalHeaderLabels(["Resident", "Coverage"] + [m.detail_metric_header() for m in metrics])
+        self.setHorizontalHeaderLabels(
+            ["Resident", "Coverage"] + [m.detail_metric_header() for m in metrics]
+        )
         dates = [
             solution.start_date + timedelta(days=day)
             for day in range(solution.num_days)
