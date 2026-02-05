@@ -13,20 +13,25 @@ from optimization.call_problem_impl import CallProblemBuilderImpl
 from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
+from optimization.constraint import ConstraintRegistry
 from typeutil import none_throws
-from gui.table import TableWidget, SectionHeaderWidget, EditWidget
+from gui.table import TableWidget, SectionHeaderWidget, AddOrEditWidget, AddNewWidget
 from gui.common import center_on_screen
 
 
 class ConstraintsHeaderWidget(SectionHeaderWidget):
-    def __init__(self) -> None:
+    def __init__(self, parent: "EditProjectWidget") -> None:
         super().__init__("Constraints")
+
+        self.edit_parent = parent
 
     @QtCore.Slot()
     @override
     def add_new_clicked(self):
-        # TODO implement
-        pass
+        self.add_widget = AddConstraintWidget(self.edit_parent)
+        self.add_widget.show()
+        center_on_screen(self.add_widget)
+        self.edit_parent.setEnabled(False)
 
 
 class ObjectivesHeaderWidget(SectionHeaderWidget):
@@ -40,14 +45,18 @@ class ObjectivesHeaderWidget(SectionHeaderWidget):
         pass
 
 
-class EditConstraintWidget(EditWidget):
+class EditConstraintWidget(AddOrEditWidget):
     def __init__(
         self, project: Project, constraint_index: int, root: "EditProjectWidget"
     ) -> None:
-        super().__init__(project, constraint_index, root)
+        super().__init__(root)
 
+        self.project = project
+        self.index = constraint_index
         self.root = root
         self.setWindowTitle("Edit Constraint")
+
+        self.populate_fields()
 
     @override
     def get_current_fields(self) -> tuple[Field, ...]:
@@ -63,14 +72,18 @@ class EditConstraintWidget(EditWidget):
         self.close()
 
 
-class EditObjectiveWidget(EditWidget):
+class EditObjectiveWidget(AddOrEditWidget):
     def __init__(
         self, project: Project, objective_index: int, root: "EditProjectWidget"
     ) -> None:
-        super().__init__(project, objective_index, root)
+        super().__init__(root)
 
+        self.project = project
+        self.index = objective_index
         self.root = root
         self.setWindowTitle("Edit Objective")
+
+        self.populate_fields()
 
     @override
     def get_current_fields(self) -> tuple[Field, ...]:
@@ -84,6 +97,21 @@ class EditObjectiveWidget(EditWidget):
         self.project.objectives[self.index] = new_objective
         self.root.update_project(self.project)
         self.close()
+
+
+class AddConstraintWidget(AddNewWidget):
+    def __init__(self, root: "EditProjectWidget") -> None:
+        # TODO improve constraint names
+        super().__init__(root, list(ConstraintRegistry().constraints.keys()))
+
+    @override
+    def get_current_fields(self) -> tuple[Field, ...]:
+        # TODO implement
+        return ()
+
+    @override
+    def save_clicked(self) -> None:
+        pass  # TODO implement
 
 
 class ConstraintsWidget(TableWidget):
@@ -331,7 +359,7 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         availability_button = QtWidgets.QPushButton("Edit Availability")
 
-        self.constraints_header = ConstraintsHeaderWidget()
+        self.constraints_header = ConstraintsHeaderWidget(self)
         self.constraints = ConstraintsWidget(self.project, self)
         self.objectives_header = ObjectivesHeaderWidget()
         self.objectives = ObjectivesWidget(self.project, self)

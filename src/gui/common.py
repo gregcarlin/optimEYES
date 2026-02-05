@@ -37,3 +37,13 @@ def center_on_screen(widget: QtWidgets.QWidget) -> None:
     x = int((screen_geometry.width() - widget.width()) / 2)
     y = int((screen_geometry.height() - widget.height()) / 2)
     widget.move(x, y)
+
+
+def clear_layout(layout: QtWidgets.QLayout, start_index: int = 0) -> None:
+    while item := layout.takeAt(start_index):
+        if sublayout := item.layout():
+            clear_layout(sublayout)
+        elif widget := item.widget():
+            widget.deleteLater()
+        else:
+            raise ValueError(f"Unknown layout item: {type(item)}")

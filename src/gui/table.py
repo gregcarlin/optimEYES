@@ -10,7 +10,7 @@ from structs.field import (
     OptionField,
     TextInputField,
 )
-from gui.common import AbstractQWidgetMeta, BinaryMessage
+from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
 from gui.field import TextFieldEdit, DropDownEdit
 
 
@@ -91,26 +91,30 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
         pass
 
 
-class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
-    def __init__(self, project: Project, index: int, root: QtWidgets.QWidget) -> None:
+class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, root: QtWidgets.QWidget, prefix_fields: int = 0) -> None:
         super().__init__()
 
-        self.project = project
-        self.index = index
         self.root = root
+        self.prefix_fields = prefix_fields
 
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
-        save_button = QtWidgets.QPushButton("Save")
-        save_button.clicked.connect(self.save_clicked)
+        self.save_button = QtWidgets.QPushButton("Save")
+        self.save_button.clicked.connect(self.save_clicked)
 
-        layout = QtWidgets.QGridLayout(self)
+        self._layout = QtWidgets.QGridLayout(self)
 
         self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+
+    def populate_fields(self) -> None:
+        clear_layout(self._layout, start_index=self.prefix_fields)
+        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+
         fields = self.get_current_fields()
         for i, field in enumerate(fields):
             label = QtWidgets.QLabel(field.name)
-            layout.addWidget(label, i, 0)
+            self._layout.addWidget(label, self.prefix_fields + i, 0)
             match field:
                 case OptionField():
                     edit = DropDownEdit(
@@ -118,13 +122,15 @@ class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                         field.allowed_values.index(field.value),
                     )
                 case TextInputField():
-                    edit = TextFieldEdit(field, save_button)
+                    edit = TextFieldEdit(field, self.save_button)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
-            layout.addWidget(edit, i, 1)
+            self._layout.addWidget(edit, self.prefix_fields + i, 1)
             self.field_widgets.append(edit)
 
-        layout.addWidget(save_button, len(fields), 0, 1, 2)
+        self._layout.addWidget(
+            self.save_button, self.prefix_fields + len(fields), 0, 1, 2
+        )
 
     @staticmethod
     def _rebuild_field(
@@ -144,7 +150,7 @@ class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     def _rebuild_fields(self) -> tuple[Any, ...]:
         old_fields = self.get_current_fields()
         return tuple(
-            EditWidget._rebuild_field(old_field, widget)
+            AddOrEditWidget._rebuild_field(old_field, widget)
             for old_field, widget in zip(old_fields, self.field_widgets)
         )
 
@@ -176,3 +182,14 @@ class EditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     @abstractmethod
     def save_clicked(self) -> None:
         pass
+
+
+class AddNewWidget(AddOrEditWidget, ABC, metaclass=AbstractQWidgetMeta):
+    def __init__(self, root: QtWidgets.QWidget, items: list[str]) -> None:
+        super().__init__(root, prefix_fields=1)
+
+        self.selector = QtWidgets.QComboBox()
+        self.selector.addItems(items)
+        self._layout.addWidget(self.selector, 0, 0, 1, 2)
+
+        self.populate_fields()
