@@ -103,6 +103,7 @@ class EditObjectiveWidget(AddOrEditWidget):
 class AddConstraintWidget(AddNewWidget):
     def __init__(self, project: Project, root: "EditProjectWidget") -> None:
         self.project = project
+        self.root = root
         self.constraints = ConstraintRegistry().constraints
         super().__init__(
             root,
@@ -116,7 +117,12 @@ class AddConstraintWidget(AddNewWidget):
 
     @override
     def save_clicked(self) -> None:
-        pass  # TODO implement
+        new_fields = self._rebuild_fields()
+        selected = list(sorted(self.constraints.keys()))[self.index]
+        new_constraint = self.constraints[selected].from_fields(new_fields)
+        self.project.constraints.append(new_constraint)
+        self.root.update_project(self.project)
+        self.close()
 
 
 class ConstraintsWidget(TableWidget):
