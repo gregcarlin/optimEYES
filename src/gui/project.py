@@ -20,15 +20,16 @@ from gui.common import center_on_screen
 
 
 class ConstraintsHeaderWidget(SectionHeaderWidget):
-    def __init__(self, parent: "EditProjectWidget") -> None:
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
         super().__init__("Constraints")
 
+        self.project = project
         self.edit_parent = parent
 
     @QtCore.Slot()
     @override
     def add_new_clicked(self):
-        self.add_widget = AddConstraintWidget(self.edit_parent)
+        self.add_widget = AddConstraintWidget(self.project, self.edit_parent)
         self.add_widget.show()
         center_on_screen(self.add_widget)
         self.edit_parent.setEnabled(False)
@@ -100,14 +101,18 @@ class EditObjectiveWidget(AddOrEditWidget):
 
 
 class AddConstraintWidget(AddNewWidget):
-    def __init__(self, root: "EditProjectWidget") -> None:
-        # TODO improve constraint names
-        super().__init__(root, list(ConstraintRegistry().constraints.keys()))
+    def __init__(self, project: Project, root: "EditProjectWidget") -> None:
+        self.project = project
+        self.constraints = ConstraintRegistry().constraints
+        super().__init__(
+            root,
+            [self.constraints[k].human_name() for k in sorted(self.constraints.keys())],
+        )
 
     @override
     def get_current_fields(self) -> tuple[Field, ...]:
-        # TODO implement
-        return ()
+        selected = list(sorted(self.constraints.keys()))[self.index]
+        return self.constraints[selected].default(self.project).fields(self.project)
 
     @override
     def save_clicked(self) -> None:
@@ -359,7 +364,7 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         availability_button = QtWidgets.QPushButton("Edit Availability")
 
-        self.constraints_header = ConstraintsHeaderWidget(self)
+        self.constraints_header = ConstraintsHeaderWidget(self.project, self)
         self.constraints = ConstraintsWidget(self.project, self)
         self.objectives_header = ObjectivesHeaderWidget()
         self.objectives = ObjectivesWidget(self.project, self)

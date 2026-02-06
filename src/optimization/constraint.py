@@ -35,6 +35,16 @@ class SerializableConstraint(Constraint, Generic[TFields]):
 
     @staticmethod
     @abstractmethod
+    def human_name() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def default(project: ProjectInfo) -> Constraint:
+        pass
+
+    @staticmethod
+    @abstractmethod
     def deserialize(data: dict[str, Any]) -> Constraint:
         pass
 
@@ -64,6 +74,16 @@ class DistributeDayOfWeekConstraint(SerializableConstraint[tuple[WeekdayField]])
     @override
     def get_name() -> str:
         return "distribute_weekday"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Evenly distribute day of week"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return DistributeDayOfWeekConstraint(Weekday.MONDAY)
 
     @staticmethod
     @override
@@ -119,6 +139,16 @@ class DistributeWeekendsConstraint(SerializableConstraint):
 
     @staticmethod
     @override
+    def human_name() -> str:
+        return "Evenly distribute weekend days (combined Saturdays and Sundays)"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return DistributeWeekendsConstraint()
+
+    @staticmethod
+    @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         return DistributeWeekendsConstraint()
 
@@ -137,7 +167,7 @@ class DistributeWeekendsConstraint(SerializableConstraint):
 
     @override
     def description(self) -> str:
-        return f"Evenly distribute weekend days (combined Saturdays and Sundays)"
+        return DistributeWeekendsConstraint.human_name()
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -189,6 +219,16 @@ class LimitWeekdayConstraint(SerializableConstraint):
 
     @staticmethod
     @override
+    def human_name() -> str:
+        return "Limit a day of the week"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitWeekdayConstraint(Weekday.MONDAY, 5)
+
+    @staticmethod
+    @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         return LimitWeekdayConstraint(Weekday(data["weekday"]), int(data["limit"]))
 
@@ -235,6 +275,18 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
     @override
     def get_name() -> str:
         return "limit_weekday_for_resident"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Limit a day of the week for a resident"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitWeekdayForResidentConstraint(
+            Weekday.MONDAY, 5, project.get_residents()[0]
+        )
 
     @staticmethod
     @override
@@ -290,6 +342,18 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def get_name() -> str:
         return "minimum_for_days_of_week_for_resident"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Set minimum for day of week for resident"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return SetMinimumForDaysOfWeekForResidentConstraint(
+            [Weekday.MONDAY], 5, project.get_residents()[0]
+        )
 
     @staticmethod
     @override
@@ -353,6 +417,16 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
 
     @staticmethod
     @override
+    def human_name() -> str:
+        return "Ensure no resident works two weekends in a row"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return NoAdjacentWeekendsConstraint()
+
+    @staticmethod
+    @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         return NoAdjacentWeekendsConstraint()
 
@@ -371,7 +445,7 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
 
     @override
     def description(self) -> str:
-        return f"Ensure no resident works two weekends in a row"
+        return NoAdjacentWeekendsConstraint.human_name()
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -420,6 +494,16 @@ class LimitForPGYConstraint(SerializableConstraint):
     @override
     def get_name() -> str:
         return "limit_for_pgy"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Limit calls for a PGY year"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitForPGYConstraint(project.get_min_pgy(), 25)
 
     @staticmethod
     @override
@@ -472,6 +556,16 @@ class LimitVACoverageConstraint(SerializableConstraint):
 
     @staticmethod
     @override
+    def human_name() -> str:
+        return "Limit VA coverage days"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitVACoverageConstraint(5)
+
+    @staticmethod
+    @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         return LimitVACoverageConstraint(int(data["limit"]))
 
@@ -505,6 +599,16 @@ class DistributeQ2sConstraint(SerializableConstraint):
     @override
     def get_name() -> str:
         return "distribute_q2s"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Evenly distribute Q2s"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return DistributeQ2sConstraint(5)
 
     @staticmethod
     @override
@@ -552,6 +656,16 @@ class LimitQ2sConstraint(SerializableConstraint):
 
     @staticmethod
     @override
+    def human_name() -> str:
+        return "Limit the number of Q2s per resident"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitQ2sConstraint(5)
+
+    @staticmethod
+    @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         return LimitQ2sConstraint(int(data["limit"]))
 
@@ -589,6 +703,16 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
     @override
     def get_name() -> str:
         return "limit_total_q2s"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Limit the total number of Q2s"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitTotalQ2sConstraint(20)
 
     @staticmethod
     @override

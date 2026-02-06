@@ -40,7 +40,7 @@ def center_on_screen(widget: QtWidgets.QWidget) -> None:
 
 
 def clear_layout(layout: QtWidgets.QLayout, start_index: int = 0) -> None:
-    while item := layout.takeAt(start_index):
+    while layout.count() > start_index and (item := layout.takeAt(start_index)):
         if sublayout := item.layout():
             clear_layout(sublayout)
         elif widget := item.widget():

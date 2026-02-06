@@ -100,9 +100,6 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
 
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
 
-        self.save_button = QtWidgets.QPushButton("Save")
-        self.save_button.clicked.connect(self.save_clicked)
-
         self._layout = QtWidgets.QGridLayout(self)
 
         self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
@@ -110,6 +107,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     def populate_fields(self) -> None:
         clear_layout(self._layout, start_index=self.prefix_fields)
         self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+        self.save_button = QtWidgets.QPushButton("Save")
+        self.save_button.clicked.connect(self.save_clicked)
 
         fields = self.get_current_fields()
         for i, field in enumerate(fields):
@@ -188,8 +187,20 @@ class AddNewWidget(AddOrEditWidget, ABC, metaclass=AbstractQWidgetMeta):
     def __init__(self, root: QtWidgets.QWidget, items: list[str]) -> None:
         super().__init__(root, prefix_fields=1)
 
+        self.index = 0
         self.selector = QtWidgets.QComboBox()
         self.selector.addItems(items)
         self._layout.addWidget(self.selector, 0, 0, 1, 2)
+        self.selector.currentIndexChanged.connect(self.on_change)
 
         self.populate_fields()
+
+    def on_change(self, index: int) -> None:
+        self.index = index
+        self.populate_fields()
+
+    @override
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        # Skip check for unsaved fields, just allow user to close
+        self.root.setEnabled(True)
+        event.accept()
