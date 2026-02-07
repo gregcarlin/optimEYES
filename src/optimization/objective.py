@@ -33,6 +33,16 @@ class SerializableObjective(Objective, Generic[TFields]):
     def get_name() -> str:
         pass
 
+    @staticmethod
+    @abstractmethod
+    def human_name() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def default(project: ProjectInfo) -> Objective:
+        pass
+
     @classmethod
     @abstractmethod
     def deserialize(cls, data: dict[str, Any]) -> Objective:
@@ -82,9 +92,19 @@ class Q2Objective(NoArgSerializableObjective):
     def get_name() -> str:
         return "q2s"
 
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Minimize Q2s"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Objective:
+        return Q2Objective()
+
     @override
     def description(self) -> str:
-        return f"Minimize Q2s"
+        return Q2Objective.human_name()
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
@@ -109,6 +129,16 @@ class ChangesFromPreviousSolutionObjective(
     @override
     def get_name() -> str:
         return "changes_from_previous_solution"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Minimize changes from another solution"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Objective:
+        return ChangesFromPreviousSolutionObjective("")
 
     @override
     def description(self) -> str:
@@ -193,9 +223,19 @@ class VACoverageObjective(NoArgSerializableObjective):
     def get_name() -> str:
         return "va_coverage"
 
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Minimize VA coverage"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Objective:
+        return VACoverageObjective()
+
     @override
     def description(self) -> str:
-        return "Minimize VA coverage"
+        return VACoverageObjective.human_name()
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
@@ -218,9 +258,19 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], ResidentMetr
     def get_name() -> str:
         return "weariness"
 
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Minimize the maximum weariness score across residents"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Objective:
+        return WearinessObjective({3: 10, 4: 5, 5: 3, 6: 2, 7: 1})
+
     @override
     def description(self) -> str:
-        return "Minimize the maximum weariness score across residents"
+        return WearinessObjective.human_name()
 
     @classmethod
     @override

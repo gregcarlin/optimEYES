@@ -14,6 +14,7 @@ from optimization.availability import AvailabilityConstraint
 from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from optimization.constraint import ConstraintRegistry
+from optimization.objective import ObjectiveRegistry
 from typeutil import none_throws
 from gui.table import TableWidget, SectionHeaderWidget, AddOrEditWidget, AddNewWidget
 from gui.common import center_on_screen
@@ -36,14 +37,19 @@ class ConstraintsHeaderWidget(SectionHeaderWidget):
 
 
 class ObjectivesHeaderWidget(SectionHeaderWidget):
-    def __init__(self) -> None:
+    def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
         super().__init__("Objectives")
+
+        self.project = project
+        self.edit_parent = parent
 
     @QtCore.Slot()
     @override
     def add_new_clicked(self):
-        # TODO implement
-        pass
+        self.add_widget = AddObjectiveWidget(self.project, self.edit_parent)
+        self.add_widget.show()
+        center_on_screen(self.add_widget)
+        self.edit_parent.setEnabled(False)
 
 
 class EditConstraintWidget(AddOrEditWidget):
@@ -121,6 +127,31 @@ class AddConstraintWidget(AddNewWidget):
         selected = list(sorted(self.constraints.keys()))[self.index]
         new_constraint = self.constraints[selected].from_fields(new_fields)
         self.project.constraints.append(new_constraint)
+        self.root.update_project(self.project)
+        self.close()
+
+
+class AddObjectiveWidget(AddNewWidget):
+    def __init__(self, project: Project, root: "EditProjectWidget") -> None:
+        self.project = project
+        self.root = root
+        self.objectives = ObjectiveRegistry().objectives
+        super().__init__(
+            root,
+            [self.objectives[k].human_name() for k in sorted(self.objectives.keys())],
+        )
+
+    @override
+    def get_current_fields(self) -> tuple[Field, ...]:
+        selected = list(sorted(self.objectives.keys()))[self.index]
+        return self.objectives[selected].default(self.project).fields(self.project)
+
+    @override
+    def save_clicked(self) -> None:
+        new_fields = self._rebuild_fields()
+        selected = list(sorted(self.objectives.keys()))[self.index]
+        new_objective = self.objectives[selected].from_fields(new_fields)
+        self.project.objectives.append(new_objective)
         self.root.update_project(self.project)
         self.close()
 
@@ -372,7 +403,7 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         self.constraints_header = ConstraintsHeaderWidget(self.project, self)
         self.constraints = ConstraintsWidget(self.project, self)
-        self.objectives_header = ObjectivesHeaderWidget()
+        self.objectives_header = ObjectivesHeaderWidget(self.project, self)
         self.objectives = ObjectivesWidget(self.project, self)
 
         self.generate_button = QtWidgets.QPushButton("Generate schedule")
