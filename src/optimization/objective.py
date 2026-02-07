@@ -322,8 +322,11 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], ResidentMetr
             )
 
         max_possible_weariness = self.get_max_value(builder)
-        return builder.get_problem().max_of(
-            weariness_scores, max_possible_weariness, "max_weariness"
+        problem = builder.get_problem()
+        return problem.max_of(
+            weariness_scores,
+            max_possible_weariness,
+            f"max_weariness_{problem.get_var_name_index()}",
         )
 
     @override

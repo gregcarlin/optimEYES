@@ -45,6 +45,11 @@ class PulpProblem:
         self.objective_fn = None
         self.constraint_fns = []
         self.seed = seed
+        self.var_name_index = -1
+
+    def get_var_name_index(self) -> int:
+        self.var_name_index += 1
+        return self.var_name_index
 
     def new_binary_variable(self, name: str) -> Variable:
         assert name not in self.var_names, f"Duplicate variable {name}"
