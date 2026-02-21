@@ -333,7 +333,7 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
 
 
 class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
-    def __init__(self, weekdays: list[Weekday], minimum: int, resident: str) -> None:
+    def __init__(self, weekdays: set[Weekday], minimum: int, resident: str) -> None:
         self.weekdays = weekdays
         self.minimum = minimum
         self.resident = resident
@@ -352,13 +352,13 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def default(project: ProjectInfo) -> Constraint:
         return SetMinimumForDaysOfWeekForResidentConstraint(
-            [Weekday.MONDAY], 5, project.get_residents()[0]
+            {Weekday.MONDAY}, 5, project.get_residents()[0]
         )
 
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        weekdays = [Weekday(w) for w in data["weekdays"].split(",")]
+        weekdays = {Weekday(w) for w in data["weekdays"].split(",")}
         return SetMinimumForDaysOfWeekForResidentConstraint(
             weekdays, int(data["minimum"]), str(data["resident"])
         )
@@ -394,7 +394,7 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def description(self) -> str:
         if len(self.weekdays) == 1:
-            return f"Ensure {self.resident} has at least {self.minimum} {self.weekdays[0].human_name()}s"
+            return f"Ensure {self.resident} has at least {self.minimum} {next(iter(self.weekdays)).human_name()}s"
         else:
             weekdays_str = ", ".join([w.human_name() for w in self.weekdays])
             return f"Ensure {self.resident} has at least {self.minimum} of days: {weekdays_str}"

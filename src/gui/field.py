@@ -2,9 +2,11 @@ from typing import override
 
 from PySide6 import QtWidgets, QtGui
 
+from dateutil import Weekday
 from structs.field import (
     TextInputField,
     IntermediateSentinel,
+    WeekdayListField,
 )
 
 
@@ -57,3 +59,18 @@ class DropDownEdit(QtWidgets.QComboBox):
 
         self.addItems(items)
         self.setCurrentIndex(selected)
+
+
+class WeekdayListEdit(QtWidgets.QWidget):
+    def __init__(self, field: WeekdayListField) -> None:
+        super().__init__()
+
+        layout = QtWidgets.QHBoxLayout(self)
+        self.checkboxes = []
+        for weekday in Weekday:
+            checkbox = QtWidgets.QCheckBox()
+            checkbox.setChecked(weekday in field.value)
+            self.checkboxes.append(checkbox)
+            layout.addWidget(checkbox)
+            label = QtWidgets.QLabel(weekday.name.capitalize())
+            layout.addWidget(label)

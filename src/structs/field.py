@@ -56,8 +56,11 @@ class WeekdayField(OptionField[Weekday]):
 
 
 @dataclass
-class WeekdayListField(Field[list[Weekday]]):
-    pass  # TODO
+class WeekdayListField(Field[set[Weekday]]):
+    def parse(self, checks: list[bool]) -> "WeekdayListField":
+        assert len(checks) == len(Weekday)
+        checked = {day for check, day in zip(checks, Weekday) if check}
+        return WeekdayListField(checked, self.name)
 
 
 @dataclass

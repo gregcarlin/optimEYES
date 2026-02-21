@@ -9,9 +9,10 @@ from structs.field import (
     Field,
     OptionField,
     TextInputField,
+    WeekdayListField,
 )
 from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
-from gui.field import TextFieldEdit, DropDownEdit
+from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -91,6 +92,9 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
         pass
 
 
+Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit
+
+
 class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     def __init__(self, root: QtWidgets.QWidget, prefix_fields: int = 0) -> None:
         super().__init__()
@@ -102,11 +106,11 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
 
         self._layout = QtWidgets.QGridLayout(self)
 
-        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+        self.field_widgets: list[Editor] = []
 
     def populate_fields(self) -> None:
         clear_layout(self._layout, start_index=self.prefix_fields)
-        self.field_widgets: list[DropDownEdit | TextFieldEdit] = []
+        self.field_widgets: list[Editor] = []
         self.save_button = QtWidgets.QPushButton("Save")
         self.save_button.clicked.connect(self.save_clicked)
 
@@ -122,6 +126,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                     )
                 case TextInputField():
                     edit = TextFieldEdit(field, self.save_button)
+                case WeekdayListField():
+                    edit = WeekdayListEdit(field)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)
@@ -133,8 +139,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
 
     @staticmethod
     def _rebuild_field(
-        field: Field, widget: DropDownEdit | TextFieldEdit
-    ) -> OptionField | TextInputField:
+        field: Field, widget: Editor
+    ) -> OptionField | TextInputField | WeekdayListField:
         if isinstance(field, OptionField):
             assert isinstance(widget, DropDownEdit)
             return field.parse(widget.currentIndex())
@@ -143,6 +149,9 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
             new_field = field.parse(widget.text())
             assert isinstance(new_field, TextInputField)
             return new_field
+        elif isinstance(field, WeekdayListField):
+            assert isinstance(widget, WeekdayListEdit)
+            return field.parse([box.isChecked() for box in widget.checkboxes])
         else:
             raise ValueError(f"Unsupported field type: {type(field)}")
 
