@@ -51,8 +51,8 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             calls_per_resident_by_year[resident.pgy].append(
                 self.day_vars[resident.name]
             )
-        mins = {}
-        maxs = {}
+        self.mins_by_year = {}
+        self.maxs_by_year = {}
         for year, calls_per_resident in calls_per_resident_by_year.items():
             upper = self.problem.max_of(
                 calls_per_resident, self.num_days, f"max_calls_pgy{year}"
@@ -61,12 +61,8 @@ class CallProblemBuilderImpl(CallProblemBuilder):
                 calls_per_resident, self.num_days, f"min_calls_pgy{year}"
             )
             self.problem.add_constraint(upper - lower <= 1)
-            maxs[year] = upper
-            mins[year] = lower
-        # Ensure pgy2s and 3s aren't too far apart
-        assert 2 in calls_per_resident_by_year, "PGY2 year not found"
-        assert 3 in calls_per_resident_by_year, "PGY3 year not found"
-        self.problem.add_constraint(maxs[2] - mins[3] <= project.pgy_2_3_gap)
+            self.maxs_by_year[year] = upper
+            self.mins_by_year[year] = lower
 
         if project.buddy_period:
             buddy_start, buddy_end = project.buddy_period
@@ -188,6 +184,14 @@ class CallProblemBuilderImpl(CallProblemBuilder):
                 result[resident].append(var)
         self.qns[n] = result
         return result
+
+    @override
+    def get_min_by_year(self, pgy: int) -> Variable:
+        return self.mins_by_year[pgy]
+
+    @override
+    def get_max_by_year(self, pgy: int) -> Variable:
+        return self.maxs_by_year[pgy]
 
     def apply_constraints(
         self, constraints: list[Constraint] | list[SerializableConstraint]

@@ -15,7 +15,6 @@ class Project(ProjectInfo):
     end_date: date
     buddy_period: tuple[date, date] | None
     availability: list[Resident]
-    pgy_2_3_gap: int
     seed: int
     constraints: list[SerializableConstraint]
     objectives: list[SerializableObjective]
@@ -46,7 +45,6 @@ class Project(ProjectInfo):
 
         availability = [Resident.deserialize(r) for r in data["availability"]]
 
-        pgy_2_3_gap = int(data["pgy_2_3_gap"])
         seed = int(data["seed"])
 
         constraint_registry = ConstraintRegistry()
@@ -66,7 +64,6 @@ class Project(ProjectInfo):
             end_date,
             buddy_period,
             availability,
-            pgy_2_3_gap,
             seed,
             constraints,
             objectives,
@@ -89,7 +86,6 @@ class Project(ProjectInfo):
         data.update(
             {
                 "availability": [r.serialize() for r in self.availability],
-                "pgy_2_3_gap": self.pgy_2_3_gap,
                 "seed": self.seed,
                 "constraints": [
                     {"name": c.get_name(), "data": c.serialize()}

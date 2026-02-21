@@ -43,3 +43,11 @@ class CallProblemBuilder(ABC):
     @abstractmethod
     def get_va_vars(self) -> list[Variable]:
         pass
+
+    @abstractmethod
+    def get_min_by_year(self, pgy: int) -> Variable:
+        pass
+
+    @abstractmethod
+    def get_max_by_year(self, pgy: int) -> Variable:
+        pass

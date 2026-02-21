@@ -1,7 +1,6 @@
 {
   "start_date": "2025-12-29",
   "end_date": "2026-06-30",
-  "pgy_2_3_gap": 4,
   "seed": 1761842917,
   "constraints": [
     {"name": "distribute_weekends"},

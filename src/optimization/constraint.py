@@ -743,6 +743,54 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
         return [var_sum(q2s) <= self.limit]
 
 
+class LimitPGY23GapConstraint(SerializableConstraint):
+    def __init__(self, limit: int) -> None:
+        self.limit = limit
+
+    @staticmethod
+    @override
+    def get_name() -> str:
+        return "limit_pgy_2_3_gap"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Limit the difference between the PGY2 with the most call and the PGY3 with the least call"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitPGY23GapConstraint(4)
+
+    @staticmethod
+    @override
+    def deserialize(data: dict[str, Any]) -> Constraint:
+        return LimitPGY23GapConstraint(int(data["limit"]))
+
+    @override
+    def serialize(self) -> dict[str, Any]:
+        return {"limit": self.limit}
+
+    @override
+    def fields(self, project: ProjectInfo) -> tuple[IntField]:
+        return (IntField(self.limit, "Limit"),)
+
+    @override
+    @staticmethod
+    def from_fields(fields: tuple[IntField]) -> SerializableConstraint:
+        return LimitPGY23GapConstraint(fields[0].value)
+
+    @override
+    def description(self) -> str:
+        return f"Ensure the PGY2 with the most call has no more than {self.limit} more than the PGY3 with the least call"
+
+    @override
+    def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
+        max_2 = builder.get_max_by_year(2)
+        min_3 = builder.get_min_by_year(3)
+        return [max_2 - min_3 <= self.limit]
+
+
 class ConstraintRegistry:
     def __init__(self) -> None:
         self.constraints = {
@@ -759,6 +807,7 @@ class ConstraintRegistry:
                 DistributeQ2sConstraint,
                 LimitQ2sConstraint,
                 LimitTotalQ2sConstraint,
+                LimitPGY23GapConstraint,
             ]
         }
 
