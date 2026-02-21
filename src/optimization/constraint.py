@@ -375,17 +375,17 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def fields(
         self, project: ProjectInfo
-    ) -> tuple[WeekdayListField, IntField, StringField]:
+    ) -> tuple[WeekdayListField, IntField, LimitedStringField]:
         return (
             WeekdayListField(self.weekdays, "Days of the week"),
             IntField(self.minimum, "Minimum"),
-            StringField(self.resident, "Resident"),
+            LimitedStringField(self.resident, "Resident", project.get_residents()),
         )
 
     @override
     @staticmethod
     def from_fields(
-        fields: tuple[WeekdayListField, IntField, StringField],
+        fields: tuple[WeekdayListField, IntField, LimitedStringField],
     ) -> SerializableConstraint:
         return SetMinimumForDaysOfWeekForResidentConstraint(
             fields[0].value, fields[1].value, fields[2].value
