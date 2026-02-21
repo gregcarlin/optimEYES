@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import override
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from PySide6 import QtCore, QtWidgets
 
@@ -398,6 +398,10 @@ class EditProjectWidget(QtWidgets.QWidget):
         self.project = project
 
         self.setWindowTitle(self.project_path.name)
+        self.last_saved = datetime.now()
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(self.every_second)
+        timer.start(1000)
 
         availability_button = QtWidgets.QPushButton("Edit Availability")
 
@@ -421,6 +425,20 @@ class EditProjectWidget(QtWidgets.QWidget):
 
         self.result = None
 
+    def every_second(self) -> None:
+        saved_ago = (datetime.now() - self.last_saved).total_seconds()
+        if saved_ago < 10:
+            text = "just now"
+        elif saved_ago < 60:
+            text = "less than one minute ago"
+        elif saved_ago < 60 * 60:
+            text = f"{int(saved_ago / 60)} minutes ago"
+        elif saved_ago < 60 * 60 * 24:
+            text = f"{int(saved_ago / 60 / 60)} hours ago"
+        else:
+            text = f"{int(saved_ago / 60 / 60 / 24)} days ago"
+        self.setWindowTitle(f"{self.project_path.name} (saved {text})")
+
     def update_project(self, project: Project) -> None:
         old_constraints = self.constraints
         self.constraints = ConstraintsWidget(self.project, self)
@@ -433,6 +451,7 @@ class EditProjectWidget(QtWidgets.QWidget):
         old.widget().deleteLater()
 
         project.write_to_file(str(self.project_path))
+        self.last_saved = datetime.now()
 
     @QtCore.Slot()
     def edit_availability_clicked(self) -> None:
