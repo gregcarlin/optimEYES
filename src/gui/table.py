@@ -127,7 +127,7 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                 case TextInputField():
                     edit = TextFieldEdit(field, self.save_button)
                 case WeekdayListField():
-                    edit = WeekdayListEdit(field)
+                    edit = WeekdayListEdit(field, self.save_button)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)

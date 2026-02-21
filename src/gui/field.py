@@ -62,15 +62,23 @@ class DropDownEdit(QtWidgets.QComboBox):
 
 
 class WeekdayListEdit(QtWidgets.QWidget):
-    def __init__(self, field: WeekdayListField) -> None:
+    def __init__(
+        self, field: WeekdayListField, save_button: QtWidgets.QPushButton
+    ) -> None:
         super().__init__()
+
+        self.save_button = save_button
 
         layout = QtWidgets.QHBoxLayout(self)
         self.checkboxes = []
         for weekday in Weekday:
             checkbox = QtWidgets.QCheckBox()
             checkbox.setChecked(weekday in field.value)
+            checkbox.checkStateChanged.connect(self.check_state)
             self.checkboxes.append(checkbox)
             layout.addWidget(checkbox)
             label = QtWidgets.QLabel(weekday.name.capitalize())
             layout.addWidget(label)
+
+    def check_state(self) -> None:
+        self.save_button.setEnabled(any(box.isChecked() for box in self.checkboxes))
