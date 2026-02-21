@@ -11,6 +11,7 @@ from structs.field import (
     Field,
     StringField,
     FileField,
+    DictIntIntField,
 )
 from structs.project_info import ProjectInfo
 
@@ -253,8 +254,7 @@ class VACoverageObjective(NoArgSerializableObjective):
         return builder.get_num_days() * builder.get_num_residents()
 
 
-# TODO improve field spec
-class WearinessObjective(SerializableObjective[tuple[StringField]], ResidentMetric):
+class WearinessObjective(SerializableObjective[tuple[DictIntIntField]], ResidentMetric):
     def __init__(self, weariness_map: dict[int, int]) -> None:
         self.weariness_map = weariness_map
 
@@ -294,22 +294,20 @@ class WearinessObjective(SerializableObjective[tuple[StringField]], ResidentMetr
         return {"map": map_str}
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[StringField]:
+    def fields(self, project: ProjectInfo) -> tuple[DictIntIntField]:
         return (
-            StringField(
-                ",".join(f"{k}={v}" for k, v in self.weariness_map.items()),
+            DictIntIntField(
+                self.weariness_map,
                 "Weariness map",
+                "Days apart",
+                "Score",
             ),
         )
 
     @classmethod
     @override
-    def from_fields(cls, fields: tuple[StringField]) -> "SerializableObjective":
-        weariness_map: dict[int, int] = {}
-        for entry in fields[0].value.split(","):
-            k, v = entry.split("=")
-            weariness_map[int(k)] = int(v)
-        return WearinessObjective(weariness_map)
+    def from_fields(cls, fields: tuple[DictIntIntField]) -> "SerializableObjective":
+        return WearinessObjective(fields[0].value)
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:

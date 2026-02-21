@@ -11,9 +11,10 @@ from structs.field import (
     TextInputField,
     WeekdayListField,
     FileField,
+    DictIntIntField,
 )
 from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
-from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit, FileEdit
+from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit, FileEdit, DictIntIntEdit
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -93,7 +94,7 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
         pass
 
 
-Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit | FileEdit
+Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit | FileEdit | DictIntIntEdit
 
 
 class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -131,6 +132,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                     edit = WeekdayListEdit(field, self.save_button)
                 case FileField():
                     edit = FileEdit(field.value)
+                case DictIntIntField():
+                    edit = DictIntIntEdit(field.value, field.key_label, field.value_label)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)
@@ -143,7 +146,7 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     @staticmethod
     def _rebuild_field(
         field: Field, widget: Editor
-    ) -> OptionField | TextInputField | WeekdayListField | FileField:
+    ) -> OptionField | TextInputField | WeekdayListField | FileField | DictIntIntField:
         if isinstance(field, OptionField):
             assert isinstance(widget, DropDownEdit)
             return field.parse(widget.currentIndex())
@@ -158,6 +161,9 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
         elif isinstance(field, FileField):
             assert isinstance(widget, FileEdit)
             return FileField(widget.path, field.name)
+        elif isinstance(field, DictIntIntField):
+            assert isinstance(widget, DictIntIntEdit)
+            return field.parse(widget.get_data())
         else:
             raise ValueError(f"Unsupported field type: {type(field)}")
 

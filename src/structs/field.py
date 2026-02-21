@@ -102,3 +102,11 @@ class LimitedStringField(OptionField[str]):
 @dataclass
 class FileField(Field[str]):
     pass
+
+@dataclass
+class DictIntIntField(Field[dict[int, int]]):
+    key_label: str
+    value_label: str
+
+    def parse(self, data: dict[int, int]) -> "DictIntIntField":
+        return DictIntIntField(data, self.name, self.key_label, self.value_label)

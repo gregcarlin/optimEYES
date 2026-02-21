@@ -1,8 +1,9 @@
 from typing import override
 
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui, QtCore
 
 from dateutil import Weekday
+from typeutil import none_throws
 from structs.field import (
     TextInputField,
     IntermediateSentinel,
@@ -113,3 +114,41 @@ class FileEdit(QtWidgets.QWidget):
 
         self.path = dialog.selectedFiles()[0]
         self.label.setText(self.path)
+
+class DictIntIntEdit(QtWidgets.QTableWidget):
+    def __init__(self, data: dict[int, int], key_label: str, val_label: str) -> None:
+        super().__init__()
+
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        self.verticalHeader().hide()
+        self.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+
+        self.setRowCount(len(data))
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels([key_label, val_label])
+        for i, (key, val) in enumerate(data.items()):
+            key_item = QtWidgets.QTableWidgetItem(str(key))
+            key_item.setFlags(key_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            self.setItem(i, 0, key_item)
+            value_item = QtWidgets.QTableWidgetItem(str(val))
+            self.setItem(i, 1, value_item)
+
+    def _int_at(self, row: int, col: int) -> int:
+        return int(none_throws(self.item(row, col)).text())
+
+    def get_data(self) -> dict[int, int]:
+        # If a cell is currently being edited, force it to save
+        # This works because cell 0, 0 is uneditable
+        self.setCurrentCell(0, 0)
+
+        data = {}
+        for i in range(self.rowCount()):
+            key = self._int_at(i, 0)
+            value = self._int_at(i, 1)
+            data[key] = value
+        return data
