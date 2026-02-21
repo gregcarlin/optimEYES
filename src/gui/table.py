@@ -14,7 +14,13 @@ from structs.field import (
     DictIntIntField,
 )
 from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
-from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit, FileEdit, DictIntIntEdit
+from gui.field import (
+    TextFieldEdit,
+    DropDownEdit,
+    WeekdayListEdit,
+    FileEdit,
+    DictIntIntEdit,
+)
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -133,7 +139,9 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                 case FileField():
                     edit = FileEdit(field.value)
                 case DictIntIntField():
-                    edit = DictIntIntEdit(field.value, field.key_label, field.value_label)
+                    edit = DictIntIntEdit(
+                        field.value, field.key_label, field.value_label
+                    )
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)

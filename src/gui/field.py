@@ -115,6 +115,7 @@ class FileEdit(QtWidgets.QWidget):
         self.path = dialog.selectedFiles()[0]
         self.label.setText(self.path)
 
+
 class DictIntIntEdit(QtWidgets.QTableWidget):
     def __init__(self, data: dict[int, int], key_label: str, val_label: str) -> None:
         super().__init__()

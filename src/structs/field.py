@@ -103,6 +103,7 @@ class LimitedStringField(OptionField[str]):
 class FileField(Field[str]):
     pass
 
+
 @dataclass
 class DictIntIntField(Field[dict[int, int]]):
     key_label: str
