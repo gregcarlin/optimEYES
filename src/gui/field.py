@@ -132,14 +132,17 @@ class DictIntIntEdit(QtWidgets.QTableWidget):
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels([key_label, val_label])
         for i, (key, val) in enumerate(data.items()):
-            key_item = QtWidgets.QTableWidgetItem(str(key))
-            key_item.setFlags(key_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
-            self.setItem(i, 0, key_item)
-            value_item = QtWidgets.QTableWidgetItem(str(val))
-            self.setItem(i, 1, value_item)
+            key_item = QtWidgets.QLabel(str(key))
+            self.setCellWidget(i, 0, key_item)
+            value_item = QtWidgets.QLineEdit(str(val))
+            value_item.setFrame(False)
+            value_item.setValidator(QtGui.QIntValidator(0, 2147483647))
+            self.setCellWidget(i, 1, value_item)
 
     def _int_at(self, row: int, col: int) -> int:
-        return int(none_throws(self.item(row, col)).text())
+        widget = none_throws(self.cellWidget(row, col))
+        assert isinstance(widget, (QtWidgets.QLabel, QtWidgets.QLineEdit))
+        return int(widget.text())
 
     def get_data(self) -> dict[int, int]:
         # If a cell is currently being edited, force it to save
