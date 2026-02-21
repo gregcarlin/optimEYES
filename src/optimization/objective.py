@@ -119,12 +119,12 @@ class Q2Objective(NoArgSerializableObjective):
         return math.ceil(builder.get_num_days() / 2.0) * builder.get_num_residents()
 
 
-# TODO improve field spec
 class ChangesFromPreviousSolutionObjective(
     SerializableObjective[tuple[FileField]], SummaryMetric, DetailMetric
 ):
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, data: list[list[str]]) -> None:
         self.path = path
+        self.data = data
 
     @staticmethod
     @override
@@ -139,7 +139,7 @@ class ChangesFromPreviousSolutionObjective(
     @staticmethod
     @override
     def default(project: ProjectInfo) -> Objective:
-        return ChangesFromPreviousSolutionObjective("")
+        return ChangesFromPreviousSolutionObjective("", [])
 
     @override
     def description(self) -> str:
@@ -148,11 +148,14 @@ class ChangesFromPreviousSolutionObjective(
     @classmethod
     @override
     def deserialize(cls, data: dict[str, Any]) -> Objective:
-        return ChangesFromPreviousSolutionObjective(str(data["path"]))
+        per_day_data: list[str] = data["data"]
+        full_data = [datum.split(",") for datum in per_day_data]
+        return ChangesFromPreviousSolutionObjective(str(data["path"]), full_data)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"path": self.path}
+        data = [",".join(day) for day in self.data]
+        return {"path": self.path, "data": data}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[FileField]:
@@ -161,15 +164,18 @@ class ChangesFromPreviousSolutionObjective(
     @classmethod
     @override
     def from_fields(cls, fields: tuple[FileField]) -> "SerializableObjective":
-        return ChangesFromPreviousSolutionObjective(fields[0].value)
+        path = fields[0].value
+        data = ChangesFromPreviousSolutionObjective.read_data(path)
+        return ChangesFromPreviousSolutionObjective(path, data)
 
-    def read_data(self) -> list[list[str]]:
-        with open(self.path, "r") as result_file:
+    @staticmethod
+    def read_data(path) -> list[list[str]]:
+        with open(path, "r") as result_file:
             return [line.strip().split(",") for line in result_file.readlines()]
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
-        previous_result = self.read_data()
+        previous_result = self.data
 
         is_changed_vars = []
         for i, previous in enumerate(previous_result):
@@ -196,9 +202,7 @@ class ChangesFromPreviousSolutionObjective(
         return str(
             sum(
                 0 if sorted(current) == sorted(prev) else 1
-                for day, (current, prev) in enumerate(
-                    zip(assignments, self.read_data())
-                )
+                for day, (current, prev) in enumerate(zip(assignments, self.data))
             )
         )
 
@@ -214,7 +218,7 @@ class ChangesFromPreviousSolutionObjective(
     def detail_metric(self, assignments: Sequence[Sequence[str]]) -> list[str]:
         return [
             "" if sorted(current) == sorted(prev) else ", ".join(prev)
-            for day, (current, prev) in enumerate(zip(assignments, self.read_data()))
+            for day, (current, prev) in enumerate(zip(assignments, self.data))
         ]
 
 
