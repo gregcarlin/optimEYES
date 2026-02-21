@@ -432,6 +432,8 @@ class EditProjectWidget(QtWidgets.QWidget):
         old = self._layout.replaceWidget(old_objectives, self.objectives)
         old.widget().deleteLater()
 
+        project.write_to_file(str(self.project_path))
+
     @QtCore.Slot()
     def edit_availability_clicked(self) -> None:
         # TODO implement

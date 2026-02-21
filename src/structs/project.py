@@ -75,6 +75,11 @@ class Project(ProjectInfo):
             project_data = json.loads(project_file.read())
             return Project.deserialize(project_data)
 
+    def write_to_file(self, path: str) -> None:
+        with open(path, "w") as project_file:
+            project_data = json.dumps(self.serialize(), indent=1)
+            project_file.write(project_data)
+
     def serialize(self) -> dict[str, Any]:
         data: dict[str, Any] = {
             "start_date": f"{self.start_date:%Y-%m-%d}",
