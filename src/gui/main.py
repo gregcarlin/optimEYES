@@ -6,7 +6,7 @@ from gui.project import EditProjectWidget
 
 
 class OpenProjectDialog(QtWidgets.QFileDialog):
-    def __init__(self, parent: QtWidgets.QWidget) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
         self.setNameFilter("*.json")
@@ -38,7 +38,7 @@ class IntroWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def open_project_clicked(self):
-        dialog = OpenProjectDialog(self)
+        dialog = OpenProjectDialog()
         result = dialog.exec()
         if not result:
             return

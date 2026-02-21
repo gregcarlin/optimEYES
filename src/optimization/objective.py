@@ -10,6 +10,7 @@ from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from structs.field import (
     Field,
     StringField,
+    FileField,
 )
 from structs.project_info import ProjectInfo
 
@@ -120,7 +121,7 @@ class Q2Objective(NoArgSerializableObjective):
 
 # TODO improve field spec
 class ChangesFromPreviousSolutionObjective(
-    SerializableObjective[tuple[StringField]], SummaryMetric, DetailMetric
+    SerializableObjective[tuple[FileField]], SummaryMetric, DetailMetric
 ):
     def __init__(self, path: str) -> None:
         self.path = path
@@ -154,12 +155,12 @@ class ChangesFromPreviousSolutionObjective(
         return {"path": self.path}
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[StringField]:
-        return (StringField(self.path, "Path to solution file"),)
+    def fields(self, project: ProjectInfo) -> tuple[FileField]:
+        return (FileField(self.path, "Path to solution file"),)
 
     @classmethod
     @override
-    def from_fields(cls, fields: tuple[StringField]) -> "SerializableObjective":
+    def from_fields(cls, fields: tuple[FileField]) -> "SerializableObjective":
         return ChangesFromPreviousSolutionObjective(fields[0].value)
 
     def read_data(self) -> list[list[str]]:

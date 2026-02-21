@@ -97,3 +97,8 @@ class LimitedStringField(OptionField[str]):
     @override
     def allowed_value_labels(self) -> list[str]:
         return self.allowed_values
+
+
+@dataclass
+class FileField(Field[str]):
+    pass

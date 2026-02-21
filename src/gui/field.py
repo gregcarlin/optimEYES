@@ -82,3 +82,34 @@ class WeekdayListEdit(QtWidgets.QWidget):
 
     def check_state(self) -> None:
         self.save_button.setEnabled(any(box.isChecked() for box in self.checkboxes))
+
+
+class FileEditDialog(QtWidgets.QFileDialog):
+    def __init__(self, path: str) -> None:
+        super().__init__()
+
+        self.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
+        self.selectFile(path)
+
+
+class FileEdit(QtWidgets.QWidget):
+    def __init__(self, path: str) -> None:
+        super().__init__()
+
+        self.path = path
+
+        layout = QtWidgets.QHBoxLayout(self)
+        self.label = QtWidgets.QLabel(path)
+        layout.addWidget(self.label)
+        edit_btn = QtWidgets.QPushButton("Edit")
+        edit_btn.clicked.connect(self.edit_clicked)
+        layout.addWidget(edit_btn)
+
+    def edit_clicked(self) -> None:
+        dialog = FileEditDialog(self.path)
+        result = dialog.exec()
+        if not result:
+            return
+
+        self.path = dialog.selectedFiles()[0]
+        self.label.setText(self.path)

@@ -10,9 +10,10 @@ from structs.field import (
     OptionField,
     TextInputField,
     WeekdayListField,
+    FileField,
 )
 from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
-from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit
+from gui.field import TextFieldEdit, DropDownEdit, WeekdayListEdit, FileEdit
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -92,7 +93,7 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
         pass
 
 
-Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit
+Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit | FileEdit
 
 
 class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -128,6 +129,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                     edit = TextFieldEdit(field, self.save_button)
                 case WeekdayListField():
                     edit = WeekdayListEdit(field, self.save_button)
+                case FileField():
+                    edit = FileEdit(field.value)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)
@@ -140,7 +143,7 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     @staticmethod
     def _rebuild_field(
         field: Field, widget: Editor
-    ) -> OptionField | TextInputField | WeekdayListField:
+    ) -> OptionField | TextInputField | WeekdayListField | FileField:
         if isinstance(field, OptionField):
             assert isinstance(widget, DropDownEdit)
             return field.parse(widget.currentIndex())
@@ -152,6 +155,9 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
         elif isinstance(field, WeekdayListField):
             assert isinstance(widget, WeekdayListEdit)
             return field.parse([box.isChecked() for box in widget.checkboxes])
+        elif isinstance(field, FileField):
+            assert isinstance(widget, FileEdit)
+            return FileField(widget.path, field.name)
         else:
             raise ValueError(f"Unsupported field type: {type(field)}")
 
