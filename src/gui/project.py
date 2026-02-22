@@ -17,6 +17,7 @@ from optimization.constraint import ConstraintRegistry
 from optimization.objective import ObjectiveRegistry
 from typeutil import none_throws
 from gui.table import TableWidget, SectionHeaderWidget, AddOrEditWidget, AddNewWidget
+from gui.availability import AvailabilityWidget
 from gui.common import center_on_screen
 
 
@@ -455,8 +456,10 @@ class EditProjectWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def edit_availability_clicked(self) -> None:
-        # TODO implement
-        pass
+        self.availability = AvailabilityWidget(self.project, self)
+        self.availability.show()
+        center_on_screen(self.availability)
+        self.setEnabled(False)
 
     def _set_result(self, new_result: QtWidgets.QWidget) -> None:
         if self.result is None:

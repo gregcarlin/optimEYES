@@ -1,13 +1,35 @@
 from datetime import timedelta
+from typing import override
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
 
 
-class AvailabilityWidget(QtWidgets.QTableWidget):
+class AvailabilityWidget(QtWidgets.QWidget):
+    def __init__(self, project: Project, parent: QtWidgets.QWidget) -> None:
+        super().__init__()
+
+        self.edit_parent = parent
+
+        layout = QtWidgets.QVBoxLayout(self)
+        label = QtWidgets.QLabel(
+            "Set availability for residents here. A partial check (dash) indicates that they're available, but at the VA on a day where we should try to limit them being oncall (if the relevant VA coverage constraints and/or objectives are used)."
+        )
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        table = AvailabilityTableWidget(project)
+        layout.addWidget(table)
+
+    @override
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        self.edit_parent.setEnabled(True)
+
+
+class AvailabilityTableWidget(QtWidgets.QTableWidget):
     def __init__(self, project: Project) -> None:
         super().__init__()
+
         num_days = (
             0
             if project.availability == []
@@ -33,7 +55,14 @@ class AvailabilityWidget(QtWidgets.QTableWidget):
                 zip(resident.availability, resident.va)
             ):
                 check = QtWidgets.QCheckBox()
-                check.setChecked(available != 0)
+                check.setTristate(True)
+                if available == 0:
+                    check_state = QtCore.Qt.CheckState.Unchecked
+                elif va != 0:
+                    check_state = QtCore.Qt.CheckState.PartiallyChecked
+                else:
+                    check_state = QtCore.Qt.CheckState.Checked
+                check.setCheckState(check_state)
 
                 # Magic needed to center check box
                 widget = QtWidgets.QWidget()
@@ -42,12 +71,6 @@ class AvailabilityWidget(QtWidgets.QTableWidget):
                 layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 layout.setContentsMargins(0, 0, 0, 0)
                 widget.setLayout(layout)
-
-                if va != 0:
-                    p = widget.palette()
-                    p.setColor(QtGui.QPalette.ColorRole.Base, QtGui.QColor(255, 0, 0))
-                    widget.setAutoFillBackground(True)
-                    widget.setPalette(p)
 
                 self.setCellWidget(day_index, resident_index, widget)
 
@@ -58,3 +81,7 @@ class AvailabilityWidget(QtWidgets.QTableWidget):
         )
         for i in range(len(project.availability)):
             self.setColumnWidth(i, column_width)
+
+    @override
+    def sizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(500, 600)
