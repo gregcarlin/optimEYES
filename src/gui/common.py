@@ -1,10 +1,18 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from PySide6 import QtWidgets
+
+from structs.project import Project
 
 
 class AbstractQWidgetMeta(type(ABC), type(QtWidgets.QWidget)):
     pass
+
+
+class ProjectManagerWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
+    @abstractmethod
+    def update_project(self, project: Project) -> None:
+        pass
 
 
 class AlertMessage(QtWidgets.QMessageBox):

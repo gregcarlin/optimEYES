@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, override
 
 
 class Resident:
@@ -34,3 +34,19 @@ class Resident:
             data["va"],
             data["coverage"],
         )
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Resident):
+            return False
+        return (
+            self.name == other.name
+            and self.pgy == other.pgy
+            and self.availability == other.availability
+            and self.va == other.va
+            and self.coverage == other.coverage
+        )
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self.name)

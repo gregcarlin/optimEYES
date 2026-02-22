@@ -18,7 +18,7 @@ from optimization.objective import ObjectiveRegistry
 from typeutil import none_throws
 from gui.table import TableWidget, SectionHeaderWidget, AddOrEditWidget, AddNewWidget
 from gui.availability import AvailabilityWidget
-from gui.common import center_on_screen
+from gui.common import center_on_screen, ProjectManagerWidget
 
 
 class ConstraintsHeaderWidget(SectionHeaderWidget):
@@ -391,7 +391,7 @@ class ScheduleResult(QtWidgets.QWidget):
         layout.addWidget(self.schedule, 2, 1)
 
 
-class EditProjectWidget(QtWidgets.QWidget):
+class EditProjectWidget(ProjectManagerWidget):
     def __init__(self, project_path: str, project: Project) -> None:
         super().__init__()
 
@@ -440,6 +440,7 @@ class EditProjectWidget(QtWidgets.QWidget):
             text = f"{int(saved_ago / 60 / 60 / 24)} days ago"
         self.setWindowTitle(f"{self.project_path.name} (saved {text})")
 
+    @override
     def update_project(self, project: Project) -> None:
         old_constraints = self.constraints
         self.constraints = ConstraintsWidget(self.project, self)
