@@ -36,7 +36,7 @@ class AvailabilityWidget(QtWidgets.QWidget):
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        old_data = self.project.availability
+        old_data = self.project.availability, self.project.coverage
         new_data = self.table.get_data()
         if old_data == new_data:
             # Data is unchanged, close
@@ -52,7 +52,9 @@ class AvailabilityWidget(QtWidgets.QWidget):
                 event.ignore()
 
     def save_clicked(self) -> None:
-        self.project.availability = self.table.get_data()
+        availability, coverage = self.table.get_data()
+        self.project.availability = availability
+        self.project.coverage = coverage
         self.edit_parent.refresh_project()
         self.close()
 
@@ -74,9 +76,9 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(0 if project.availability == [] else num_days)
-        self.setColumnCount(len(project.availability))
+        self.setColumnCount(len(project.availability) + 1)
         self.setHorizontalHeaderLabels(
-            [resident.name for resident in project.availability]
+            [resident.name for resident in project.availability] + ["Coverage note"]
         )
         self.setVerticalHeaderLabels(
             []
@@ -114,6 +116,14 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
 
                 self.setCellWidget(day_index, resident_index, widget)
 
+        self.coverages: list[QtWidgets.QLineEdit] = []
+        for day_index in range(num_days):
+            coverage_edit = QtWidgets.QLineEdit(str(project.coverage[day_index]))
+            coverage_edit.setFrame(False)
+            coverage_edit.setCursorPosition(0)
+            self.setCellWidget(day_index, len(project.availability), coverage_edit)
+            self.coverages.append(coverage_edit)
+
         # Set all columns to the width of the longest resident's name
         self.resizeColumnsToContents()
         column_width = max(
@@ -121,13 +131,14 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
         )
         for i in range(len(project.availability)):
             self.setColumnWidth(i, column_width)
+        self.setColumnWidth(len(project.availability), 200)
 
     @override
     def sizeHint(self) -> QtCore.QSize:
-        return QtCore.QSize(500, 600)
+        return QtCore.QSize(700, 600)
 
-    def get_data(self) -> list[Resident]:
-        result: list[Resident] = []
+    def get_data(self) -> tuple[list[Resident], list[str]]:
+        residents: list[Resident] = []
 
         for resident in self.project.availability:
             availability = [
@@ -138,8 +149,9 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
                 1 if box.checkState() == QtCore.Qt.CheckState.PartiallyChecked else 0
                 for box in self.checkboxes[resident.name]
             ]
-            # TODO add note column for coverage
             new_resident = Resident(resident.name, resident.pgy, availability, va)
-            result.append(new_resident)
+            residents.append(new_resident)
 
-        return result
+        coverage = [widget.text() for widget in self.coverages]
+
+        return residents, coverage
