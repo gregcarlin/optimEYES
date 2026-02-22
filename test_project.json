@@ -376,12 +376,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "77": "vacation",
-    "148": "vacation",
-    "107": "requested weekend"
-   }
+   ]
   },
   {
    "name": "Alex",
@@ -757,11 +752,7 @@
     1,
     0,
     0
-   ],
-   "coverage": {
-    "115": "vacation",
-    "172": "requested weekend"
-   }
+   ]
   },
   {
    "name": "Keir",
@@ -1137,12 +1128,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "108": "conference",
-    "151": "requested weekend",
-    "53": "requested weekend"
-   }
+   ]
   },
   {
    "name": "Jess",
@@ -1518,14 +1504,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "15": "vacation",
-    "126": "vacation",
-    "133": "vacation",
-    "1": "working next day",
-    "8": "avoiding Q2"
-   }
+   ]
   },
   {
    "name": "Andrew",
@@ -1901,12 +1880,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "0": "vacation",
-    "99": "vacation",
-    "113": "avoiding Q2"
-   }
+   ]
   },
   {
    "name": "Paris",
@@ -2282,10 +2256,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "52": "so she can cover next day"
-   }
+   ]
   },
   {
    "name": "Sophia",
@@ -2661,13 +2632,7 @@
     0,
     0,
     0
-   ],
-   "coverage": {
-    "25": "vacation",
-    "137": "vacation",
-    "109": "conference",
-    "123": "requested weekend"
-   }
+   ]
   },
   {
    "name": "Andrieh",
@@ -3043,13 +3008,194 @@
     1,
     0,
     0
-   ],
-   "coverage": {
-    "50": "vacation",
-    "140": "vacation",
-    "114": "so he can cover previous day"
-   }
+   ]
   }
+ ],
+ "coverage": [
+  "Covering for Andrew due to vacation",
+  "Covering for Jess due to working next day",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Jess due to avoiding Q2",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Jess due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Sophia due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Andrieh due to vacation",
+  "",
+  "Covering for Paris so she can cover next day",
+  "Covering for Keir due to requested weekend",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Loubna due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Andrew due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Loubna due to requested weekend",
+  "Covering for Keir due to conference",
+  "Covering for Sophia due to conference",
+  "",
+  "",
+  "",
+  "Covering for Andrew due to avoiding Q2",
+  "Covering for Andrieh so he can cover previous day",
+  "Covering for Alex due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Sophia due to requested weekend",
+  "",
+  "",
+  "Covering for Jess due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Jess due to vacation",
+  "",
+  "",
+  "",
+  "Covering for Sophia due to vacation",
+  "",
+  "",
+  "Covering for Andrieh due to vacation",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Loubna due to vacation",
+  "",
+  "",
+  "Covering for Keir due to requested weekend",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "Covering for Alex due to requested weekend",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  ""
  ],
  "seed": 1761842917,
  "constraints": [

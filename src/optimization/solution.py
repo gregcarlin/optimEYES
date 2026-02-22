@@ -19,12 +19,14 @@ class Solution:
         start_date: date,
         num_days: int,
         residents: dict[str, Resident],
+        coverage: list[str],
     ) -> None:
         self.objective_value = objective_value
         self.values = values
         self.start_date = start_date
         self.num_days = num_days
         self.residents = residents
+        self.coverage = coverage
         self.assignments = None
 
     def __getitem__(self, key: str) -> float:
@@ -132,24 +134,6 @@ class Solution:
                 results[day] = violated
         return results
 
-    def _coverage_msg_for(self, index: int, csv: bool) -> str:
-        covered = [
-            (name, resident.coverage[index])
-            for name, resident in self.residents.items()
-            if index in resident.coverage
-        ]
-        if covered == []:
-            return ""
-        else:
-            assert (
-                len(covered) == 1
-            ), "Multiple residents covered on day {index}: {', '.join(name for name, _ in covered)}"
-            name, reason = covered[0]
-            if csv:
-                return f"Covering for {name} due to {reason}"
-            else:
-                return f" (covering for {name} due to {reason})"
-
     def print(
         self,
         mode: OutputMode,
@@ -164,7 +148,7 @@ class Solution:
 
         for day, residents in enumerate(self.get_assignments()):
             date = self.start_date + timedelta(days=day)
-            cover_msg = self._coverage_msg_for(day, mode == OutputMode.CSV)
+            cover_msg = self.coverage[day]
             if mode == OutputMode.CSV:
                 print(f"{date:%A},{date:%m/%d/%Y},{'/'.join(residents)},{cover_msg}")
             else:

@@ -15,6 +15,7 @@ class Project(ProjectInfo):
     end_date: date
     buddy_period: tuple[date, date] | None
     availability: list[Resident]
+    coverage: list[str]
     seed: int
     constraints: list[SerializableConstraint]
     objectives: list[SerializableObjective]
@@ -44,6 +45,7 @@ class Project(ProjectInfo):
             buddy_period = None
 
         availability = [Resident.deserialize(r) for r in data["availability"]]
+        coverage = data["coverage"]
 
         seed = int(data["seed"])
 
@@ -64,6 +66,7 @@ class Project(ProjectInfo):
             end_date,
             buddy_period,
             availability,
+            coverage,
             seed,
             constraints,
             objectives,
@@ -91,6 +94,7 @@ class Project(ProjectInfo):
         data.update(
             {
                 "availability": [r.serialize() for r in self.availability],
+                "coverage": self.coverage,
                 "seed": self.seed,
                 "constraints": [
                     {"name": c.get_name(), "data": c.serialize()}

@@ -139,9 +139,7 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
                 for box in self.checkboxes[resident.name]
             ]
             # TODO add note column for coverage
-            new_resident = Resident(
-                resident.name, resident.pgy, availability, va, resident.coverage
-            )
+            new_resident = Resident(resident.name, resident.pgy, availability, va)
             result.append(new_resident)
 
         return result

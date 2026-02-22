@@ -8,13 +8,11 @@ class Resident:
         pgy: int,
         availability: list[int],
         va: list[int],
-        coverage: dict[int, str],
     ) -> None:
         self.name = name
         self.pgy = pgy
         self.availability = availability
         self.va = va
-        self.coverage = coverage
 
     def serialize(self) -> dict[str, Any]:
         return {
@@ -22,7 +20,6 @@ class Resident:
             "pgy": self.pgy,
             "schedule": self.availability,
             "va": self.va,
-            "coverage": self.coverage,
         }
 
     @staticmethod
@@ -32,7 +29,6 @@ class Resident:
             data["pgy"],
             data["schedule"],
             data["va"],
-            data["coverage"],
         )
 
     @override
@@ -44,7 +40,6 @@ class Resident:
             and self.pgy == other.pgy
             and self.availability == other.availability
             and self.va == other.va
-            and self.coverage == other.coverage
         )
 
     @override

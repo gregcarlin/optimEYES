@@ -21,11 +21,6 @@ class ResidentBuilder:
         self.name = name
         self.pgy = pgy
         self.availability = [Availability.AVAILABLE] * num_days
-        # Tracks days a resident should be working due to their regular
-        # schedule, but will instead get coverage because they're unavailable,
-        # eg. due to vacation
-        # Map of day -> reason
-        self.coverage: dict[int, str] = {}
 
 
 class AvailabilityBuilder:
@@ -37,6 +32,10 @@ class AvailabilityBuilder:
         self.residents = [
             ResidentBuilder(name, pgy, num_days) for name, pgy in residents.items()
         ]
+        # Tracks days a resident should be working due to their regular
+        # schedule, but will instead get coverage because they're unavailable,
+        # eg. due to vacation
+        self.coverage = [""] * num_days
         errors = self._validate()
         assert errors == [], errors
 
@@ -129,7 +128,7 @@ class AvailabilityBuilder:
                 previous_resident = res
                 res.availability[index] = Availability.AVAILABLE
         assert previous_resident is not None
-        previous_resident.coverage[index] = reason
+        self.coverage[index] = f"Covering for {previous_resident.name} due to {reason}"
 
     def _get_resident(self, name: str) -> ResidentBuilder:
         for res in self.residents:
@@ -141,8 +140,8 @@ class AvailabilityBuilder:
         self, resident: ResidentBuilder, index: int, reason: str
     ) -> None:
         if resident.availability[index] == Availability.PREFERRED:
-            assert index not in resident.coverage
-            resident.coverage[index] = reason
+            assert index not in self.coverage
+            self.coverage[index] = f"Covering for {resident.name} due to {reason}"
         resident.availability[index] = Availability.UNAVAILABLE
 
     def set_unavailable(
@@ -260,7 +259,7 @@ class AvailabilityBuilder:
     def _convert_va_unavailability(self, availability: list[Availability]) -> list[int]:
         return [1 if x == Availability.UNAVAILABLE_VA else 0 for x in availability]
 
-    def build(self) -> AbstractSet[Resident] | list[str]:
+    def build(self) -> tuple[AbstractSet[Resident], list[str]] | list[str]:
         self._eliminate_non_preferred()
 
         errors = self._validate()
@@ -273,7 +272,6 @@ class AvailabilityBuilder:
                 r.pgy,
                 self._convert_availability(r.availability),
                 self._convert_va_unavailability(r.availability),
-                r.coverage,
             )
             for r in self.residents
-        }
+        }, self.coverage

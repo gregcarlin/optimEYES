@@ -24,6 +24,7 @@ class CallProblemBuilderImpl(CallProblemBuilder):
     ) -> None:
         self.start_date = project.start_date
         self.residents = {resident.name: resident for resident in project.availability}
+        self.coverage = project.coverage
 
         self.problem = PulpProblem(
             "optimEYES",
@@ -217,4 +218,5 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             self.start_date,
             self.num_days,
             self.residents,
+            self.coverage,
         )
