@@ -53,7 +53,7 @@ class AvailabilityWidget(QtWidgets.QWidget):
 
     def save_clicked(self) -> None:
         self.project.availability = self.table.get_data()
-        self.edit_parent.update_project(self.project)
+        self.edit_parent.refresh_project()
         self.close()
 
     def cancel_clicked(self) -> None:

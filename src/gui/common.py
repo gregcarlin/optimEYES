@@ -11,7 +11,7 @@ class AbstractQWidgetMeta(type(ABC), type(QtWidgets.QWidget)):
 
 class ProjectManagerWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     @abstractmethod
-    def update_project(self, project: Project) -> None:
+    def refresh_project(self) -> None:
         pass
 
 

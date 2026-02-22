@@ -76,7 +76,7 @@ class EditConstraintWidget(AddOrEditWidget):
         constraint = self.project.constraints[self.index]
         new_constraint = constraint.from_fields(new_fields)
         self.project.constraints[self.index] = new_constraint
-        self.root.update_project(self.project)
+        self.root.refresh_project()
         self.close()
 
 
@@ -103,7 +103,7 @@ class EditObjectiveWidget(AddOrEditWidget):
         objective = self.project.objectives[self.index]
         new_objective = objective.from_fields(new_fields)
         self.project.objectives[self.index] = new_objective
-        self.root.update_project(self.project)
+        self.root.refresh_project()
         self.close()
 
 
@@ -128,7 +128,7 @@ class AddConstraintWidget(AddNewWidget):
         selected = list(sorted(self.constraints.keys()))[self.index]
         new_constraint = self.constraints[selected].from_fields(new_fields)
         self.project.constraints.append(new_constraint)
-        self.root.update_project(self.project)
+        self.root.refresh_project()
         self.close()
 
 
@@ -153,7 +153,7 @@ class AddObjectiveWidget(AddNewWidget):
         selected = list(sorted(self.objectives.keys()))[self.index]
         new_objective = self.objectives[selected].from_fields(new_fields)
         self.project.objectives.append(new_objective)
-        self.root.update_project(self.project)
+        self.root.refresh_project()
         self.close()
 
 
@@ -178,7 +178,7 @@ class ConstraintsWidget(TableWidget):
     @override
     def delete_clicked(self, index: int) -> None:
         self.project.constraints.pop(index)
-        self.edit_parent.update_project(self.project)
+        self.edit_parent.refresh_project()
 
 
 class ObjectivesWidget(TableWidget):
@@ -203,7 +203,7 @@ class ObjectivesWidget(TableWidget):
     @override
     def delete_clicked(self, index: int) -> None:
         self.project.objectives.pop(index)
-        self.edit_parent.update_project(self.project)
+        self.edit_parent.refresh_project()
 
 
 @dataclass
@@ -441,7 +441,7 @@ class EditProjectWidget(ProjectManagerWidget):
         self.setWindowTitle(f"{self.project_path.name} (saved {text})")
 
     @override
-    def update_project(self, project: Project) -> None:
+    def refresh_project(self) -> None:
         old_constraints = self.constraints
         self.constraints = ConstraintsWidget(self.project, self)
         old = self._layout.replaceWidget(old_constraints, self.constraints)
@@ -452,7 +452,7 @@ class EditProjectWidget(ProjectManagerWidget):
         old = self._layout.replaceWidget(old_objectives, self.objectives)
         old.widget().deleteLater()
 
-        project.write_to_file(str(self.project_path))
+        self.project.write_to_file(str(self.project_path))
         self.last_saved = datetime.now()
 
     @QtCore.Slot()
