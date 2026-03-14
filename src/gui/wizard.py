@@ -17,6 +17,11 @@ FIRST_PAGE_ID = 0
 BUDDY_PAGE_ID = 5
 BLOCK_PAGE_ID = 10
 
+START_FIELD = "start"
+END_FIELD = "end"
+BUDDY_START_FIELD = "buddy_start"
+BUDDY_END_FIELD = "buddy_end"
+
 
 class DatePicker(QCalendarWidget):
     def __init__(self, complete_signal: SignalInstance) -> None:
@@ -35,6 +40,9 @@ class StartEndPage(QWizardPage):
     def __init__(self, question: str, start_field: str, end_field: str) -> None:
         super().__init__()
 
+        self.start_field = start_field
+        self.end_field = end_field
+
         self._layout = QGridLayout(self)
         date_description = QLabel(question)
         self._layout.addWidget(date_description, 0, 0, 1, 2)
@@ -42,12 +50,14 @@ class StartEndPage(QWizardPage):
         self._layout.addWidget(start_label, 1, 0)
         self.start = DatePicker(self.completeChanged)
         self._layout.addWidget(self.start, 1, 1)
-        self.registerField(start_field, self.start)
         end_label = QLabel("End")
         self._layout.addWidget(end_label, 2, 0)
         self.end = DatePicker(self.completeChanged)
-        self.registerField(end_field, self.end)
         self._layout.addWidget(self.end, 2, 1)
+
+    def afterSetup(self) -> None:
+        self.registerField(self.start_field, self.start, "selectedDate")
+        self.registerField(self.end_field, self.end, "selectedDate")
 
     @override
     def isComplete(self) -> bool:
@@ -58,9 +68,20 @@ class BuddyPage(StartEndPage):
     def __init__(self) -> None:
         super().__init__(
             "What is the first and last day of the buddy period?",
-            "buddy_start*",
-            "buddy_end*",
+            BUDDY_START_FIELD,
+            BUDDY_END_FIELD,
         )
+
+    @override
+    def initializePage(self) -> None:
+        super().initializePage()
+
+        overall_start = self.field(START_FIELD)
+        overall_end = self.field(END_FIELD)
+        self.start.setMinimumDate(overall_start)
+        self.start.setMaximumDate(overall_end)
+        self.end.setMinimumDate(overall_start)
+        self.end.setMaximumDate(overall_end)
 
     @override
     def nextId(self) -> int:
@@ -68,16 +89,21 @@ class BuddyPage(StartEndPage):
 
     @override
     def isComplete(self) -> bool:
-        # TODO also check that it's within original start/end
-        return super().isComplete()
+        overall_start = cast(date, self.field(START_FIELD).toPython())
+        overall_end = cast(date, self.field(END_FIELD).toPython())
+        return (
+            super().isComplete()
+            and self.start.selectedPythonDate() >= overall_start
+            and self.end.selectedPythonDate() <= overall_end
+        )
 
 
 class DatesPage(StartEndPage):
     def __init__(self) -> None:
         super().__init__(
             "What is the first and last day to be OptimEYEsd? You cannot change this later.",
-            "start*",
-            "end*",
+            START_FIELD,
+            END_FIELD,
         )
 
         buddy_description = QLabel("Is there a buddy call period?")
@@ -110,6 +136,10 @@ class SetupWizard(QWizard):
             QWizard.WizardPixmap.BackgroundPixmap, QPixmap("./eye-drawing-35.jpg")
         )
 
-        self.setPage(FIRST_PAGE_ID, DatesPage())
-        self.setPage(BUDDY_PAGE_ID, BuddyPage())
+        dates_page = DatesPage()
+        self.setPage(FIRST_PAGE_ID, dates_page)
+        buddy_page = BuddyPage()
+        self.setPage(BUDDY_PAGE_ID, buddy_page)
         self.setPage(BLOCK_PAGE_ID, BlockPage())
+        dates_page.afterSetup()
+        buddy_page.afterSetup()
