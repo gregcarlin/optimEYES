@@ -8,14 +8,20 @@ from PySide6.QtWidgets import (
     QCalendarWidget,
     QLabel,
     QRadioButton,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
 )
 from PySide6.QtCore import SignalInstance
 from PySide6.QtGui import QPixmap
 
+from typeutil import none_throws
+
 
 FIRST_PAGE_ID = 0
 BUDDY_PAGE_ID = 5
-BLOCK_PAGE_ID = 10
+RESIDENTS_PAGE_ID = 10
+BLOCK_PAGE_ID = 20
 
 START_FIELD = "start"
 END_FIELD = "end"
@@ -85,7 +91,7 @@ class BuddyPage(StartEndPage):
 
     @override
     def nextId(self) -> int:
-        return BLOCK_PAGE_ID
+        return RESIDENTS_PAGE_ID
 
     @override
     def isComplete(self) -> bool:
@@ -116,7 +122,91 @@ class DatesPage(StartEndPage):
 
     @override
     def nextId(self) -> int:
-        return BLOCK_PAGE_ID if self.no.isChecked() else BUDDY_PAGE_ID
+        return RESIDENTS_PAGE_ID if self.no.isChecked() else BUDDY_PAGE_ID
+
+
+class PGYSpinBox(QSpinBox):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.setRange(2, 4)
+    
+class ResidentsPage(QWizardPage):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self._layout = QGridLayout(self)
+        self._layout.addWidget(QLabel("Name"), 0, 0)
+        self._layout.addWidget(QLabel("PGY"), 0, 1)
+
+        self.add_btn = QPushButton("Add")
+        self.add_btn.setAutoDefault(False)
+        self.add_btn.clicked.connect(self.addRow)
+        self._layout.addWidget(self.add_btn, 1, 0)
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.setAutoDefault(False)
+        self.remove_btn.clicked.connect(self.removeRow)
+        self._layout.addWidget(self.remove_btn, 1, 1)
+
+        self._layout.setColumnStretch(0, 1)
+        self._layout.setColumnStretch(1, 1)
+
+        self.addRow()
+
+    def addRow(self) -> None:
+        print('adding row')
+        self._layout.removeWidget(self.add_btn)
+        self._layout.removeWidget(self.remove_btn)
+
+        rows = self._layout.rowCount()
+        print(f"row count is {rows}")
+
+        line_edit = QLineEdit()
+        line_edit.textChanged.connect(self.completeChanged)
+        self._layout.addWidget(line_edit, rows - 1, 0)
+        self._layout.addWidget(PGYSpinBox(), rows - 1, 1)
+
+        self._layout.addWidget(self.add_btn, rows, 0)
+        self._layout.addWidget(self.remove_btn, rows, 1)
+        print('done adding row')
+
+        self.completeChanged.emit()
+
+    def removeRow(self) -> None:
+        self._layout.removeWidget(self.add_btn)
+        self._layout.removeWidget(self.remove_btn)
+
+        rows = self._layout.rowCount()
+
+        name = none_throws(self._layout.itemAtPosition(rows - 2, 0)).widget()
+        pgy = none_throws(self._layout.itemAtPosition(rows - 2, 1)).widget()
+        name.hide()
+        pgy.hide()
+        self._layout.removeWidget(name)
+        self._layout.removeWidget(pgy)
+
+        self._layout.addWidget(self.add_btn, rows - 2, 0)
+        self._layout.addWidget(self.remove_btn, rows - 2, 1)
+
+        # TODO I think row count is innaccurate now, must track manually
+        # TODO ensure last row can't be removed (disable remove button)
+
+        self.completeChanged.emit()
+
+    @override
+    def nextId(self) -> int:
+        return BLOCK_PAGE_ID
+
+    @override
+    def isComplete(self) -> bool:
+        print('checking is complete')
+        for i in range(1, self._layout.rowCount() - 1):
+            print(i)
+            item = none_throws(self._layout.itemAtPosition(i, 0)).widget()
+            assert isinstance(item, QLineEdit)
+            if not item.text().strip():
+                return False
+        return True
 
 
 class BlockPage(QWizardPage):
@@ -140,6 +230,7 @@ class SetupWizard(QWizard):
         self.setPage(FIRST_PAGE_ID, dates_page)
         buddy_page = BuddyPage()
         self.setPage(BUDDY_PAGE_ID, buddy_page)
+        self.setPage(RESIDENTS_PAGE_ID, ResidentsPage())
         self.setPage(BLOCK_PAGE_ID, BlockPage())
         dates_page.afterSetup()
         buddy_page.afterSetup()
