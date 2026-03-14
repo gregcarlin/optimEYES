@@ -66,6 +66,11 @@ class BuddyPage(StartEndPage):
     def nextId(self) -> int:
         return BLOCK_PAGE_ID
 
+    @override
+    def isComplete(self) -> bool:
+        # TODO also check that it's within original start/end
+        return super().isComplete()
+
 
 class DatesPage(StartEndPage):
     def __init__(self) -> None:
@@ -91,6 +96,8 @@ class DatesPage(StartEndPage):
 class BlockPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
+
+        # TODO implement
 
 
 class SetupWizard(QWizard):
