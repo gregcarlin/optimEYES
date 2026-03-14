@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QRadioButton,
 )
 from PySide6.QtCore import SignalInstance
+from PySide6.QtGui import QPixmap
 
 
 FIRST_PAGE_ID = 0
@@ -98,6 +99,10 @@ class SetupWizard(QWizard):
 
         self.setWindowTitle("New Project")
         self.setOption(QWizard.WizardOption.NoCancelButton)
+        self.setPixmap(
+            QWizard.WizardPixmap.BackgroundPixmap, QPixmap("./eye-drawing-35.jpg")
+        )
+
         self.setPage(FIRST_PAGE_ID, DatesPage())
         self.setPage(BUDDY_PAGE_ID, BuddyPage())
         self.setPage(BLOCK_PAGE_ID, BlockPage())
