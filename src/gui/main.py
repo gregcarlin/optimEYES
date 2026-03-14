@@ -3,6 +3,7 @@ from PySide6 import QtCore, QtWidgets
 from structs.project import Project
 from gui.common import center_on_screen, show_alert
 from gui.project import EditProjectWidget
+from gui.wizard import SetupWizard
 
 
 class OpenProjectDialog(QtWidgets.QFileDialog):
@@ -33,8 +34,10 @@ class IntroWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def new_project_clicked(self):
-        # TODO implement (needs availability builder)
-        pass
+        self.wizard = SetupWizard()
+        self.wizard.show()
+        self.close()
+        center_on_screen(self.wizard)
 
     @QtCore.Slot()
     def open_project_clicked(self):
@@ -62,12 +65,17 @@ def main(args: list[str]) -> int:
     app.setApplicationDisplayName("OptimEYES")
 
     if len(args) >= 2:
-        # Convenience for running program directly in edit mode
+        # Convenience for bypassing first screen
         project_path = args[1]
-        project = Project.read_from_file(project_path)
-        edit = EditProjectWidget(project_path, project)
-        edit.show()
-        center_on_screen(edit)
+        if project_path == "new":
+            wizard = SetupWizard()
+            wizard.show()
+            center_on_screen(wizard)
+        else:
+            project = Project.read_from_file(project_path)
+            edit = EditProjectWidget(project_path, project)
+            edit.show()
+            center_on_screen(edit)
     else:
         intro = IntroWidget()
         intro.show()
