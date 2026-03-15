@@ -15,6 +15,10 @@ class Weekday(IntEnum):
     def human_name(self) -> str:
         return self.name.capitalize()
 
+    @staticmethod
+    def just_weekdays() -> list["Weekday"]:
+        return [Weekday.MONDAY, Weekday.TUESDAY, Weekday.WEDNESDAY, Weekday.THURSDAY, Weekday.FRIDAY]
+
 
 # The number of days between the start date and the next given day of the week
 def days_until_next_weekday(start: date, weekday: Weekday) -> int:

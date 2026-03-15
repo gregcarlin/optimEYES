@@ -11,11 +11,13 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSpinBox,
+    QDateEdit,
 )
-from PySide6.QtCore import SignalInstance
+from PySide6.QtCore import SignalInstance, Qt
 from PySide6.QtGui import QPixmap
 
 from typeutil import none_throws
+from dateutil import Weekday
 
 
 FIRST_PAGE_ID = 0
@@ -25,6 +27,7 @@ BLOCK_PAGE_ID = 20
 
 START_FIELD = "start"
 END_FIELD = "end"
+BUDDY_DISABLED_FIELD = "buddy_disabled"
 BUDDY_START_FIELD = "buddy_start"
 BUDDY_END_FIELD = "buddy_end"
 
@@ -40,6 +43,12 @@ class DatePicker(QCalendarWidget):
 
     def selectedPythonDate(self) -> date:
         return cast(date, self.selectedDate().toPython())
+
+class CompactDatePicker(QDateEdit):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.setCalendarPopup(True)
 
 
 class StartEndPage(QWizardPage):
@@ -85,6 +94,11 @@ class DatesPage(StartEndPage):
         self._layout.addWidget(self.no, 4, 0)
         self.yes = QRadioButton("Yes")
         self._layout.addWidget(self.yes, 5, 0)
+
+    @override
+    def afterSetup(self) -> None:
+        super().afterSetup()
+        self.registerField(BUDDY_DISABLED_FIELD, self.no)
 
     @override
     def nextId(self) -> int:
@@ -163,7 +177,8 @@ class ResidentsPage(QWizardPage):
         line_edit = QLineEdit()
         line_edit.textChanged.connect(self.completeChanged)
         self._layout.addWidget(line_edit, self.row_count - 1, 0)
-        self._layout.addWidget(PGYSpinBox(), self.row_count - 1, 1)
+        pgy_edit = PGYSpinBox()
+        self._layout.addWidget(pgy_edit, self.row_count - 1, 1)
 
         self._layout.addWidget(self.add_btn, self.row_count, 0)
         self._layout.addWidget(self.remove_btn, self.row_count, 1)
@@ -197,21 +212,87 @@ class ResidentsPage(QWizardPage):
     def nextId(self) -> int:
         return BLOCK_PAGE_ID
 
+    def get_residents(self) -> list[tuple[str, int]]:
+        result = []
+        for i in range(1, self.row_count - 1):
+            name_widget = none_throws(self._layout.itemAtPosition(i, 0)).widget()
+            assert isinstance(name_widget, QLineEdit)
+            name = name_widget.text().strip()
+            pgy_widget = none_throws(self._layout.itemAtPosition(i, 1)).widget()
+            assert isinstance(pgy_widget, QSpinBox)
+            pgy = pgy_widget.value()
+            result.append((name, pgy))
+        return result
+
     @override
     def isComplete(self) -> bool:
-        for i in range(1, self.row_count - 1):
-            item = none_throws(self._layout.itemAtPosition(i, 0)).widget()
-            assert isinstance(item, QLineEdit)
-            if not item.text().strip():
-                return False
-        return True
+        return all(name for name, _ in self.get_residents())
 
 
 class BlockPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
 
+        self.num_blocks = 0
+        self._layout = QGridLayout(self)
+
+        self.add_btn = QPushButton("Add")
+        self.add_btn.setAutoDefault(False)
+        self.add_btn.clicked.connect(self.addBlock)
+        self._layout.addWidget(self.add_btn, 0, 0)
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.setAutoDefault(False)
+        self.remove_btn.setEnabled(False)
+        self.remove_btn.clicked.connect(self.removeBlock)
+        self._layout.addWidget(self.remove_btn, 0, 1)
+
+    def addBlock(self) -> None:
+        overall_start = self.field(START_FIELD)
+        overall_end = self.field(END_FIELD)
+
+        self._layout.removeWidget(self.add_btn)
+        self._layout.removeWidget(self.remove_btn)
+
+        start_row = self.num_blocks * 3
+
+        self._layout.addWidget(QLabel(f"Block {self.num_blocks + 1}"), start_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._layout.addWidget(QLabel("Block Start"), start_row + 1, 0)
+        start = CompactDatePicker()
+        start.setMinimumDate(overall_start)
+        start.setMaximumDate(overall_end)
+        self._layout.addWidget(start, start_row + 1, 1)
+        self._layout.addWidget(QLabel("Block End"), start_row + 2, 0)
+        end = CompactDatePicker()
+        end.setMinimumDate(overall_start)
+        end.setMaximumDate(overall_end)
+        self._layout.addWidget(end, start_row + 2, 1)
+        for i, weekday in enumerate(Weekday.just_weekdays()):
+            self._layout.addWidget(QLabel(weekday.human_name()), start_row + 3 + i, 0)
+            self._layout.addWidget() # TODO populate with resident multi combo box or something
+        self.num_blocks += 1
+
+        self._layout.addWidget(self.add_btn, start_row + 3, 0)
+        self._layout.addWidget(self.remove_btn, start_row + 3, 1)
+
+    def removeBlock(self) -> None:
+        pass
         # TODO implement
+
+    @override
+    def initializePage(self) -> None:
+        super().initializePage()
+
+        wizard = self.wizard()
+        assert isinstance(wizard, SetupWizard)
+        r = wizard.get_residents()
+        # TODO use residents in schedule
+
+        self.addBlock()
+
+    @override
+    def isComplete(self) -> bool:
+        # TODO validate that all dates are valid (within valid range, don't overlap, all dates are covered)
+        return True
 
 
 class SetupWizard(QWizard):
@@ -228,7 +309,11 @@ class SetupWizard(QWizard):
         self.setPage(FIRST_PAGE_ID, dates_page)
         buddy_page = BuddyPage()
         self.setPage(BUDDY_PAGE_ID, buddy_page)
-        self.setPage(RESIDENTS_PAGE_ID, ResidentsPage())
+        self.residents_page = ResidentsPage()
+        self.setPage(RESIDENTS_PAGE_ID, self.residents_page)
         self.setPage(BLOCK_PAGE_ID, BlockPage())
         dates_page.afterSetup()
         buddy_page.afterSetup()
+
+    def get_residents(self) -> list[tuple[str, int]]:
+        return self.residents_page.get_residents()
