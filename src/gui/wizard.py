@@ -70,6 +70,27 @@ class StartEndPage(QWizardPage):
         return self.start.selectedPythonDate() < self.end.selectedPythonDate()
 
 
+class DatesPage(StartEndPage):
+    def __init__(self) -> None:
+        super().__init__(
+            "What is the first and last day to be OptimEYEsd? You cannot change this later.",
+            START_FIELD,
+            END_FIELD,
+        )
+
+        buddy_description = QLabel("Is there a buddy call period?")
+        self._layout.addWidget(buddy_description, 3, 0, 1, 2)
+        self.no = QRadioButton("No")
+        self.no.setChecked(True)
+        self._layout.addWidget(self.no, 4, 0)
+        self.yes = QRadioButton("Yes")
+        self._layout.addWidget(self.yes, 5, 0)
+
+    @override
+    def nextId(self) -> int:
+        return RESIDENTS_PAGE_ID if self.no.isChecked() else BUDDY_PAGE_ID
+
+
 class BuddyPage(StartEndPage):
     def __init__(self) -> None:
         super().__init__(
@@ -102,27 +123,6 @@ class BuddyPage(StartEndPage):
             and self.start.selectedPythonDate() >= overall_start
             and self.end.selectedPythonDate() <= overall_end
         )
-
-
-class DatesPage(StartEndPage):
-    def __init__(self) -> None:
-        super().__init__(
-            "What is the first and last day to be OptimEYEsd? You cannot change this later.",
-            START_FIELD,
-            END_FIELD,
-        )
-
-        buddy_description = QLabel("Is there a buddy call period?")
-        self._layout.addWidget(buddy_description, 3, 0, 1, 2)
-        self.no = QRadioButton("No")
-        self.no.setChecked(True)
-        self._layout.addWidget(self.no, 4, 0)
-        self.yes = QRadioButton("Yes")
-        self._layout.addWidget(self.yes, 5, 0)
-
-    @override
-    def nextId(self) -> int:
-        return RESIDENTS_PAGE_ID if self.no.isChecked() else BUDDY_PAGE_ID
 
 
 class PGYSpinBox(QSpinBox):
