@@ -17,7 +17,13 @@ class Weekday(IntEnum):
 
     @staticmethod
     def just_weekdays() -> list["Weekday"]:
-        return [Weekday.MONDAY, Weekday.TUESDAY, Weekday.WEDNESDAY, Weekday.THURSDAY, Weekday.FRIDAY]
+        return [
+            Weekday.MONDAY,
+            Weekday.TUESDAY,
+            Weekday.WEDNESDAY,
+            Weekday.THURSDAY,
+            Weekday.FRIDAY,
+        ]
 
 
 # The number of days between the start date and the next given day of the week

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QWizard,
     QWizardPage,
     QGridLayout,
+    QHBoxLayout,
     QCalendarWidget,
     QLabel,
     QRadioButton,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QDateEdit,
+    QWidget,
 )
 from PySide6.QtCore import SignalInstance, Qt
 from PySide6.QtGui import QPixmap
@@ -43,6 +45,7 @@ class DatePicker(QCalendarWidget):
 
     def selectedPythonDate(self) -> date:
         return cast(date, self.selectedDate().toPython())
+
 
 class CompactDatePicker(QDateEdit):
     def __init__(self) -> None:
@@ -229,6 +232,19 @@ class ResidentsPage(QWizardPage):
         return all(name for name, _ in self.get_residents())
 
 
+class MultiResidentSelectWidget(QWidget):
+    def __init__(self, residents: list[str]) -> None:
+        super().__init__()
+
+        self.setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        for resident in residents:
+            layout.addWidget(QLabel(resident))
+            # TODO add check boxes
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+
 class BlockPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
@@ -249,13 +265,25 @@ class BlockPage(QWizardPage):
     def addBlock(self) -> None:
         overall_start = self.field(START_FIELD)
         overall_end = self.field(END_FIELD)
+        wizard = self.wizard()
+        assert isinstance(wizard, SetupWizard)
+        residents = wizard.get_residents()
+        resident_names = [name for name, _ in residents]
 
         self._layout.removeWidget(self.add_btn)
         self._layout.removeWidget(self.remove_btn)
 
-        start_row = self.num_blocks * 3
+        weekdays = Weekday.just_weekdays()
+        start_row = self.num_blocks * (3 + len(weekdays))
 
-        self._layout.addWidget(QLabel(f"Block {self.num_blocks + 1}"), start_row, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._layout.addWidget(
+            QLabel(f"Block {self.num_blocks + 1}"),
+            start_row,
+            0,
+            1,
+            2,
+            alignment=Qt.AlignmentFlag.AlignCenter,
+        )
         self._layout.addWidget(QLabel("Block Start"), start_row + 1, 0)
         start = CompactDatePicker()
         start.setMinimumDate(overall_start)
@@ -266,28 +294,56 @@ class BlockPage(QWizardPage):
         end.setMinimumDate(overall_start)
         end.setMaximumDate(overall_end)
         self._layout.addWidget(end, start_row + 2, 1)
-        for i, weekday in enumerate(Weekday.just_weekdays()):
+        for i, weekday in enumerate(weekdays):
             self._layout.addWidget(QLabel(weekday.human_name()), start_row + 3 + i, 0)
-            self._layout.addWidget() # TODO populate with resident multi combo box or something
-        self.num_blocks += 1
+            combo = MultiResidentSelectWidget(resident_names)
+            self._layout.addWidget(combo, start_row + 3 + i, 1)
 
-        self._layout.addWidget(self.add_btn, start_row + 3, 0)
-        self._layout.addWidget(self.remove_btn, start_row + 3, 1)
+        self._layout.addWidget(self.add_btn, start_row + 3 + len(weekdays), 0)
+        self._layout.addWidget(self.remove_btn, start_row + 3 + len(weekdays), 1)
+
+        self.num_blocks += 1
+        if self.num_blocks >= 2:
+            self.remove_btn.setEnabled(True)
+        self.completeChanged.emit()
+
+    def widgetAt(self, row: int, col: int) -> QWidget:
+        return none_throws(self._layout.itemAtPosition(row, col)).widget()
 
     def removeBlock(self) -> None:
-        pass
-        # TODO implement
+        self._layout.removeWidget(self.add_btn)
+        self._layout.removeWidget(self.remove_btn)
+
+        weekdays = len(Weekday.just_weekdays())
+        start_row = (self.num_blocks - 1) * (3 + weekdays)
+        for i in range(3 + weekdays):
+            left = self.widgetAt(start_row + i, 0)
+            right = self.widgetAt(start_row + i, 1)
+            left.hide()
+            right.hide()
+            self._layout.removeWidget(left)
+            self._layout.removeWidget(right)
+
+        self._layout.addWidget(self.add_btn, start_row, 0)
+        self._layout.addWidget(self.remove_btn, start_row, 1)
+
+        self.num_blocks -= 1
+        if self.num_blocks <= 1:
+            self.remove_btn.setEnabled(False)
+        self.completeChanged.emit()
 
     @override
     def initializePage(self) -> None:
         super().initializePage()
 
-        wizard = self.wizard()
-        assert isinstance(wizard, SetupWizard)
-        r = wizard.get_residents()
-        # TODO use residents in schedule
-
         self.addBlock()
+
+    @override
+    def cleanupPage(self) -> None:
+        super().cleanupPage()
+
+        while self.num_blocks > 0:
+            self.removeBlock()
 
     @override
     def isComplete(self) -> bool:
