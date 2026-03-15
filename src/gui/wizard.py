@@ -130,7 +130,8 @@ class PGYSpinBox(QSpinBox):
         super().__init__()
 
         self.setRange(2, 4)
-    
+
+
 class ResidentsPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
@@ -145,52 +146,51 @@ class ResidentsPage(QWizardPage):
         self._layout.addWidget(self.add_btn, 1, 0)
         self.remove_btn = QPushButton("Remove")
         self.remove_btn.setAutoDefault(False)
+        self.remove_btn.setEnabled(False)
         self.remove_btn.clicked.connect(self.removeRow)
         self._layout.addWidget(self.remove_btn, 1, 1)
 
         self._layout.setColumnStretch(0, 1)
         self._layout.setColumnStretch(1, 1)
 
+        self.row_count = 2
         self.addRow()
 
     def addRow(self) -> None:
-        print('adding row')
         self._layout.removeWidget(self.add_btn)
         self._layout.removeWidget(self.remove_btn)
 
-        rows = self._layout.rowCount()
-        print(f"row count is {rows}")
-
         line_edit = QLineEdit()
         line_edit.textChanged.connect(self.completeChanged)
-        self._layout.addWidget(line_edit, rows - 1, 0)
-        self._layout.addWidget(PGYSpinBox(), rows - 1, 1)
+        self._layout.addWidget(line_edit, self.row_count - 1, 0)
+        self._layout.addWidget(PGYSpinBox(), self.row_count - 1, 1)
 
-        self._layout.addWidget(self.add_btn, rows, 0)
-        self._layout.addWidget(self.remove_btn, rows, 1)
-        print('done adding row')
+        self._layout.addWidget(self.add_btn, self.row_count, 0)
+        self._layout.addWidget(self.remove_btn, self.row_count, 1)
 
+        self.row_count += 1
+        if self.row_count > 3:
+            self.remove_btn.setEnabled(True)
         self.completeChanged.emit()
 
     def removeRow(self) -> None:
         self._layout.removeWidget(self.add_btn)
         self._layout.removeWidget(self.remove_btn)
 
-        rows = self._layout.rowCount()
-
-        name = none_throws(self._layout.itemAtPosition(rows - 2, 0)).widget()
-        pgy = none_throws(self._layout.itemAtPosition(rows - 2, 1)).widget()
+        name = none_throws(self._layout.itemAtPosition(self.row_count - 2, 0)).widget()
+        pgy = none_throws(self._layout.itemAtPosition(self.row_count - 2, 1)).widget()
         name.hide()
         pgy.hide()
         self._layout.removeWidget(name)
         self._layout.removeWidget(pgy)
 
-        self._layout.addWidget(self.add_btn, rows - 2, 0)
-        self._layout.addWidget(self.remove_btn, rows - 2, 1)
+        self._layout.addWidget(self.add_btn, self.row_count - 2, 0)
+        self._layout.addWidget(self.remove_btn, self.row_count - 2, 1)
 
-        # TODO I think row count is innaccurate now, must track manually
-        # TODO ensure last row can't be removed (disable remove button)
-
+        self.row_count -= 1
+        if self.row_count <= 3:
+            # Disable button so last row can't be removed
+            self.remove_btn.setEnabled(False)
         self.completeChanged.emit()
 
     @override
@@ -199,9 +199,7 @@ class ResidentsPage(QWizardPage):
 
     @override
     def isComplete(self) -> bool:
-        print('checking is complete')
-        for i in range(1, self._layout.rowCount() - 1):
-            print(i)
+        for i in range(1, self.row_count - 1):
             item = none_throws(self._layout.itemAtPosition(i, 0)).widget()
             assert isinstance(item, QLineEdit)
             if not item.text().strip():
