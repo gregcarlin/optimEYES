@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QWizardPage,
     QGridLayout,
     QHBoxLayout,
+    QVBoxLayout,
     QCalendarWidget,
     QLabel,
     QRadioButton,
@@ -14,6 +15,8 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QDateEdit,
     QWidget,
+    QCheckBox,
+    QScrollArea,
 )
 from PySide6.QtCore import SignalInstance, Qt
 from PySide6.QtGui import QPixmap
@@ -238,9 +241,12 @@ class MultiResidentSelectWidget(QWidget):
 
         self.setContentsMargins(0, 0, 0, 0)
         layout = QHBoxLayout(self)
+        self.checks: dict[str, QCheckBox] = {}
         for resident in residents:
+            check = QCheckBox()
+            layout.addWidget(check)
+            self.checks[resident] = check
             layout.addWidget(QLabel(resident))
-            # TODO add check boxes
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -250,7 +256,15 @@ class BlockPage(QWizardPage):
         super().__init__()
 
         self.num_blocks = 0
-        self._layout = QGridLayout(self)
+
+        self.inner = QWidget()
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidget(self.inner)
+        self.scroll_area.setWidgetResizable(True)
+        outer_layout = QVBoxLayout(self)
+        outer_layout.addWidget(self.scroll_area)
+
+        self._layout = QGridLayout(self.inner)
 
         self.add_btn = QPushButton("Add")
         self.add_btn.setAutoDefault(False)
