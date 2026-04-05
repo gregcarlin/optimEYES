@@ -1,5 +1,7 @@
 from typing import override, cast
-from datetime import date
+from datetime import date, timedelta
+from dataclasses import dataclass
+from collections import defaultdict
 
 from PySide6.QtWidgets import (
     QWizard,
@@ -18,7 +20,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QScrollArea,
 )
-from PySide6.QtCore import SignalInstance, Qt
+from PySide6.QtCore import SignalInstance, Qt, QDate
 from PySide6.QtGui import QPixmap
 
 from typeutil import none_throws
@@ -55,6 +57,11 @@ class CompactDatePicker(QDateEdit):
         super().__init__()
 
         self.setCalendarPopup(True)
+
+    def get_date_as_python(self) -> date:
+        result = self.date().toPython()
+        assert isinstance(result, date)
+        return result
 
 
 class StartEndPage(QWizardPage):
@@ -236,7 +243,7 @@ class ResidentsPage(QWizardPage):
 
 
 class MultiResidentSelectWidget(QWidget):
-    def __init__(self, residents: list[str]) -> None:
+    def __init__(self, residents: list[str], complete_signal: SignalInstance) -> None:
         super().__init__()
 
         self.setContentsMargins(0, 0, 0, 0)
@@ -244,11 +251,22 @@ class MultiResidentSelectWidget(QWidget):
         self.checks: dict[str, QCheckBox] = {}
         for resident in residents:
             check = QCheckBox()
+            check.checkStateChanged.connect(complete_signal)
             layout.addWidget(check)
             self.checks[resident] = check
             layout.addWidget(QLabel(resident))
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+
+    def selected_residents(self) -> list[str]:
+        return [name for name, checkbox in self.checks.items() if checkbox.isChecked()]
+
+
+@dataclass
+class BlockData:
+    start: date
+    end: date
+    assignments: dict[Weekday, list[str]]
 
 
 class BlockPage(QWizardPage):
@@ -276,13 +294,18 @@ class BlockPage(QWizardPage):
         self.remove_btn.clicked.connect(self.removeBlock)
         self._layout.addWidget(self.remove_btn, 0, 1)
 
-    def addBlock(self) -> None:
-        overall_start = self.field(START_FIELD)
-        overall_end = self.field(END_FIELD)
+    def _get_date_bounds(self) -> tuple[QDate, QDate]:
+        return self.field(START_FIELD), self.field(END_FIELD)
+
+    def _get_residents(self) -> list[str]:
         wizard = self.wizard()
         assert isinstance(wizard, SetupWizard)
         residents = wizard.get_residents()
-        resident_names = [name for name, _ in residents]
+        return [name for name, _ in residents]
+
+    def addBlock(self) -> None:
+        overall_start, overall_end = self._get_date_bounds()
+        resident_names = self._get_residents()
 
         self._layout.removeWidget(self.add_btn)
         self._layout.removeWidget(self.remove_btn)
@@ -302,15 +325,17 @@ class BlockPage(QWizardPage):
         start = CompactDatePicker()
         start.setMinimumDate(overall_start)
         start.setMaximumDate(overall_end)
+        start.userDateChanged.connect(self.completeChanged)
         self._layout.addWidget(start, start_row + 1, 1)
         self._layout.addWidget(QLabel("Block End"), start_row + 2, 0)
         end = CompactDatePicker()
         end.setMinimumDate(overall_start)
         end.setMaximumDate(overall_end)
+        end.userDateChanged.connect(self.completeChanged)
         self._layout.addWidget(end, start_row + 2, 1)
         for i, weekday in enumerate(weekdays):
             self._layout.addWidget(QLabel(weekday.human_name()), start_row + 3 + i, 0)
-            combo = MultiResidentSelectWidget(resident_names)
+            combo = MultiResidentSelectWidget(resident_names, self.completeChanged)
             self._layout.addWidget(combo, start_row + 3 + i, 1)
 
         self._layout.addWidget(self.add_btn, start_row + 3 + len(weekdays), 0)
@@ -359,10 +384,62 @@ class BlockPage(QWizardPage):
         while self.num_blocks > 0:
             self.removeBlock()
 
+    def _get_data(self) -> list[BlockData]:
+        weekdays = len(Weekday.just_weekdays())
+
+        result: list[BlockData] = []
+        for block in range(self.num_blocks):
+            start = self.widgetAt(block * (3 + weekdays) + 1, 1)
+            assert isinstance(start, CompactDatePicker)
+            end = self.widgetAt(block * (3 + weekdays) + 2, 1)
+            assert isinstance(end, CompactDatePicker)
+            assignments: dict[Weekday, list[str]] = {}
+            for i, weekday in enumerate(Weekday.just_weekdays()):
+                combo = self.widgetAt(block * (3 + weekdays) + 3 + i, 1)
+                assert isinstance(combo, MultiResidentSelectWidget)
+                assignments[weekday] = combo.selected_residents()
+            result.append(
+                BlockData(
+                    start=start.get_date_as_python(),
+                    end=end.get_date_as_python(),
+                    assignments=assignments,
+                )
+            )
+
+        return sorted(result, key=lambda block: block.start)
+
     @override
     def isComplete(self) -> bool:
-        # TODO validate that all dates are valid (within valid range, don't overlap, all dates are covered)
-        return True
+        overall_qstart, overall_qend = self._get_date_bounds()
+        overall_start = cast(date, overall_qstart.toPython())
+        overall_end = cast(date, overall_qend.toPython())
+        resident_names = self._get_residents()
+
+        blocks = self._get_data()
+
+        # At least one block
+        if blocks == []:
+            return False
+        # Start and end matches overall bounds
+        if blocks[0].start != overall_start:
+            return False
+        if blocks[-1].end != overall_end:
+            return False
+
+        for block in blocks:
+            # All blocks are within bounds
+            if block.start < overall_start or block.end > overall_end:
+                return False
+            # End is after start
+            if block.start >= block.end:
+                return False
+
+        for block_a, block_b in zip(blocks[:-1], blocks[1:]):
+            # Next block should start one day after previous block
+            if block_b.start != block_a.end + timedelta(days=1):
+                return False
+
+        return super().isComplete()
 
 
 class SetupWizard(QWizard):
