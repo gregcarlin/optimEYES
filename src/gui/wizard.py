@@ -19,12 +19,15 @@ from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
     QScrollArea,
+    QMessageBox,
+    QFileDialog,
 )
 from PySide6.QtCore import SignalInstance, Qt, QDate
 from PySide6.QtGui import QPixmap
 
 from typeutil import none_throws
 from dateutil import Weekday
+from gui.common import show_alert
 
 
 FIRST_PAGE_ID = 0
@@ -442,9 +445,43 @@ class BlockPage(QWizardPage):
         return super().isComplete()
 
 
+    def get_save_file_name(self) -> str | None:
+        result = QFileDialog.getSaveFileName(self, "Save Project", "~/Documents/optimize_project.json", "*.json")
+        if not result:
+            # User cancelled
+            return None
+        if not result.endswith(".json"):
+            show_alert("File name must end in .json", self)
+            return self.get_save_file_name()
+        return result
+
     def validatePage(self) -> bool:
-        # TODO confirm with user? Then actually generated project
-        return super().validatePage()
+        confirm = QMessageBox(self)
+        confirm.setInformativeText("After this point, you will not be able to edit the block schedule. Future schedule changes will have to be applied to each day manually. Are you sure you want to proceed?")
+        confirm.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        confirm.setDefaultButton(QMessageBox.StandardButton.No)
+        result = confirm.exec()
+        if result == QMessageBox.StandardButton.No:
+            return False
+
+        project_path = self.get_save_file_name()
+        if not project_path:
+            # User cancelled
+            return False
+
+        qstart, qend = self._get_date_bounds()
+        start = cast(date, qstart.toPython())
+        end = cast(date, qend.toPython())
+        # TODO finish generating project
+        self.field(BUDDY_DISABLED_FIELD)
+        blocks = self._get_data()
+        project = Project(start_date=start, end_date=end, buddy_period=)
+
+        edit = EditProjectWidget(project_path, project)
+        edit.show()
+        center_on_screen(edit)
+
+        return True
 
 
 class SetupWizard(QWizard):
