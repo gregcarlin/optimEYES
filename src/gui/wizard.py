@@ -442,6 +442,11 @@ class BlockPage(QWizardPage):
         return super().isComplete()
 
 
+    def validatePage(self) -> bool:
+        # TODO confirm with user? Then actually generated project
+        return super().validatePage()
+
+
 class SetupWizard(QWizard):
     def __init__(self) -> None:
         super().__init__()
