@@ -2,6 +2,7 @@ from typing import override, cast
 from datetime import date, timedelta
 from dataclasses import dataclass
 from collections import defaultdict
+import random
 
 from PySide6.QtWidgets import (
     QWizard,
@@ -27,7 +28,10 @@ from PySide6.QtGui import QPixmap
 
 from typeutil import none_throws
 from dateutil import Weekday
-from gui.common import show_alert
+from structs.project import Project
+from availability import AvailabilityBuilder
+from gui.common import show_alert, center_on_screen
+from gui.project import EditProjectWidget
 
 
 FIRST_PAGE_ID = 0
@@ -300,15 +304,14 @@ class BlockPage(QWizardPage):
     def _get_date_bounds(self) -> tuple[QDate, QDate]:
         return self.field(START_FIELD), self.field(END_FIELD)
 
-    def _get_residents(self) -> list[str]:
+    def _get_residents(self) -> list[tuple[str, int]]:
         wizard = self.wizard()
         assert isinstance(wizard, SetupWizard)
-        residents = wizard.get_residents()
-        return [name for name, _ in residents]
+        return wizard.get_residents()
 
     def addBlock(self) -> None:
         overall_start, overall_end = self._get_date_bounds()
-        resident_names = self._get_residents()
+        resident_names = [name for name, _ in self._get_residents()]
 
         self._layout.removeWidget(self.add_btn)
         self._layout.removeWidget(self.remove_btn)
@@ -416,7 +419,7 @@ class BlockPage(QWizardPage):
         overall_qstart, overall_qend = self._get_date_bounds()
         overall_start = cast(date, overall_qstart.toPython())
         overall_end = cast(date, overall_qend.toPython())
-        resident_names = self._get_residents()
+        resident_names = [name for name, _ in self._get_residents()]
 
         blocks = self._get_data()
 
@@ -444,9 +447,10 @@ class BlockPage(QWizardPage):
 
         return super().isComplete()
 
-
     def get_save_file_name(self) -> str | None:
-        result = QFileDialog.getSaveFileName(self, "Save Project", "~/Documents/optimize_project.json", "*.json")
+        result, _ = QFileDialog.getSaveFileName(
+            self, "Save Project", "~/Documents/optimize_project.json", "*.json"
+        )
         if not result:
             # User cancelled
             return None
@@ -457,8 +461,12 @@ class BlockPage(QWizardPage):
 
     def validatePage(self) -> bool:
         confirm = QMessageBox(self)
-        confirm.setInformativeText("After this point, you will not be able to edit the block schedule. Future schedule changes will have to be applied to each day manually. Are you sure you want to proceed?")
-        confirm.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        confirm.setInformativeText(
+            "After this point, you will not be able to edit the block schedule. Future schedule changes will have to be applied to each day manually. Are you sure you want to proceed?"
+        )
+        confirm.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
         confirm.setDefaultButton(QMessageBox.StandardButton.No)
         result = confirm.exec()
         if result == QMessageBox.StandardButton.No:
@@ -469,13 +477,46 @@ class BlockPage(QWizardPage):
             # User cancelled
             return False
 
+        # Overall start/end
         qstart, qend = self._get_date_bounds()
         start = cast(date, qstart.toPython())
         end = cast(date, qend.toPython())
-        # TODO finish generating project
-        self.field(BUDDY_DISABLED_FIELD)
+
+        # Buddy period
+        if self.field(BUDDY_DISABLED_FIELD):
+            buddy_period = None
+        else:
+            buddy_start = cast(date, self.field(BUDDY_START_FIELD).toPython())
+            buddy_end = cast(date, self.field(BUDDY_END_FIELD).toPython())
+            buddy_period = buddy_start, buddy_end
+
+        # Availability
+        residents = {name: pgy for name, pgy in self._get_residents()}
+        availability_builder = AvailabilityBuilder(start, end, residents)
         blocks = self._get_data()
-        project = Project(start_date=start, end_date=end, buddy_period=)
+        for block in blocks:
+            for weekday, assigned in block.assignments.items():
+                if assigned != []:
+                    availability_builder.assign_to_day_of_week(
+                        assigned, weekday, block.start, block.end
+                    )
+        availability_or_errors = availability_builder.build()
+        if isinstance(availability_or_errors, list):
+            # Errors found in availability
+            show_alert("\n".join(availability_or_errors), self)
+            return False
+        availability, coverage = availability_or_errors
+
+        project = Project(
+            start_date=start,
+            end_date=end,
+            buddy_period=buddy_period,
+            availability=list(availability),
+            coverage=coverage,
+            seed=random.randrange(2147483647),
+            constraints=[],
+            objectives=[],
+        )
 
         edit = EditProjectWidget(project_path, project)
         edit.show()

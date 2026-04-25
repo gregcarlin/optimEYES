@@ -25,17 +25,17 @@ class ResidentBuilder:
 
 class AvailabilityBuilder:
     def __init__(
-        self, start_date: date, residents: dict[str, int], num_days: int
+        self, start_date: date, end_date: date, residents: dict[str, int]
     ) -> None:
         self.start_date = start_date
-        self.num_days = num_days
+        self.num_days = (end_date - start_date).days + 1
         self.residents = [
-            ResidentBuilder(name, pgy, num_days) for name, pgy in residents.items()
+            ResidentBuilder(name, pgy, self.num_days) for name, pgy in residents.items()
         ]
         # Tracks days a resident should be working due to their regular
         # schedule, but will instead get coverage because they're unavailable,
         # eg. due to vacation
-        self.coverage = [""] * num_days
+        self.coverage = [""] * self.num_days
         errors = self._validate()
         assert errors == [], errors
 
@@ -74,16 +74,25 @@ class AvailabilityBuilder:
                 )
         return errors
 
+    def _parse_date(self, d: str | date) -> date:
+        if isinstance(d, str):
+            return date.fromisoformat(d)
+        return d
+
     def assign_to_day_of_week(
-        self, residents: str | list[str], weekday: Weekday, start: str, end: str
+        self,
+        residents: str | list[str],
+        weekday: Weekday,
+        start: str | date,
+        end: str | date,
     ) -> None:
         """
         Assigns the given resident to be on call every given weekday between the two dates.
         If multiple residents are given, does round robin assignment.
         Both the start and end dates are inclusive.
         """
-        start_date = date.fromisoformat(start)
-        end_date = date.fromisoformat(end)
+        start_date = self._parse_date(start)
+        end_date = self._parse_date(end)
 
         if isinstance(residents, str):
             residents = [residents]

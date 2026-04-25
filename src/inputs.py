@@ -4,7 +4,6 @@ from dateutil import Weekday
 
 START_DATE = date.fromisoformat("2025-12-29")
 END_DATE = date.fromisoformat("2026-06-30")
-NUM_DAYS = (END_DATE - START_DATE).days + 1
 
 BUDDY_START = date.fromisoformat("2026-07-01")
 BUDDY_END = date.fromisoformat("2026-07-20")  # inclusive
@@ -40,7 +39,7 @@ RESIDENTS = {
 
 
 def get_availability() -> AvailabilityBuilder:
-    input = AvailabilityBuilder(START_DATE, RESIDENTS, NUM_DAYS)
+    input = AvailabilityBuilder(START_DATE, END_DATE, RESIDENTS)
 
     # Weekday call
 
