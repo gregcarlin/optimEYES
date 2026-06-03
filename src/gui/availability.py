@@ -36,7 +36,11 @@ class AvailabilityWidget(QtWidgets.QWidget):
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        old_data = self.project.availability, self.project.coverage
+        old_data = (
+            self.project.availability,
+            self.project.coverage,
+            self.project.buddy_period,
+        )
         new_data = self.table.get_data()
         if old_data == new_data:
             # Data is unchanged, close
@@ -52,9 +56,10 @@ class AvailabilityWidget(QtWidgets.QWidget):
                 event.ignore()
 
     def save_clicked(self) -> None:
-        availability, coverage = self.table.get_data()
+        availability, coverage, buddy = self.table.get_data()
         self.project.availability = availability
         self.project.coverage = coverage
+        self.project.buddy_period = buddy
         self.edit_parent.refresh_project()
         self.close()
 
@@ -76,9 +81,10 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(0 if project.availability == [] else num_days)
-        self.setColumnCount(len(project.availability) + 1)
+        self.setColumnCount(len(project.availability) + 2)
         self.setHorizontalHeaderLabels(
-            [resident.name for resident in project.availability] + ["Coverage note"]
+            [resident.name for resident in project.availability]
+            + ["Coverage note", "Buddy"]
         )
         self.setVerticalHeaderLabels(
             []
@@ -124,6 +130,23 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
             self.setCellWidget(day_index, len(project.availability), coverage_edit)
             self.coverages.append(coverage_edit)
 
+        buddy_period = project.buddy_period
+        self.buddy_checks: list[QtWidgets.QCheckBox] = []
+        for day_index in range(num_days):
+            check = QtWidgets.QCheckBox()
+            self.buddy_checks.append(check)
+            check.setChecked(buddy_period is not None and buddy_period[day_index])
+
+            # Magic needed to center check box
+            widget = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout(widget)
+            layout.addWidget(check)
+            layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            layout.setContentsMargins(0, 0, 0, 0)
+            widget.setLayout(layout)
+
+            self.setCellWidget(day_index, len(project.availability) + 1, check)
+
         # Set all columns to the width of the longest resident's name
         self.resizeColumnsToContents()
         column_width = max(
@@ -131,15 +154,15 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
         )
         for i in range(len(project.availability)):
             self.setColumnWidth(i, column_width)
-        self.setColumnWidth(len(project.availability), 200)
+        self.setColumnWidth(len(project.availability), 200)  # coverage note
+        self.setColumnWidth(len(project.availability) + 1, 50)  # buddy
 
     @override
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(700, 600)
 
-    def get_data(self) -> tuple[list[Resident], list[str]]:
+    def get_data(self) -> tuple[list[Resident], list[str], list[bool] | None]:
         residents: list[Resident] = []
-
         for resident in self.project.availability:
             availability = [
                 1 if box.checkState() != QtCore.Qt.CheckState.Unchecked else 0
@@ -154,4 +177,8 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
 
         coverage = [widget.text() for widget in self.coverages]
 
-        return residents, coverage
+        buddy = [box.isChecked() for box in self.buddy_checks]
+        if not (any(buddy)):
+            buddy = None
+
+        return residents, coverage, buddy
