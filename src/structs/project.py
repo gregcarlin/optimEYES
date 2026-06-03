@@ -13,7 +13,7 @@ from structs.resident import Resident
 class Project(ProjectInfo):
     start_date: date
     end_date: date
-    buddy_period: tuple[date, date] | None
+    buddy_period: list[bool] | None
     availability: list[Resident]
     coverage: list[str]
     seed: int
@@ -37,12 +37,7 @@ class Project(ProjectInfo):
         start_date = date.fromisoformat(data["start_date"])
         end_date = date.fromisoformat(data["end_date"])
 
-        if "buddy_period_start_date" and "buddy_period_end_date" in data:
-            buddy_start = date.fromisoformat(data["buddy_period_start_date"])
-            buddy_end = date.fromisoformat(data["buddy_period_end_date"])
-            buddy_period = (buddy_start, buddy_end)
-        else:
-            buddy_period = None
+        buddy_period = data.get("buddy_days")
 
         availability = [Resident.deserialize(r) for r in data["availability"]]
         coverage = data["coverage"]

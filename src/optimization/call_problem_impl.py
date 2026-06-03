@@ -65,35 +65,32 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             self.maxs_by_year[year] = upper
             self.mins_by_year[year] = lower
 
-        if project.buddy_period:
-            buddy_start, buddy_end = project.buddy_period
-
-            buddy_start_index = (buddy_start - self.start_date).days
-            buddy_end_index = (buddy_end - self.start_date).days  # inclusive
-            assert (
-                buddy_start_index >= 0 and buddy_start_index < self.num_days
-            ), "Invalid buddy call start date"
-            assert (
-                buddy_end_index >= 0 and buddy_end_index < self.num_days
-            ), "Invalid buddy call end date"
-
-            self._ensure_one_resident_per_day(range(buddy_start_index))
-            for day in range(buddy_start_index, buddy_end_index + 1):
-                # Ensure one PGY2 and either one PGY3 or PGY4 is assigned to each day
+        buddy_days = project.buddy_period or [False] * self.num_days
+        assert (
+            len(buddy_days) == self.num_days
+        ), f"Invalid size of buddy list. Got {len(buddy_days)}, expected {self.num_days}"
+        for day, is_buddy in enumerate(buddy_days):
+            if is_buddy:
+                # Ensure one PGY2 and one PGY3-5 is assigned to the day
                 vars_by_pgy = self._vars_for_day_by_pgy(day)
                 self.problem.add_constraint(sum(vars_by_pgy[2]) == 1)
-                self.problem.add_constraint(sum(vars_by_pgy[3] + vars_by_pgy[4]) == 1)
+                self.problem.add_constraint(
+                    sum(vars_by_pgy[3] + vars_by_pgy[4] + vars_by_pgy.get(5, [])) == 1
+                )
                 remaining_vars = [
                     v
                     for pgy, vs in vars_by_pgy.items()
-                    if pgy != 2 and pgy != 3
+                    if pgy != 2 and pgy != 3 and pgy != 4 and pgy != 5
                     for v in vs
                 ]
                 if remaining_vars != []:
                     self.problem.add_constraint(sum(remaining_vars) == 0)
-            self._ensure_one_resident_per_day(range(buddy_end_index + 1, self.num_days))
-        else:
-            self._ensure_one_resident_per_day(range(self.num_days))
+            else:
+                all_residents_for_day = [
+                    days_for_resident[day]
+                    for days_for_resident in self.day_vars.values()
+                ]
+                self.problem.add_constraint(sum(all_residents_for_day) == 1)
 
         # Ensure a resident doesn't work two days in a row
         for days_for_resident in self.day_vars.values():
@@ -105,14 +102,6 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         # Cache of q2s, q3s, etc
         self.qns: dict[int, dict[str, List[Variable]]] = {}
         self.va_vars: list[Variable] | None = None
-
-    def _ensure_one_resident_per_day(self, indices: range) -> None:
-        # Ensure exactly one resident is assigned to each day in the given range
-        for day in indices:
-            all_residents_for_day = [
-                days_for_resident[day] for days_for_resident in self.day_vars.values()
-            ]
-            self.problem.add_constraint(sum(all_residents_for_day) == 1)
 
     def _vars_for_day_by_pgy(self, day: int) -> Mapping[int, List[Variable]]:
         result = defaultdict(list)

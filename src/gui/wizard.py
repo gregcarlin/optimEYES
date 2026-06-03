@@ -488,7 +488,15 @@ class BlockPage(QWizardPage):
         else:
             buddy_start = cast(date, self.field(BUDDY_START_FIELD).toPython())
             buddy_end = cast(date, self.field(BUDDY_END_FIELD).toPython())
-            buddy_period = buddy_start, buddy_end
+            buddy_start_index = (buddy_start - start).days
+            buddy_end_index = (buddy_end - start).days
+            print(f"buddy start index is {buddy_start_index}")
+            print(f"buddy end index is {buddy_end_index}")
+            print(f"num days is {(end - start).days}")
+            buddy_period = [False] * (end - start).days
+            print(buddy_period)
+            for i in range(buddy_start_index, buddy_end_index + 1):
+                buddy_period[i] = True
 
         # Availability
         residents = {name: pgy for name, pgy in self._get_residents()}
