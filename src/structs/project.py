@@ -84,8 +84,7 @@ class Project(ProjectInfo):
             "end_date": f"{self.end_date:%Y-%m-%d}",
         }
         if self.buddy_period:
-            data["buddy_period_start_date"] = f"{self.buddy_period[0]:%Y-%m-%d}"
-            data["buddy_period_end_date"] = f"{self.buddy_period[1]:%Y-%m-%d}"
+            data["buddy_days"] = self.buddy_period
         data.update(
             {
                 "availability": [r.serialize() for r in self.availability],

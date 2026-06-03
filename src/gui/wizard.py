@@ -490,11 +490,7 @@ class BlockPage(QWizardPage):
             buddy_end = cast(date, self.field(BUDDY_END_FIELD).toPython())
             buddy_start_index = (buddy_start - start).days
             buddy_end_index = (buddy_end - start).days
-            print(f"buddy start index is {buddy_start_index}")
-            print(f"buddy end index is {buddy_end_index}")
-            print(f"num days is {(end - start).days}")
-            buddy_period = [False] * (end - start).days
-            print(buddy_period)
+            buddy_period = [False] * ((end - start).days + 1)
             for i in range(buddy_start_index, buddy_end_index + 1):
                 buddy_period[i] = True
 
@@ -525,6 +521,7 @@ class BlockPage(QWizardPage):
             constraints=[],
             objectives=[],
         )
+        project.write_to_file(project_path)
 
         edit = EditProjectWidget(project_path, project)
         edit.show()
