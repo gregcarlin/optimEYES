@@ -38,6 +38,8 @@ class Project(ProjectInfo):
         end_date = date.fromisoformat(data["end_date"])
 
         buddy_period = data.get("buddy_days")
+        if buddy_period:
+            buddy_period = [bool(day) for day in buddy_period]
 
         availability = [Resident.deserialize(r) for r in data["availability"]]
         coverage = data["coverage"]
@@ -84,7 +86,7 @@ class Project(ProjectInfo):
             "end_date": f"{self.end_date:%Y-%m-%d}",
         }
         if self.buddy_period:
-            data["buddy_days"] = self.buddy_period
+            data["buddy_days"] = [1 if day else 0 for day in self.buddy_period]
         data.update(
             {
                 "availability": [r.serialize() for r in self.availability],
