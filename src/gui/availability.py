@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import override
+from typing import override, Callable
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -81,9 +81,10 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
 
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.setRowCount(0 if project.availability == [] else num_days)
-        self.setColumnCount(len(project.availability) + 2)
+        self.setColumnCount(len(project.availability) + 3)
         self.setHorizontalHeaderLabels(
-            [resident.name for resident in project.availability]
+            ["Select"]
+            + [resident.name for resident in project.availability]
             + ["Coverage note", "Buddy"]
         )
         self.setVerticalHeaderLabels(
@@ -120,14 +121,14 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
                 layout.setContentsMargins(0, 0, 0, 0)
                 widget.setLayout(layout)
 
-                self.setCellWidget(day_index, resident_index, widget)
+                self.setCellWidget(day_index, resident_index + 1, widget)
 
         self.coverages: list[QtWidgets.QLineEdit] = []
         for day_index in range(num_days):
             coverage_edit = QtWidgets.QLineEdit(str(project.coverage[day_index]))
             coverage_edit.setFrame(False)
             coverage_edit.setCursorPosition(0)
-            self.setCellWidget(day_index, len(project.availability), coverage_edit)
+            self.setCellWidget(day_index, len(project.availability) + 1, coverage_edit)
             self.coverages.append(coverage_edit)
 
         buddy_period = project.buddy_period
@@ -145,7 +146,7 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
             layout.setContentsMargins(0, 0, 0, 0)
             widget.setLayout(layout)
 
-            self.setCellWidget(day_index, len(project.availability) + 1, check)
+            self.setCellWidget(day_index, len(project.availability) + 2, check)
 
         # Set all columns to the width of the longest resident's name
         self.resizeColumnsToContents()
@@ -154,8 +155,38 @@ class AvailabilityTableWidget(QtWidgets.QTableWidget):
         )
         for i in range(len(project.availability)):
             self.setColumnWidth(i, column_width)
-        self.setColumnWidth(len(project.availability), 200)  # coverage note
-        self.setColumnWidth(len(project.availability) + 1, 50)  # buddy
+        self.setColumnWidth(len(project.availability) + 1, 200)  # coverage note
+        self.setColumnWidth(len(project.availability) + 2, 50)  # buddy
+
+        # Add select all/none buttons after setting column widths
+        for day_index in range(num_days):
+            select_all_button = QtWidgets.QPushButton("All")
+            select_none_button = QtWidgets.QPushButton("None")
+            select_all_button.clicked.connect(self.set_row_state(day_index, True))
+            select_none_button.clicked.connect(self.set_row_state(day_index, False))
+            select_all_button.setFixedWidth(27)
+            select_none_button.setFixedWidth(45)
+            widget = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout(widget)
+            layout.addWidget(select_all_button)
+            layout.addWidget(select_none_button)
+            layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(0)
+            widget.setLayout(layout)
+            self.setCellWidget(day_index, 0, widget)
+        self.setColumnWidth(0, 80)
+
+    def set_row_state(self, row: int, state: bool) -> Callable[[], None]:
+        def select_all_impl() -> None:
+            for checks in self.checkboxes.values():
+                checks[row].setCheckState(
+                    QtCore.Qt.CheckState.Checked
+                    if state
+                    else QtCore.Qt.CheckState.Unchecked
+                )
+
+        return select_all_impl
 
     @override
     def sizeHint(self) -> QtCore.QSize:
