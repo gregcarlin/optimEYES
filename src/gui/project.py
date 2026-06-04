@@ -484,8 +484,9 @@ class EditProjectWidget(ProjectManagerWidget):
     def result_ready(self, result: SolveResult) -> None:
         self.generate_button.setEnabled(True)
         if isinstance(result.result, str):
-            self._set_result(QtWidgets.QLabel("Failed"))
+            self._set_result(QtWidgets.QLabel(result.result))
             # TODO attempt to generate hint to source of failure
-            print("Failed")
+            print("Failed:")
+            print(result.result)
         else:
             self._set_result(ScheduleResult(self.project, result.result))

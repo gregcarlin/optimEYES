@@ -42,6 +42,7 @@ class Project(ProjectInfo):
             buddy_period = [bool(day) for day in buddy_period]
 
         availability = [Resident.deserialize(r) for r in data["availability"]]
+        availability = list(sorted(availability, key=lambda r: (r.pgy, r.name)))
         coverage = data["coverage"]
 
         seed = int(data["seed"])
