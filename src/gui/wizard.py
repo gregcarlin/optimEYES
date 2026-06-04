@@ -163,7 +163,7 @@ class PGYSpinBox(QSpinBox):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setRange(2, 4)
+        self.setRange(1, 5)
 
 
 class ResidentsPage(QWizardPage):
