@@ -252,9 +252,14 @@ class SolveThread(QtCore.QThread):
                     residents_str = ", ".join(residents)
                     messages.append(f"{date:%a %m-%d}: {residents_str}")
                 return SolveResult(message + ", ".join(messages))
-            return SolveResult(
-                f"Solver returned {result}, and the secondary solver failed with: {result}"
-            )
+            elif result == "Infeasible" and debug_result == "Infeasible":
+                return SolveResult(
+                    "Even ignoring availability, these constraints are completely unsolvable."
+                )
+            else:
+                return SolveResult(
+                    f"Solver returned {result}, and the secondary solver failed with: {debug_result}"
+                )
 
 
 class ResultSummary(QtWidgets.QWidget):
