@@ -322,7 +322,10 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
             ["Calls", "Saturdays", "Sundays", "Q2s"]
             + [m.resident_metric_header() for m in metrics]
         )
-        resident_names = list(sorted(solution.residents.keys()))
+        resident_names = [
+            r.name
+            for r in sorted(solution.residents.values(), key=lambda r: (r.pgy, r.name))
+        ]
         self.setVerticalHeaderLabels(resident_names)
         self.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Fixed
