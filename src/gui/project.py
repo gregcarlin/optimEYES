@@ -10,7 +10,7 @@ from structs.field import (
     Field,
 )
 from optimization.call_problem_impl import CallProblemBuilderImpl
-from optimization.availability import AvailabilityConstraint
+from optimization.availability import AvailabilityConstraint, AvailabilityObjective
 from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from optimization.constraint import ConstraintRegistry
@@ -226,8 +226,35 @@ class SolveThread(QtCore.QThread):
         builder.apply_constraints([AvailabilityConstraint()])
         builder.apply_constraints(self.project.constraints)
         builder.set_objectives(self.project.objectives)
-        result = builder.solve()
-        self.done_signal.emit(SolveResult(result))
+        result = self._get_solve_result(builder.solve())
+        self.done_signal.emit(result)
+
+    def _get_solve_result(self, result: Solution | str) -> SolveResult:
+        if isinstance(result, Solution):
+            # Success!
+            return SolveResult(result)
+        else:
+            # Failure, re-solve with availability as an objective to determine why
+            debug_builder = CallProblemBuilderImpl(self.project)
+            debug_builder.apply_constraints(self.project.constraints)
+            debug_builder.set_objectives([AvailabilityObjective()])
+            debug_result = debug_builder.solve()
+            if isinstance(debug_result, Solution):
+                violations = debug_result.get_availability_violations()
+                if violations == []:
+                    return SolveResult(
+                        f"Solver returned {result}, and the secondary solver couldn't help :("
+                    )
+                message = f"Solver returned {result}. Hint (may not be accurate): Try checking the schedule around the following days and/or residents: "
+                messages = []
+                for day, residents in violations.items():
+                    date = self.project.start_date + timedelta(days=day)
+                    residents_str = ", ".join(residents)
+                    messages.append(f"{date:%a %m-%d}: {residents_str}")
+                return SolveResult(message + ", ".join(messages))
+            return SolveResult(
+                f"Solver returned {result}, and the secondary solver failed with: {result}"
+            )
 
 
 class ResultSummary(QtWidgets.QWidget):
@@ -485,7 +512,6 @@ class EditProjectWidget(ProjectManagerWidget):
         self.generate_button.setEnabled(True)
         if isinstance(result.result, str):
             self._set_result(QtWidgets.QLabel(result.result))
-            # TODO attempt to generate hint to source of failure
             print("Failed:")
             print(result.result)
         else:
