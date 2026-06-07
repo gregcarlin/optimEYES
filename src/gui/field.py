@@ -9,6 +9,7 @@ from structs.field import (
     IntermediateSentinel,
     WeekdayListField,
 )
+from gui.common import TableBackedWidget
 
 
 class TextFieldValidator(QtGui.QValidator):
@@ -116,18 +117,9 @@ class FileEdit(QtWidgets.QWidget):
         self.label.setText(self.path)
 
 
-class DictIntIntEdit(QtWidgets.QTableWidget):
+class DictIntIntEdit(TableBackedWidget):
     def __init__(self, data: dict[int, int], key_label: str, val_label: str) -> None:
         super().__init__()
-
-        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
-        self.verticalHeader().hide()
-        self.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeMode.Stretch
-        )
-        self.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeMode.Stretch
-        )
 
         self.setRowCount(len(data))
         self.setColumnCount(2)
@@ -155,4 +147,27 @@ class DictIntIntEdit(QtWidgets.QTableWidget):
             key = self._int_at(i, 0)
             value = self._int_at(i, 1)
             data[key] = value
+        return data
+
+class MultiCheckEdit(TableBackedWidget):
+    def __init__(self, data: dict[str, bool]) -> None:
+        super().__init__()
+
+        self.setRowCount(len(data))
+        self.setColumnCount(2)
+        self.horizontalHeader().hide()
+        self.keys = sorted(list(data.keys()))
+        for i, key in enumerate(self.keys):
+            key_item = QtWidgets.QLabel(key)
+            self.setCellWidget(i, 0, key_item)
+            check_item = QtWidgets.QCheckBox()
+            check_item.setChecked(data[key])
+            self.setCellWidget(i, 1, check_item)
+
+    def get_data(self) -> dict[str, bool]:
+        data = {}
+        for i in range(self.rowCount()):
+            widget = none_throws(self.cellWidget(i, 1))
+            assert isinstance(widget, QtWidgets.QCheckBox)
+            data[self.keys[i]] = widget.isChecked()
         return data

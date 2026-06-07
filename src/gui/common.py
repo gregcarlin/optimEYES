@@ -55,3 +55,16 @@ def clear_layout(layout: QtWidgets.QLayout, start_index: int = 0) -> None:
             widget.deleteLater()
         else:
             raise ValueError(f"Unknown layout item: {type(item)}")
+
+class TableBackedWidget(QtWidgets.QTableWidget):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        self.verticalHeader().hide()
+        self.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )

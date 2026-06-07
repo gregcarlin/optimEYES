@@ -191,9 +191,10 @@ class DistributeWeekendsConstraint(SerializableConstraint):
         if pgys == []:
             # Nothing selected means everything selected
             pgys = list(self.pgys.keys())
-        pgys = set(pgys)
-        min_var = builder.get_min_by_years_on_weekdays(pgys, {Weekday.SATURDAY, Weekday.SUNDAY})
-        max_var = builder.get_max_by_years_on_weekdays(pgys, {Weekday.SATURDAY, Weekday.SUNDAY})
+        pgys = frozenset(pgys)
+        weekend = frozenset({Weekday.SATURDAY, Weekday.SUNDAY})
+        min_var = builder.get_min_by_years_on_weekdays(pgys, weekend)
+        max_var = builder.get_max_by_years_on_weekdays(pgys, weekend)
         return [max_var - min_var <= self.tolerance]
 
 
