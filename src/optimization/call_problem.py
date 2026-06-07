@@ -1,6 +1,7 @@
 from typing import Mapping, Sequence
 from abc import ABC, abstractmethod
 from datetime import date
+from functools import cache
 
 from optimization.linear_problem import Variable, PulpProblem
 from structs.resident import Resident
@@ -50,4 +51,14 @@ class CallProblemBuilder(ABC):
 
     @abstractmethod
     def get_max_by_year(self, pgy: int) -> Variable:
+        pass
+
+    @abstractmethod
+    @cache
+    def get_min_by_years_on_weekdays(self, pgys: set[int], weekdays: set[Weekday]) -> Variable:
+        pass
+
+    @abstractmethod
+    @cache
+    def get_max_by_years_on_weekdays(self, pgys: set[int], weekdays: set[Weekday]) -> Variable:
         pass

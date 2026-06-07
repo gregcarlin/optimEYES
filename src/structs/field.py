@@ -111,3 +111,8 @@ class DictIntIntField(Field[dict[int, int]]):
 
     def parse(self, data: dict[int, int]) -> "DictIntIntField":
         return DictIntIntField(data, self.name, self.key_label, self.value_label)
+
+@dataclass
+class MultiCheckField(Field[dict[str, bool]]):
+    def parse(self, data: dict[str, bool]) -> "MultiCheckField":
+        return MultiCheckField(data, self.name)

@@ -2,6 +2,7 @@ from typing import Mapping, Sequence, List, override
 
 from datetime import date
 from collections import defaultdict
+from functools import cache
 
 from optimization.call_problem import CallProblemBuilder
 from optimization.solution import Solution, key_for_day
@@ -13,6 +14,7 @@ from structs.resident import Resident
 from optimization.linear_problem import (
     PulpProblem,
     Variable,
+    VariableLike,
 )
 
 
@@ -35,7 +37,6 @@ class CallProblemBuilderImpl(CallProblemBuilder):
 
         self.num_days = len(next(iter(project.availability)).availability)
         self.num_residents = len(project.availability)
-        self.soft_unavailable_days: list[Variable] = []
 
         # For each resident, create a variable representing every day
         self.day_vars = {resident.name: [] for resident in project.availability}
@@ -182,6 +183,41 @@ class CallProblemBuilderImpl(CallProblemBuilder):
     @override
     def get_max_by_year(self, pgy: int) -> Variable:
         return self.maxs_by_year[pgy]
+
+    def _get_vars_by_years_on_weekdays(self, pgys: set[int], weekdays: set[Weekday]) -> list[VariableLike]:
+        residents = [r.name for r in self.residents.values() if r.pgy in pgys]
+        resident_vars: dict[str, list[Variable]] = {}
+        for resident in residents:
+            rvs: list[Variable] = []
+            for weekday in weekdays:
+                rvs.extend(self.get_vars_for_weekday(resident, weekday))
+            resident_vars[resident] = rvs
+
+        return [sum(rvs) for rvs in resident_vars.values()]
+
+    @staticmethod
+    def _weekdays_key(weekdays: set[Weekday]) -> str:
+        return "+".join([w.human_name()[:3] for w in sorted(list(weekdays))])
+
+    @override
+    @cache
+    def get_min_by_years_on_weekdays(self, pgys: set[int], weekdays: set[Weekday]) -> Variable:
+        rvs = self._get_vars_by_years_on_weekdays(pgys, weekdays)
+        pgys_str = "+".join([str(pgy) for pgy in sorted(list(pgys))])
+        weekdays_str = CallProblemBuilderImpl._weekdays_key(weekdays)
+        return self.problem.min_of(
+            rvs, self.num_days, f"min_calls_pgys{pgys_str}_on_{weekdays_str}"
+        )
+
+    @override
+    @cache
+    def get_max_by_years_on_weekdays(self, pgys: set[int], weekdays: set[Weekday]) -> Variable:
+        rvs = self._get_vars_by_years_on_weekdays(pgys, weekdays)
+        pgys_str = "+".join([str(pgy) for pgy in sorted(list(pgys))])
+        weekdays_str = CallProblemBuilderImpl._weekdays_key(weekdays)
+        return self.problem.max_of(
+            rvs, self.num_days, f"max_calls_pgys{pgys_str}_on_{weekdays_str}"
+        )
 
     def apply_constraints(
         self, constraints: list[Constraint] | list[SerializableConstraint]
