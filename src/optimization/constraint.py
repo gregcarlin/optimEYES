@@ -232,61 +232,101 @@ class DistributeWeekendsConstraint(SerializableConstraint):
         return [max_var - min_var <= self.tolerance]
 
 
-class LimitWeekdayConstraint(SerializableConstraint):
-    def __init__(self, weekday: Weekday, limit: int) -> None:
+class ConstrainWeekdayConstraint(SerializableConstraint):
+    def __init__(
+        self, weekday: Weekday, minimum: int, limit: int, pgys: dict[int, bool]
+    ) -> None:
         self.weekday = weekday
+        self.minimum = minimum
         self.limit = limit
+        self.pgys = pgys
 
     @staticmethod
     @override
     def get_name() -> str:
-        return "limit_weekday"
+        return "constrain_weekday"
 
     @staticmethod
     @override
     def human_name() -> str:
-        return "Limit a day of the week"
+        return "Constrain a day of the week"
 
     @staticmethod
     @override
     def default(project: ProjectInfo) -> Constraint:
-        return LimitWeekdayConstraint(Weekday.MONDAY, 5)
+        min_pgy = project.get_min_pgy()
+        max_pgy = project.get_max_pgy()
+        return ConstrainWeekdayConstraint(
+            Weekday.MONDAY, 5, 10, {pgy: False for pgy in range(min_pgy, max_pgy + 1)}
+        )
 
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitWeekdayConstraint(Weekday(data["weekday"]), int(data["limit"]))
+        pgys = {int(k): bool(v) for k, v in data["pgys"].items()}
+        return ConstrainWeekdayConstraint(
+            Weekday(data["weekday"]), int(data["min"]), int(data["limit"]), pgys
+        )
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"weekday": int(self.weekday), "limit": self.limit}
+        return {
+            "weekday": int(self.weekday),
+            "min": self.minimum,
+            "limit": self.limit,
+            "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
+        }
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[WeekdayField, IntField]:
+    def fields(
+        self, project: ProjectInfo
+    ) -> tuple[WeekdayField, IntField, IntField, MultiCheckField]:
         return (
             WeekdayField(self.weekday, "Day of the week"),
-            IntField(self.limit, "Limit"),
+            IntField(self.minimum, "Minimum"),
+            IntField(self.limit, "Maximum"),
+            MultiCheckField({str(k): v for k, v in self.pgys.items()}, name="For PGYs"),
         )
 
     @override
     @staticmethod
-    def from_fields(fields: tuple[WeekdayField, IntField]) -> SerializableConstraint:
-        return LimitWeekdayConstraint(fields[0].value, fields[1].value)
+    def from_fields(
+        fields: tuple[WeekdayField, IntField, IntField, MultiCheckField],
+    ) -> SerializableConstraint:
+        pgys = {int(k): v for k, v in fields[3].value.items()}
+        return ConstrainWeekdayConstraint(
+            fields[0].value, fields[1].value, fields[2].value, pgys
+        )
 
     @override
     def description(self) -> str:
-        return f"Limit {self.weekday.human_name()}s to {self.limit}"
+        base = f"Constrain {self.weekday.human_name()}s between {self.minimum} and {self.limit}"
+        set_for = [str(k) for k, v in self.pgys.items() if v]
+        if set_for == []:
+            return base
+        elif len(set_for) == 1:
+            return base + " for PGY " + set_for[0]
+        else:
+            return base + " for PGYs " + ", ".join(set_for)
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
+        pgys = [pgy for pgy, v in self.pgys.items() if v]
+        if pgys == []:
+            # Nothing selected means everything selected
+            pgys = list(self.pgys.keys())
+        pgys = set(pgys)
+
         constraints: list[pulp.LpConstraint] = []
-        for days_for_resident in builder.get_day_vars().values():
+        for days_for_resident in builder.get_day_vars(pgys).values():
             day = days_until_next_weekday(builder.get_start_date(), self.weekday)
             day_vars = []
             while day < builder.get_num_days():
                 day_vars.append(days_for_resident[day])
                 day += 7
-            constraints.append(var_sum(day_vars) <= self.limit)
+            together = var_sum(day_vars)
+            constraints.append(together >= self.minimum)
+            constraints.append(together <= self.limit)
         return constraints
 
 
@@ -823,7 +863,7 @@ class ConstraintRegistry:
             for c in [
                 DistributeDayOfWeekConstraint,
                 DistributeWeekendsConstraint,
-                LimitWeekdayConstraint,
+                ConstrainWeekdayConstraint,
                 LimitWeekdayForResidentConstraint,
                 SetMinimumForDaysOfWeekForResidentConstraint,
                 NoAdjacentWeekendsConstraint,

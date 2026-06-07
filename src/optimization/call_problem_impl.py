@@ -131,8 +131,15 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         return self.problem
 
     @override
-    def get_day_vars(self) -> dict[str, list[Variable]]:
-        return self.day_vars
+    def get_day_vars(self, pgys: set[int] | None = None) -> dict[str, list[Variable]]:
+        if pgys is None:
+            return self.day_vars
+        else:
+            return {
+                name: vrs
+                for name, vrs in self.day_vars.items()
+                if self.residents[name].pgy in pgys
+            }
 
     @override
     def get_vars_for_weekday(self, resident: str, weekday: Weekday) -> list[Variable]:

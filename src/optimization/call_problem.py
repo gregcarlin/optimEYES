@@ -30,7 +30,7 @@ class CallProblemBuilder(ABC):
         pass
 
     @abstractmethod
-    def get_day_vars(self) -> dict[str, list[Variable]]:
+    def get_day_vars(self, pgys: set[int] | None = None) -> dict[str, list[Variable]]:
         pass
 
     @abstractmethod
