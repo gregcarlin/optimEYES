@@ -67,9 +67,13 @@ class SerializableConstraint(Constraint, Generic[TFields]):
         pass
 
 
-class DistributeDayOfWeekConstraint(SerializableConstraint[tuple[WeekdayField]]):
-    def __init__(self, weekday: Weekday) -> None:
+class DistributeDayOfWeekConstraint(
+    SerializableConstraint[tuple[WeekdayField, MultiCheckField, IntField]]
+):
+    def __init__(self, weekday: Weekday, pgys: dict[int, bool], tolerance: int) -> None:
         self.weekday = weekday
+        self.pgys = pgys
+        self.tolerance = tolerance
 
     @staticmethod
     @override
@@ -84,52 +88,70 @@ class DistributeDayOfWeekConstraint(SerializableConstraint[tuple[WeekdayField]])
     @staticmethod
     @override
     def default(project: ProjectInfo) -> Constraint:
-        return DistributeDayOfWeekConstraint(Weekday.MONDAY)
+        min_pgy = project.get_min_pgy()
+        max_pgy = project.get_max_pgy()
+        return DistributeDayOfWeekConstraint(
+            Weekday.MONDAY, {pgy: False for pgy in range(min_pgy, max_pgy + 1)}, 2
+        )
 
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return DistributeDayOfWeekConstraint(Weekday(data["weekday"]))
+        weekday = Weekday(data["weekday"])
+        pgys = {int(k): bool(v) for k, v in data["pgys"].items()}
+        tolerance = int(data["tolerance"])
+        return DistributeDayOfWeekConstraint(weekday, pgys, tolerance)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"weekday": int(self.weekday)}
+        return {
+            "weekday": int(self.weekday),
+            "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
+            "tolerance": self.tolerance,
+        }
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[WeekdayField]:
-        return (WeekdayField(self.weekday, "Day of the week"),)
+    def fields(
+        self, project: ProjectInfo
+    ) -> tuple[WeekdayField, MultiCheckField, IntField]:
+        return (
+            WeekdayField(self.weekday, name="Day of the week"),
+            MultiCheckField({str(k): v for k, v in self.pgys.items()}, name="For PGYs"),
+            IntField(self.tolerance, name="Tolerance"),
+        )
 
     @override
     @staticmethod
-    def from_fields(fields: tuple[WeekdayField]) -> SerializableConstraint:
-        weekday = fields[0]
-        return DistributeDayOfWeekConstraint(weekday.value)
+    def from_fields(
+        fields: tuple[WeekdayField, MultiCheckField, IntField],
+    ) -> SerializableConstraint:
+        weekday = fields[0].value
+        pgys = {int(k): v for k, v in fields[1].value.items()}
+        tolerance = fields[2].value
+        return DistributeDayOfWeekConstraint(weekday, pgys, tolerance)
 
     @override
     def description(self) -> str:
-        return f"Evenly distribute {self.weekday.human_name()}s"
+        base = f"Evenly distribute {self.weekday.human_name()}s"
+        set_for = [str(k) for k, v in self.pgys.items() if v]
+        if set_for == []:
+            return base
+        elif len(set_for) == 1:
+            return base + " for PGY " + set_for[0]
+        else:
+            return base + " for PGYs " + ", ".join(set_for)
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
-        num_weekdays = num_weekdays_in_time_period(
-            builder.get_start_date(), builder.get_num_days(), self.weekday
-        )
-        min_weekdays_per_resident = math.floor(
-            num_weekdays / float(builder.get_num_residents())
-        )
-        max_weekdays_per_resident = math.ceil(
-            num_weekdays / float(builder.get_num_residents())
-        )
-        constraints: list[pulp.LpConstraint] = []
-        for days_for_resident in builder.get_day_vars().values():
-            day_of_week_vars: list[pulp.LpVariable] = []
-            next_day = days_until_next_weekday(builder.get_start_date(), self.weekday)
-            while next_day < builder.get_num_days():
-                day_of_week_vars.append(days_for_resident[next_day])
-                next_day += 7
-            constraints.append(var_sum(day_of_week_vars) >= min_weekdays_per_resident)
-            constraints.append(var_sum(day_of_week_vars) <= max_weekdays_per_resident)
-        return constraints
+        pgys = [pgy for pgy, v in self.pgys.items() if v]
+        if pgys == []:
+            # Nothing selected means everything selected
+            pgys = list(self.pgys.keys())
+        pgys = frozenset(pgys)
+        days = frozenset({self.weekday})
+        min_var = builder.get_min_by_years_on_weekdays(pgys, days)
+        max_var = builder.get_max_by_years_on_weekdays(pgys, days)
+        return [max_var - min_var <= self.tolerance]
 
 
 class DistributeWeekendsConstraint(SerializableConstraint):
