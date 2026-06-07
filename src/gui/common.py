@@ -56,6 +56,7 @@ def clear_layout(layout: QtWidgets.QLayout, start_index: int = 0) -> None:
         else:
             raise ValueError(f"Unknown layout item: {type(item)}")
 
+
 class TableBackedWidget(QtWidgets.QTableWidget):
     def __init__(self) -> None:
         super().__init__()

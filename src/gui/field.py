@@ -149,6 +149,7 @@ class DictIntIntEdit(TableBackedWidget):
             data[key] = value
         return data
 
+
 class MultiCheckEdit(TableBackedWidget):
     def __init__(self, data: dict[str, bool]) -> None:
         super().__init__()

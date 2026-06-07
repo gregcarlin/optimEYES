@@ -102,7 +102,14 @@ class SectionHeaderWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta)
         pass
 
 
-Editor = DropDownEdit | TextFieldEdit | WeekdayListEdit | FileEdit | DictIntIntEdit | MultiCheckEdit
+Editor = (
+    DropDownEdit
+    | TextFieldEdit
+    | WeekdayListEdit
+    | FileEdit
+    | DictIntIntEdit
+    | MultiCheckEdit
+)
 
 
 class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
@@ -158,7 +165,14 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
     @staticmethod
     def _rebuild_field(
         field: Field, widget: Editor
-    ) -> OptionField | TextInputField | WeekdayListField | FileField | DictIntIntField | MultiCheckField:
+    ) -> (
+        OptionField
+        | TextInputField
+        | WeekdayListField
+        | FileField
+        | DictIntIntField
+        | MultiCheckField
+    ):
         if isinstance(field, OptionField):
             assert isinstance(widget, DropDownEdit)
             return field.parse(widget.currentIndex())

@@ -184,7 +184,9 @@ class CallProblemBuilderImpl(CallProblemBuilder):
     def get_max_by_year(self, pgy: int) -> Variable:
         return self.maxs_by_year[pgy]
 
-    def _get_vars_by_years_on_weekdays(self, pgys: frozenset[int], weekdays: frozenset[Weekday]) -> list[VariableLike]:
+    def _get_vars_by_years_on_weekdays(
+        self, pgys: frozenset[int], weekdays: frozenset[Weekday]
+    ) -> list[VariableLike]:
         residents = [r.name for r in self.residents.values() if r.pgy in pgys]
         resident_vars: dict[str, list[Variable]] = {}
         for resident in residents:
@@ -201,7 +203,9 @@ class CallProblemBuilderImpl(CallProblemBuilder):
 
     @override
     @cache
-    def get_min_by_years_on_weekdays(self, pgys: frozenset[int], weekdays: frozenset[Weekday]) -> Variable:
+    def get_min_by_years_on_weekdays(
+        self, pgys: frozenset[int], weekdays: frozenset[Weekday]
+    ) -> Variable:
         rvs = self._get_vars_by_years_on_weekdays(pgys, weekdays)
         pgys_str = "+".join([str(pgy) for pgy in sorted(list(pgys))])
         weekdays_str = CallProblemBuilderImpl._weekdays_key(weekdays)
@@ -211,7 +215,9 @@ class CallProblemBuilderImpl(CallProblemBuilder):
 
     @override
     @cache
-    def get_max_by_years_on_weekdays(self, pgys: frozenset[int], weekdays: frozenset[Weekday]) -> Variable:
+    def get_max_by_years_on_weekdays(
+        self, pgys: frozenset[int], weekdays: frozenset[Weekday]
+    ) -> Variable:
         rvs = self._get_vars_by_years_on_weekdays(pgys, weekdays)
         pgys_str = "+".join([str(pgy) for pgy in sorted(list(pgys))])
         weekdays_str = CallProblemBuilderImpl._weekdays_key(weekdays)

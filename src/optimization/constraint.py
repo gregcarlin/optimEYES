@@ -152,7 +152,9 @@ class DistributeWeekendsConstraint(SerializableConstraint):
     def default(project: ProjectInfo) -> Constraint:
         min_pgy = project.get_min_pgy()
         max_pgy = project.get_max_pgy()
-        return DistributeWeekendsConstraint({pgy: False for pgy in range(min_pgy, max_pgy + 1)}, 2)
+        return DistributeWeekendsConstraint(
+            {pgy: False for pgy in range(min_pgy, max_pgy + 1)}, 2
+        )
 
     @staticmethod
     @override
@@ -163,16 +165,26 @@ class DistributeWeekendsConstraint(SerializableConstraint):
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"pgys": {k: 1 if v else 0 for k, v in self.pgys.items()}, "tolerance": self.tolerance}
+        return {
+            "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
+            "tolerance": self.tolerance,
+        }
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[(MultiCheckField, IntField)]:
-        return (MultiCheckField({str(k): v for k, v in self.pgys.items()}, name="For PGYs"), IntField(self.tolerance, name="Tolerance"))
+        return (
+            MultiCheckField({str(k): v for k, v in self.pgys.items()}, name="For PGYs"),
+            IntField(self.tolerance, name="Tolerance"),
+        )
 
     @override
     @staticmethod
-    def from_fields(fields: tuple[(MultiCheckField, IntField)]) -> SerializableConstraint:
-        return DistributeWeekendsConstraint({int(k): v for k, v in fields[0].value.items()}, fields[1].value)
+    def from_fields(
+        fields: tuple[(MultiCheckField, IntField)],
+    ) -> SerializableConstraint:
+        return DistributeWeekendsConstraint(
+            {int(k): v for k, v in fields[0].value.items()}, fields[1].value
+        )
 
     @override
     def description(self) -> str:

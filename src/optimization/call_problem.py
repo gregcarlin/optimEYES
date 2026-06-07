@@ -55,10 +55,14 @@ class CallProblemBuilder(ABC):
 
     @abstractmethod
     @cache
-    def get_min_by_years_on_weekdays(self, pgys: frozenset[int], weekdays: frozenset[Weekday]) -> Variable:
+    def get_min_by_years_on_weekdays(
+        self, pgys: frozenset[int], weekdays: frozenset[Weekday]
+    ) -> Variable:
         pass
 
     @abstractmethod
     @cache
-    def get_max_by_years_on_weekdays(self, pgys: frozenset[int], weekdays: frozenset[Weekday]) -> Variable:
+    def get_max_by_years_on_weekdays(
+        self, pgys: frozenset[int], weekdays: frozenset[Weekday]
+    ) -> Variable:
         pass
