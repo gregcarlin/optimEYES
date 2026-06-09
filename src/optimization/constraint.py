@@ -535,9 +535,9 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        enabled = bool(data["enabled"])
         num = int(data["num"])
-        return NoAdjacentWeekendsConstraint(enabled)
+        enabled = bool(data["enabled"])
+        return NoAdjacentWeekendsConstraint(num, enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
