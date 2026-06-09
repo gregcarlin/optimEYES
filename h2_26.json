@@ -1122,7 +1122,7 @@
     0,
     1,
     1,
-    1,
+    0,
     0,
     1,
     0,
@@ -1490,7 +1490,7 @@
     0,
     1,
     1,
-    1,
+    0,
     1,
     1,
     0,
@@ -1858,7 +1858,7 @@
     0,
     1,
     0,
-    1,
+    0,
     0,
     0,
     0,
@@ -3330,7 +3330,7 @@
     0,
     1,
     0,
-    0,
+    1,
     0,
     0,
     0,
@@ -4347,6 +4347,15 @@
     "limit": 4,
     "enabled": 1
    }
+  },
+  {
+   "name": "limit_weekday_for_resident",
+   "data": {
+    "weekday": 5,
+    "limit": 0,
+    "resident": "Sophia",
+    "enabled": 1
+   }
   }
  ],
  "objectives": [
@@ -4363,21 +4372,21 @@
   {
    "name": "changes_from_previous_solution",
    "data": {
-    "path": "/Users/gregcarlin/Downloads/result3.csv",
+    "path": "/Users/gregcarlin/Downloads/result6.csv",
     "data": [
      "Andrew",
      "Keir",
      "Jessica",
      "Andrew",
      "Jessica",
-     "Sophia",
+     "Paris",
      "Andrieh",
      "Alex",
      "Andrew",
      "Loubna",
      "Jessica",
      "Alex",
-     "Andrew",
+     "Sophia",
      "Andrieh",
      "Andrew",
      "Alex",
@@ -4393,7 +4402,7 @@
      "Andrew",
      "Sophia",
      "Loubna",
-     "Paris",
+     "Andrew",
      "Alex",
      "Jessica",
      "Paris",

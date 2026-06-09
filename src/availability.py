@@ -50,7 +50,6 @@ class AvailabilityBuilder:
         errors = []
         errors += self._validate_num_days_are_equal()
         errors += self._validate_no_days_without_availability()
-        # TODO maybe add other validations
         return errors
 
     def _validate_num_days_are_equal(self) -> list[str]:

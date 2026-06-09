@@ -27,29 +27,27 @@ from gui.field import (
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
     def __init__(
-        self, project: Project, rows: int, buttons: int, enable_check: bool = False
+        self, project: Project, rows: int, buttons: int, col_offset: int = 0
     ) -> None:
         super().__init__()
 
         self.project = project
-        self.enable_check = enable_check
+        self.col_offset = col_offset
 
         self.setRowCount(rows)
-        self.setColumnCount(buttons + 1 + self._offset())
+        self.setColumnCount(buttons + 1 + self.col_offset)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(
-            1 if enable_check else 0, QtWidgets.QHeaderView.ResizeMode.Stretch
+            self.col_offset, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
-        if self.enable_check:
-            self.setColumnWidth(0, 25)
         for i in range(buttons):
-            self.setColumnWidth(self._offset() + i + 1, 50)
+            self.setColumnWidth(self.col_offset + i + 1, 50)
 
         self.edit_widget = None
 
@@ -57,30 +55,20 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
     def sizeHint(self) -> QtCore.QSize:
         return QtCore.QSize(400, 600)
 
-    def _offset(self) -> int:
-        return 1 if self.enable_check else 0
-
-    def setRow(
-        self, index: int, label: str, editable: bool, checked: bool = False
-    ) -> None:
-        if self.enable_check:
-            check = QtWidgets.QCheckBox()
-            check.stateChanged.connect(partial(self.check_changed, index=index))
-            check.setChecked(checked)
-            self.setCellWidget(index, 0, check)
+    def setRow(self, index: int, label: str, editable: bool) -> None:
         text = QtWidgets.QLabel(label)
         text.setMargin(5)
         text.setWordWrap(True)
-        self.setCellWidget(index, self._offset(), text)
+        self.setCellWidget(index, self.col_offset, text)
         if editable:
             edit_button = QtWidgets.QPushButton("Edit")
             edit_button.setFixedHeight(40)
             edit_button.clicked.connect(partial(self.edit_clicked, index=index))
-            self.setCellWidget(index, 1 + self._offset(), edit_button)
+            self.setCellWidget(index, 1 + self.col_offset, edit_button)
         delete_button = QtWidgets.QPushButton("Delete")
         delete_button.setFixedHeight(40)
         delete_button.clicked.connect(partial(self.delete_clicked, index=index))
-        self.setCellWidget(index, 2 + self._offset(), delete_button)
+        self.setCellWidget(index, 2 + self.col_offset, delete_button)
 
     @abstractmethod
     def edit_clicked(self, index: int) -> None:
@@ -88,9 +76,6 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
 
     @abstractmethod
     def delete_clicked(self, index: int) -> None:
-        pass
-
-    def check_changed(self, state: QtCore.Qt.CheckState, index: int) -> None:
         pass
 
 

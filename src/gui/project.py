@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import override
+from functools import partial
 from dataclasses import dataclass
 from datetime import timedelta, datetime
 
@@ -159,19 +160,28 @@ class AddObjectiveWidget(AddNewWidget):
 
 class ConstraintsWidget(TableWidget):
     def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
-        super().__init__(
-            project, len(project.constraints), buttons=2, enable_check=True
-        )
+        super().__init__(project, len(project.constraints), buttons=2, col_offset=1)
 
         self.edit_parent = parent
 
+        self.setColumnWidth(0, 25)  # checkbox column
+
         for i, constraint in enumerate(project.constraints):
-            self.setRow(
+            self.setRowWithCheck(
                 i,
                 constraint.description(),
                 constraint.fields(self.project) != (),
                 constraint.enabled,
             )
+
+    def setRowWithCheck(
+        self, index: int, label: str, editable: bool, checked: bool
+    ) -> None:
+        check = QtWidgets.QCheckBox()
+        check.stateChanged.connect(partial(self.check_changed, index=index))
+        check.setChecked(checked)
+        self.setCellWidget(index, 0, check)
+        super().setRow(index, label, editable)
 
     @override
     def edit_clicked(self, index: int) -> None:
@@ -185,7 +195,6 @@ class ConstraintsWidget(TableWidget):
         self.project.constraints.pop(index)
         self.edit_parent.refresh_project()
 
-    @override
     def check_changed(self, state: QtCore.Qt.CheckState, index: int) -> None:
         new_state = bool(state)
         if self.project.constraints[index].enabled != new_state:
