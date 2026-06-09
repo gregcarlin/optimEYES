@@ -413,6 +413,8 @@ class ScheduleResult(QtWidgets.QWidget):
     def __init__(self, project: Project, solution: Solution) -> None:
         super().__init__()
 
+        self.solution = solution
+
         layout = QtWidgets.QGridLayout(self)
         self.summary = ResultSummary(project, solution)
         layout.addWidget(self.summary, 0, 0, 1, 2)
@@ -424,6 +426,31 @@ class ScheduleResult(QtWidgets.QWidget):
         layout.addWidget(schedule_header, 1, 1)
         self.schedule = ResultDetail(project, solution)
         layout.addWidget(self.schedule, 2, 1)
+        self.export = QtWidgets.QPushButton("Export to CSV")
+        self.export.clicked.connect(self.export_clicked)
+        layout.addWidget(self.export, 3, 0)
+        self.copy = QtWidgets.QPushButton("Copy CSV to clipboard")
+        self.copy.clicked.connect(self.copy_clicked)
+        layout.addWidget(self.copy, 3, 1)
+
+    def _get_result_text(self) -> str:
+        assignments = self.solution.get_assignments()
+        return "\n".join([f"{';'.join(day)},{coverage}" for day, coverage in zip(assignments, self.solution.coverage)])
+
+    @QtCore.Slot()
+    def export_clicked(self) -> None:
+        result_text = self._get_result_text()
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Export to CSV", "~/Documents/", "*.csv")
+        if not filename:
+            # User cancelled
+            return
+        with open(filename, "w") as out_file:
+            out_file.write(result_text)
+
+    @QtCore.Slot()
+    def copy_clicked(self) -> None:
+        result_text = self._get_result_text()
+        QtWidgets.QApplication.clipboard().setText(result_text)
 
 
 class EditProjectWidget(ProjectManagerWidget):

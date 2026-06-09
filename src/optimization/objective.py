@@ -172,7 +172,7 @@ class ChangesFromPreviousSolutionObjective(
     @staticmethod
     def read_data(path) -> list[list[str]]:
         with open(path, "r") as result_file:
-            return [line.strip().split(",") for line in result_file.readlines()]
+            return [line.strip().split(",")[0].split(";") for line in result_file.readlines()]
 
     @override
     def get_objective(self, builder: CallProblemBuilder) -> VariableLike:
