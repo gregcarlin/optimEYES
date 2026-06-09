@@ -592,16 +592,19 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
         return constraints
 
 
-class LimitForPGYConstraint(SerializableConstraint):
-    def __init__(self, pgy: int, limit: int, enabled: bool = True) -> None:
+class ConstrainPGYConstraint(SerializableConstraint):
+    def __init__(
+        self, pgy: int, minimum: int, limit: int, enabled: bool = True
+    ) -> None:
         self.pgy = pgy
+        self.minimum = minimum
         self.limit = limit
         self.enabled = enabled
 
     @staticmethod
     @override
     def get_name() -> str:
-        return "limit_for_pgy"
+        return "constrain_pgy"
 
     @staticmethod
     @override
@@ -611,24 +614,27 @@ class LimitForPGYConstraint(SerializableConstraint):
     @staticmethod
     @override
     def default(project: ProjectInfo) -> Constraint:
-        return LimitForPGYConstraint(project.get_min_pgy(), 25)
+        return ConstrainPGYConstraint(project.get_min_pgy(), 20, 25)
 
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         enabled = bool(data["enabled"])
-        return LimitForPGYConstraint(int(data["pgy"]), int(data["limit"]), enabled)
+        return ConstrainPGYConstraint(
+            int(data["pgy"]), int(data["minimum"]), int(data["limit"]), enabled
+        )
 
     @override
     def serialize(self) -> dict[str, Any]:
         return {
             "pgy": self.pgy,
+            "minimum": self.minimum,
             "limit": self.limit,
             "enabled": 1 if self.enabled else 0,
         }
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[IntField, IntField]:
+    def fields(self, project: ProjectInfo) -> tuple[IntField, IntField, IntField]:
         return (
             IntField(
                 self.pgy,
@@ -636,17 +642,20 @@ class LimitForPGYConstraint(SerializableConstraint):
                 minimum=project.get_min_pgy(),
                 maximum=project.get_max_pgy(),
             ),
+            IntField(self.minimum, "Minimum"),
             IntField(self.limit, "Limit"),
         )
 
     @override
     @staticmethod
-    def from_fields(fields: tuple[IntField, IntField]) -> SerializableConstraint:
-        return LimitForPGYConstraint(fields[0].value, fields[1].value)
+    def from_fields(
+        fields: tuple[IntField, IntField, IntField],
+    ) -> SerializableConstraint:
+        return ConstrainPGYConstraint(fields[0].value, fields[1].value, fields[2].value)
 
     @override
     def description(self) -> str:
-        return f"Limit calls for PGY{self.pgy}s to {self.limit}"
+        return f"Limit calls for PGY{self.pgy}s between {self.minimum} and {self.limit}"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
@@ -654,7 +663,9 @@ class LimitForPGYConstraint(SerializableConstraint):
         for resident, days_for_resident in builder.get_day_vars().items():
             if builder.get_residents()[resident].pgy != self.pgy:
                 continue
-            constraints.append(var_sum(days_for_resident) <= self.limit)
+            vs = var_sum(days_for_resident)
+            constraints.append(vs >= self.minimum)
+            constraints.append(vs <= self.limit)
         return constraints
 
 
@@ -925,7 +936,7 @@ class ConstraintRegistry:
                 LimitWeekdayForResidentConstraint,
                 SetMinimumForDaysOfWeekForResidentConstraint,
                 NoAdjacentWeekendsConstraint,
-                LimitForPGYConstraint,
+                ConstrainPGYConstraint,
                 LimitVACoverageConstraint,
                 DistributeQ2sConstraint,
                 LimitQ2sConstraint,

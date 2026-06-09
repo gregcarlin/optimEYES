@@ -4236,25 +4236,28 @@
  "seed": 1594520080,
  "constraints": [
   {
-   "name": "limit_for_pgy",
+   "name": "constrain_pgy",
    "data": {
     "pgy": 2,
+    "minimum": 27,
     "limit": 27,
     "enabled": 1
    }
   },
   {
-   "name": "limit_for_pgy",
+   "name": "constrain_pgy",
    "data": {
     "pgy": 5,
+    "minimum": 5,
     "limit": 6,
     "enabled": 1
    }
   },
   {
-   "name": "limit_for_pgy",
+   "name": "constrain_pgy",
    "data": {
     "pgy": 3,
+    "minimum": 22,
     "limit": 23,
     "enabled": 1
    }
@@ -4299,9 +4302,10 @@
    }
   },
   {
-   "name": "limit_for_pgy",
+   "name": "constrain_pgy",
    "data": {
     "pgy": 4,
+    "minimum": 1,
     "limit": 2,
     "enabled": 1
    }
