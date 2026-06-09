@@ -151,6 +151,35 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         return day_vars
 
     @override
+    def get_vars_for_weekends(
+        self, resident: str
+    ) -> list[
+        tuple[Variable, Variable] | tuple[None, Variable] | tuple[Variable, None]
+    ]:
+        result = []
+
+        saturday = days_until_next_weekday(self.start_date, Weekday.SATURDAY)
+        sunday = days_until_next_weekday(self.start_date, Weekday.SUNDAY)
+        day_vars = self.day_vars[resident]
+        if min(saturday, sunday) + 1 >= self.num_days:
+            # No full weekends in call period
+            return []
+        elif sunday < saturday:
+            # Call period starts on a Sunday
+            result.append((None, day_vars[sunday]))
+            sunday += 7
+
+        while saturday < self.num_days:
+            if sunday < self.num_days:
+                result.append((day_vars[saturday], day_vars[sunday]))
+            else:
+                result.append((day_vars[saturday], None))
+            saturday += 7
+            sunday += 7
+
+        return result
+
+    @override
     def get_va_vars(self) -> list[Variable]:
         if self.va_vars is not None:
             return self.va_vars

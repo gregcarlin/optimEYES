@@ -4258,7 +4258,7 @@
    "data": {
     "pgy": 3,
     "minimum": 22,
-    "limit": 23,
+    "limit": 22,
     "enabled": 1
    }
   },
@@ -4331,6 +4331,20 @@
     "weekdays": "5,6",
     "minimum": 2,
     "resident": "Alex",
+    "enabled": 1
+   }
+  },
+  {
+   "name": "no_adjacent_weekends",
+   "data": {
+    "num": 2,
+    "enabled": 1
+   }
+  },
+  {
+   "name": "limit_q2s",
+   "data": {
+    "limit": 3,
     "enabled": 1
    }
   }

@@ -435,12 +435,19 @@ class ScheduleResult(QtWidgets.QWidget):
 
     def _get_result_text(self) -> str:
         assignments = self.solution.get_assignments()
-        return "\n".join([f"{';'.join(day)},{coverage}" for day, coverage in zip(assignments, self.solution.coverage)])
+        return "\n".join(
+            [
+                f"{';'.join(day)},{coverage}"
+                for day, coverage in zip(assignments, self.solution.coverage)
+            ]
+        )
 
     @QtCore.Slot()
     def export_clicked(self) -> None:
         result_text = self._get_result_text()
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Export to CSV", "~/Documents/", "*.csv")
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Export to CSV", "~/Documents/", "*.csv"
+        )
         if not filename:
             # User cancelled
             return

@@ -42,6 +42,14 @@ class CallProblemBuilder(ABC):
         pass
 
     @abstractmethod
+    def get_vars_for_weekends(
+        self, resident: str
+    ) -> list[
+        tuple[Variable, Variable] | tuple[None, Variable] | tuple[Variable, None]
+    ]:
+        pass
+
+    @abstractmethod
     def get_va_vars(self) -> list[Variable]:
         pass
 

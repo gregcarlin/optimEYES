@@ -513,7 +513,8 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
 
 
 class NoAdjacentWeekendsConstraint(SerializableConstraint):
-    def __init__(self, enabled: bool = True):
+    def __init__(self, num: int, enabled: bool = True):
+        self.num = num
         self.enabled = enabled
 
     @staticmethod
@@ -524,70 +525,60 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
     @staticmethod
     @override
     def human_name() -> str:
-        return "Ensure no resident works two weekends in a row"
+        return "Limit weekends worked in a row"
 
     @staticmethod
     @override
     def default(project: ProjectInfo) -> Constraint:
-        return NoAdjacentWeekendsConstraint()
+        return NoAdjacentWeekendsConstraint(1)
 
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         enabled = bool(data["enabled"])
+        num = int(data["num"])
         return NoAdjacentWeekendsConstraint(enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"enabled": 1 if self.enabled else 0}
+        return {"num": self.num, "enabled": 1 if self.enabled else 0}
 
     @override
-    def fields(self, project: ProjectInfo) -> tuple[()]:
-        return ()
+    def fields(self, project: ProjectInfo) -> tuple[(IntField)]:
+        return (IntField(self.num, name="Number", minimum=1),)
 
     @override
     @staticmethod
-    def from_fields(fields: tuple[()]) -> SerializableConstraint:
-        return NoAdjacentWeekendsConstraint()
+    def from_fields(fields: tuple[(IntField)]) -> SerializableConstraint:
+        return NoAdjacentWeekendsConstraint(fields[0].value)
 
     @override
     def description(self) -> str:
-        return NoAdjacentWeekendsConstraint.human_name()
+        return f"Ensure no resident works more than {self.num} {'weekend' if self.num == 1 else 'weekends'} in a row"
 
     @override
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         constraints: list[pulp.LpConstraint] = []
-        for days_for_resident in builder.get_day_vars().values():
-            first_saturday = days_until_next_weekday(
-                builder.get_start_date(), Weekday.SATURDAY
-            )
-            first_sunday = days_until_next_weekday(
-                builder.get_start_date(), Weekday.SUNDAY
-            )
-            assert (
-                first_saturday < first_sunday
-            ), "Starting on a sunday is not yet supported"
-            if first_saturday + 1 >= builder.get_num_days():
-                # No full weekends in call period
-                return []
 
-            last_saturday = days_for_resident[first_saturday]
-            last_sunday = days_for_resident[first_saturday + 1]
-            next_saturday = first_saturday + 7
-            while next_saturday < builder.get_num_days():
-                curr_saturday = days_for_resident[next_saturday]
-                if next_saturday + 1 < builder.get_num_days():
-                    curr_sunday = days_for_resident[next_saturday + 1]
-                    constraints.append(
-                        last_saturday + last_sunday + curr_saturday + curr_sunday <= 1
-                    )
+        residents = builder.get_residents().keys()
+        for resident in residents:
+            weekend_tuples = builder.get_vars_for_weekends(resident)
+            weekends_worked = []
+            for weekend in weekend_tuples:
+                match weekend:
+                    case None, sunday:
+                        worked = sunday
+                    case saturday, None:
+                        worked = saturday
+                    case saturday, sunday:
+                        worked = saturday + sunday
+                weekends_worked.append(worked)
 
-                    last_saturday = curr_saturday
-                    last_sunday = curr_sunday
-                else:
-                    constraints.append(last_saturday + last_sunday + curr_saturday <= 1)
-                    break  # should be redundant, but just in case
-                next_saturday += 7
+            # For a sliding window of our limit + 1, ensure the total number of weekends worked is within the limit
+            for i in range(len(weekends_worked) - self.num - 1):
+                constraints.append(
+                    var_sum(weekends_worked[i : i + self.num + 1]) <= self.num
+                )
 
         return constraints
 
