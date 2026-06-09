@@ -26,17 +26,19 @@ from gui.field import (
 
 
 class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
-    def __init__(self, project: Project, rows: int, buttons: int) -> None:
+    def __init__(
+        self, project: Project, rows: int, buttons: int, enable_check: bool = False
+    ) -> None:
         super().__init__()
 
         self.project = project
 
         self.setRowCount(rows)
-        self.setColumnCount(buttons + 1)
+        self.setColumnCount(buttons + 1 + (1 if enable_check else 0))
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.ResizeMode.Stretch
+            1 if enable_check else 0, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setSectionResizeMode(
@@ -44,7 +46,8 @@ class TableWidget(QtWidgets.QTableWidget, ABC, metaclass=AbstractQWidgetMeta):
         )
 
         for i in range(buttons):
-            self.setColumnWidth(i + 1, 50)
+            self.setColumnWidth((1 if enable_check else 0) + i + 1, 50)
+        # TODO support enable check
 
         self.edit_widget = None
 

@@ -20,6 +20,8 @@ from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekd
 
 
 class Constraint(ABC):
+    enabled: bool = True
+
     @abstractmethod
     def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
         pass
@@ -70,7 +72,14 @@ class SerializableConstraint(Constraint, Generic[TFields]):
 class DistributeDayOfWeekConstraint(
     SerializableConstraint[tuple[WeekdayField, MultiCheckField, IntField]]
 ):
-    def __init__(self, weekday: Weekday, pgys: dict[int, bool], tolerance: int) -> None:
+    def __init__(
+        self,
+        weekday: Weekday,
+        pgys: dict[int, bool],
+        tolerance: int,
+        enabled: bool = True,
+    ) -> None:
+        self.enabled = enabled
         self.weekday = weekday
         self.pgys = pgys
         self.tolerance = tolerance
@@ -100,11 +109,13 @@ class DistributeDayOfWeekConstraint(
         weekday = Weekday(data["weekday"])
         pgys = {int(k): bool(v) for k, v in data["pgys"].items()}
         tolerance = int(data["tolerance"])
-        return DistributeDayOfWeekConstraint(weekday, pgys, tolerance)
+        enabled = bool(data["enabled"])
+        return DistributeDayOfWeekConstraint(weekday, pgys, tolerance, enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
         return {
+            "enabled": 1 if self.enabled else 0,
             "weekday": int(self.weekday),
             "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
             "tolerance": self.tolerance,
@@ -155,9 +166,12 @@ class DistributeDayOfWeekConstraint(
 
 
 class DistributeWeekendsConstraint(SerializableConstraint):
-    def __init__(self, pgys: dict[int, bool], tolerance: int) -> None:
+    def __init__(
+        self, pgys: dict[int, bool], tolerance: int, enabled: bool = True
+    ) -> None:
         self.pgys = pgys
         self.tolerance = tolerance
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -183,13 +197,15 @@ class DistributeWeekendsConstraint(SerializableConstraint):
     def deserialize(data: dict[str, Any]) -> Constraint:
         pgys = {int(k): bool(v) for k, v in data["pgys"].items()}
         tolerance = int(data["tolerance"])
-        return DistributeWeekendsConstraint(pgys, tolerance)
+        enabled = bool(data["enabled"])
+        return DistributeWeekendsConstraint(pgys, tolerance, enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
         return {
             "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
             "tolerance": self.tolerance,
+            "enabled": self.enabled,
         }
 
     @override
@@ -234,12 +250,18 @@ class DistributeWeekendsConstraint(SerializableConstraint):
 
 class ConstrainWeekdayConstraint(SerializableConstraint):
     def __init__(
-        self, weekday: Weekday, minimum: int, limit: int, pgys: dict[int, bool]
+        self,
+        weekday: Weekday,
+        minimum: int,
+        limit: int,
+        pgys: dict[int, bool],
+        enabled: bool = True,
     ) -> None:
         self.weekday = weekday
         self.minimum = minimum
         self.limit = limit
         self.pgys = pgys
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -264,8 +286,13 @@ class ConstrainWeekdayConstraint(SerializableConstraint):
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         pgys = {int(k): bool(v) for k, v in data["pgys"].items()}
+        enabled = bool(data["enabled"])
         return ConstrainWeekdayConstraint(
-            Weekday(data["weekday"]), int(data["min"]), int(data["limit"]), pgys
+            Weekday(data["weekday"]),
+            int(data["min"]),
+            int(data["limit"]),
+            pgys,
+            enabled,
         )
 
     @override
@@ -275,6 +302,7 @@ class ConstrainWeekdayConstraint(SerializableConstraint):
             "min": self.minimum,
             "limit": self.limit,
             "pgys": {k: 1 if v else 0 for k, v in self.pgys.items()},
+            "enabled": 1 if self.enabled else 0,
         }
 
     @override
@@ -331,10 +359,13 @@ class ConstrainWeekdayConstraint(SerializableConstraint):
 
 
 class LimitWeekdayForResidentConstraint(SerializableConstraint):
-    def __init__(self, weekday: Weekday, limit: int, resident: str) -> None:
+    def __init__(
+        self, weekday: Weekday, limit: int, resident: str, enabled: bool = True
+    ) -> None:
         self.weekday = weekday
         self.limit = limit
         self.resident = resident
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -356,8 +387,9 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
+        enabled = bool(data["enabled"])
         return LimitWeekdayForResidentConstraint(
-            Weekday(data["weekday"]), int(data["limit"]), str(data["resident"])
+            Weekday(data["weekday"]), int(data["limit"]), str(data["resident"]), enabled
         )
 
     @override
@@ -366,6 +398,7 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
             "weekday": int(self.weekday),
             "limit": self.limit,
             "resident": self.resident,
+            "enabled": 1 if self.enabled else 0,
         }
 
     @override
@@ -398,10 +431,13 @@ class LimitWeekdayForResidentConstraint(SerializableConstraint):
 
 
 class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
-    def __init__(self, weekdays: set[Weekday], minimum: int, resident: str) -> None:
+    def __init__(
+        self, weekdays: set[Weekday], minimum: int, resident: str, enabled: bool = True
+    ) -> None:
         self.weekdays = weekdays
         self.minimum = minimum
         self.resident = resident
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -424,8 +460,9 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
         weekdays = {Weekday(int(w)) for w in data["weekdays"].split(",")}
+        enabled = bool(data["enabled"])
         return SetMinimumForDaysOfWeekForResidentConstraint(
-            weekdays, int(data["minimum"]), str(data["resident"])
+            weekdays, int(data["minimum"]), str(data["resident"]), enabled
         )
 
     @override
@@ -435,6 +472,7 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
             "weekdays": weekdays,
             "minimum": self.minimum,
             "resident": self.resident,
+            "enabled": 1 if self.enabled else 0,
         }
 
     @override
@@ -475,6 +513,9 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
 
 
 class NoAdjacentWeekendsConstraint(SerializableConstraint):
+    def __init__(self, enabled: bool = True):
+        self.enabled = enabled
+
     @staticmethod
     @override
     def get_name() -> str:
@@ -493,11 +534,12 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return NoAdjacentWeekendsConstraint()
+        enabled = bool(data["enabled"])
+        return NoAdjacentWeekendsConstraint(enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {}
+        return {"enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[()]:
@@ -551,9 +593,10 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
 
 
 class LimitForPGYConstraint(SerializableConstraint):
-    def __init__(self, pgy: int, limit: int) -> None:
+    def __init__(self, pgy: int, limit: int, enabled: bool = True) -> None:
         self.pgy = pgy
         self.limit = limit
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -573,11 +616,16 @@ class LimitForPGYConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitForPGYConstraint(int(data["pgy"]), int(data["limit"]))
+        enabled = bool(data["enabled"])
+        return LimitForPGYConstraint(int(data["pgy"]), int(data["limit"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"pgy": self.pgy, "limit": self.limit}
+        return {
+            "pgy": self.pgy,
+            "limit": self.limit,
+            "enabled": 1 if self.enabled else 0,
+        }
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField, IntField]:
@@ -611,8 +659,9 @@ class LimitForPGYConstraint(SerializableConstraint):
 
 
 class LimitVACoverageConstraint(SerializableConstraint):
-    def __init__(self, limit: int) -> None:
+    def __init__(self, limit: int, enabled: bool = True) -> None:
         self.limit = limit
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -632,11 +681,12 @@ class LimitVACoverageConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitVACoverageConstraint(int(data["limit"]))
+        enabled = bool(data["enabled"])
+        return LimitVACoverageConstraint(int(data["limit"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"limit": self.limit}
+        return {"limit": self.limit, "enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField]:
@@ -657,8 +707,9 @@ class LimitVACoverageConstraint(SerializableConstraint):
 
 
 class DistributeQ2sConstraint(SerializableConstraint):
-    def __init__(self, tolerance: int) -> None:
+    def __init__(self, tolerance: int, enabled: bool = True) -> None:
         self.tolerance = tolerance
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -678,11 +729,12 @@ class DistributeQ2sConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return DistributeQ2sConstraint(int(data["tolerance"]))
+        enabled = bool(data["enabled"])
+        return DistributeQ2sConstraint(int(data["tolerance"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"tolerance": self.tolerance}
+        return {"tolerance": self.tolerance, "enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField]:
@@ -711,8 +763,9 @@ class DistributeQ2sConstraint(SerializableConstraint):
 
 
 class LimitQ2sConstraint(SerializableConstraint):
-    def __init__(self, limit: int) -> None:
+    def __init__(self, limit: int, enabled: bool = True) -> None:
         self.limit = limit
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -732,11 +785,12 @@ class LimitQ2sConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitQ2sConstraint(int(data["limit"]))
+        enabled = bool(data["enabled"])
+        return LimitQ2sConstraint(int(data["limit"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"limit": self.limit}
+        return {"limit": self.limit, "enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField]:
@@ -761,8 +815,9 @@ class LimitQ2sConstraint(SerializableConstraint):
 
 
 class LimitTotalQ2sConstraint(SerializableConstraint):
-    def __init__(self, limit: int) -> None:
+    def __init__(self, limit: int, enabled: bool = True) -> None:
         self.limit = limit
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -782,11 +837,12 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitTotalQ2sConstraint(int(data["limit"]))
+        enabled = bool(data["enabled"])
+        return LimitTotalQ2sConstraint(int(data["limit"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"limit": self.limit}
+        return {"limit": self.limit, "enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField]:
@@ -809,8 +865,9 @@ class LimitTotalQ2sConstraint(SerializableConstraint):
 
 
 class LimitPGY23GapConstraint(SerializableConstraint):
-    def __init__(self, limit: int) -> None:
+    def __init__(self, limit: int, enabled: bool = True) -> None:
         self.limit = limit
+        self.enabled = enabled
 
     @staticmethod
     @override
@@ -830,11 +887,12 @@ class LimitPGY23GapConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        return LimitPGY23GapConstraint(int(data["limit"]))
+        enabled = bool(data["enabled"])
+        return LimitPGY23GapConstraint(int(data["limit"]), enabled)
 
     @override
     def serialize(self) -> dict[str, Any]:
-        return {"limit": self.limit}
+        return {"limit": self.limit, "enabled": 1 if self.enabled else 0}
 
     @override
     def fields(self, project: ProjectInfo) -> tuple[IntField]:

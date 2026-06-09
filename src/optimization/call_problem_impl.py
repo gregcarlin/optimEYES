@@ -236,6 +236,8 @@ class CallProblemBuilderImpl(CallProblemBuilder):
         self, constraints: list[Constraint] | list[SerializableConstraint]
     ) -> None:
         for constraint_builder in constraints:
+            if not constraint_builder.enabled:
+                continue
             for constraint in constraint_builder.get_constraints(self):
                 self.problem.add_constraint(constraint)
 
