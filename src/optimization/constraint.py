@@ -423,7 +423,7 @@ class SetMinimumForDaysOfWeekForResidentConstraint(SerializableConstraint):
     @staticmethod
     @override
     def deserialize(data: dict[str, Any]) -> Constraint:
-        weekdays = {Weekday(w) for w in data["weekdays"].split(",")}
+        weekdays = {Weekday(int(w)) for w in data["weekdays"].split(",")}
         return SetMinimumForDaysOfWeekForResidentConstraint(
             weekdays, int(data["minimum"]), str(data["resident"])
         )
