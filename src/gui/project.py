@@ -159,13 +159,18 @@ class AddObjectiveWidget(AddNewWidget):
 
 class ConstraintsWidget(TableWidget):
     def __init__(self, project: Project, parent: "EditProjectWidget") -> None:
-        super().__init__(project, len(project.constraints), 2)
+        super().__init__(
+            project, len(project.constraints), buttons=2, enable_check=True
+        )
 
         self.edit_parent = parent
 
         for i, constraint in enumerate(project.constraints):
             self.setRow(
-                i, constraint.description(), constraint.fields(self.project) != ()
+                i,
+                constraint.description(),
+                constraint.fields(self.project) != (),
+                constraint.enabled,
             )
 
     @override
@@ -179,6 +184,13 @@ class ConstraintsWidget(TableWidget):
     def delete_clicked(self, index: int) -> None:
         self.project.constraints.pop(index)
         self.edit_parent.refresh_project()
+
+    @override
+    def check_changed(self, state: QtCore.Qt.CheckState, index: int) -> None:
+        new_state = bool(state)
+        if self.project.constraints[index].enabled != new_state:
+            self.project.constraints[index].enabled = new_state
+            self.edit_parent.refresh_project()
 
 
 class ObjectivesWidget(TableWidget):

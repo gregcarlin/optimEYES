@@ -4239,7 +4239,7 @@
    "name": "constrain_pgy",
    "data": {
     "pgy": 2,
-    "minimum": 25,
+    "minimum": 27,
     "limit": 28,
     "enabled": 1
    }
@@ -4314,7 +4314,7 @@
    "name": "constrain_weekday",
    "data": {
     "weekday": 5,
-    "min": 0,
+    "min": 3,
     "limit": 10,
     "pgys": {
      "2": 1,
@@ -4344,7 +4344,7 @@
   {
    "name": "limit_q2s",
    "data": {
-    "limit": 3,
+    "limit": 4,
     "enabled": 1
    }
   }
