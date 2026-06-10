@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Mapping
 from datetime import date, timedelta
 from collections import defaultdict
 
-from dateutil import days_until_next_weekday
+from dateutil import days_until_next_weekday, Weekday
 from structs.output_mode import OutputMode
 from structs.resident import Resident
 
@@ -94,7 +94,7 @@ class Solution:
                 result[self.residents[resident].pgy] += 1
         return result
 
-    def _get_count_of_weekday(self, weekday) -> Dict[str, int]:
+    def get_count_of_weekday(self, weekday: Weekday) -> Dict[str, int]:
         assignments = self.get_assignments()
         result = {resident: 0 for resident in self.residents.keys()}
         next_day = days_until_next_weekday(self.start_date, weekday)
@@ -105,10 +105,10 @@ class Solution:
         return result
 
     def get_saturdays(self) -> Dict[str, int]:
-        return self._get_count_of_weekday(5)
+        return self.get_count_of_weekday(Weekday.SATURDAY)
 
     def get_sundays(self) -> Dict[str, int]:
-        return self._get_count_of_weekday(6)
+        return self.get_count_of_weekday(Weekday.SUNDAY)
 
     def get_va_covered_days(self) -> list[date]:
         result = []

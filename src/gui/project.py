@@ -16,6 +16,7 @@ from optimization.solution import Solution
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from optimization.constraint import ConstraintRegistry
 from optimization.objective import ObjectiveRegistry
+from dateutil import Weekday
 from typeutil import none_throws
 from gui.table import TableWidget, SectionHeaderWidget, AddOrEditWidget, AddNewWidget
 from gui.availability import AvailabilityWidget
@@ -343,9 +344,9 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
             for m in project.constraints + project.objectives
             if isinstance(m, ResidentMetric)
         ]
-        self.setColumnCount(4 + len(metrics))
+        self.setColumnCount(5 + len(metrics))
         self.setHorizontalHeaderLabels(
-            ["Calls", "Saturdays", "Sundays", "Q2s"]
+            ["Calls", "Fridays", "Saturdays", "Sundays", "Q2s"]
             + [m.resident_metric_header() for m in metrics]
         )
         resident_names = [
@@ -362,6 +363,7 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
         )
 
         calls = solution.get_calls_per_resident()
+        fridays = solution.get_count_of_weekday(Weekday.FRIDAY)
         saturdays = solution.get_saturdays()
         sundays = solution.get_sundays()
         q2s = solution.get_qns_per_resident(2)
@@ -369,9 +371,10 @@ class ResultResidentSummary(QtWidgets.QTableWidget):
         other = [m.resident_metric(assignments) for m in metrics]
         for i, name in enumerate(resident_names):
             self.setCellWidget(i, 0, QtWidgets.QLabel(str(calls[name])))
-            self.setCellWidget(i, 1, QtWidgets.QLabel(str(saturdays[name])))
-            self.setCellWidget(i, 2, QtWidgets.QLabel(str(sundays[name])))
-            self.setCellWidget(i, 3, QtWidgets.QLabel(str(q2s[name])))
+            self.setCellWidget(i, 1, QtWidgets.QLabel(str(fridays[name])))
+            self.setCellWidget(i, 2, QtWidgets.QLabel(str(saturdays[name])))
+            self.setCellWidget(i, 3, QtWidgets.QLabel(str(sundays[name])))
+            self.setCellWidget(i, 4, QtWidgets.QLabel(str(q2s[name])))
             for j, metric in enumerate(other):
                 self.setCellWidget(i, 4 + j, QtWidgets.QLabel(metric[name]))
 

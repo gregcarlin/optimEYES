@@ -4366,6 +4366,21 @@
     "end": "2026-08-16",
     "enabled": 1
    }
+  },
+  {
+   "name": "constrain_weekday",
+   "data": {
+    "weekday": 4,
+    "min": 0,
+    "limit": 7,
+    "pgys": {
+     "2": 0,
+     "3": 1,
+     "4": 0,
+     "5": 0
+    },
+    "enabled": 0
+   }
   }
  ],
  "objectives": [
@@ -4382,7 +4397,7 @@
   {
    "name": "changes_from_previous_solution",
    "data": {
-    "path": "/Users/gregcarlin/Downloads/result6.csv",
+    "path": "/Users/gregcarlin/Downloads/result7.csv",
     "data": [
      "Andrew",
      "Keir",
@@ -4394,8 +4409,8 @@
      "Alex",
      "Andrew",
      "Loubna",
-     "Jessica",
      "Alex",
+     "Andrew",
      "Sophia",
      "Andrieh",
      "Andrew",
@@ -4403,12 +4418,12 @@
      "Jessica",
      "Andrieh",
      "Alex",
-     "Keir",
+     "Andrew",
      "Andrieh",
      "Alex",
      "Andrew",
      "Loubna",
-     "Jessica",
+     "Keir",
      "Andrew",
      "Sophia",
      "Loubna",
@@ -4492,14 +4507,14 @@
      "Michael",
      "Daniel",
      "Sydney",
-     "Michael",
+     "Jessica",
      "Daniel",
      "Sydney",
      "Andrew",
      "Michael",
      "Daniel",
      "Jessica",
-     "Andrew",
+     "Michael",
      "Loubna",
      "Sydney",
      "Andrew",
@@ -4527,7 +4542,7 @@
      "Daniel",
      "Andrieh",
      "Loubna",
-     "Andrew",
+     "Jessica",
      "Andrieh",
      "Michael",
      "Jessica",
