@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import override, Any
+from datetime import date
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -13,6 +14,7 @@ from structs.field import (
     FileField,
     DictIntIntField,
     MultiCheckField,
+    DateField,
 )
 from gui.common import AbstractQWidgetMeta, BinaryMessage, clear_layout
 from gui.field import (
@@ -22,6 +24,7 @@ from gui.field import (
     FileEdit,
     DictIntIntEdit,
     MultiCheckEdit,
+    DateEdit,
 )
 
 
@@ -112,6 +115,7 @@ Editor = (
     | FileEdit
     | DictIntIntEdit
     | MultiCheckEdit
+    | DateEdit
 )
 
 
@@ -156,6 +160,8 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
                     )
                 case MultiCheckField():
                     edit = MultiCheckEdit(field.value)
+                case DateField():
+                    edit = DateEdit(field, self.save_button)
                 case _:
                     raise ValueError(f"Unknown field type: {field}")
             self._layout.addWidget(edit, self.prefix_fields + i, 1)
@@ -175,6 +181,7 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
         | FileField
         | DictIntIntField
         | MultiCheckField
+        | DateField
     ):
         if isinstance(field, OptionField):
             assert isinstance(widget, DropDownEdit)
@@ -196,6 +203,13 @@ class AddOrEditWidget(QtWidgets.QWidget, ABC, metaclass=AbstractQWidgetMeta):
         elif isinstance(field, MultiCheckField):
             assert isinstance(widget, MultiCheckEdit)
             return field.parse(widget.get_data())
+        elif isinstance(field, DateField):
+            assert isinstance(widget, DateEdit)
+            val = widget.date().toPython()
+            assert isinstance(val, date)
+            new_field = field.parse(val)
+            assert isinstance(new_field, DateField)
+            return new_field
         else:
             raise ValueError(f"Unsupported field type: {type(field)}")
 

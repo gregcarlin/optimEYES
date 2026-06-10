@@ -4356,6 +4356,16 @@
     "resident": "Sophia",
     "enabled": 1
    }
+  },
+  {
+   "name": "limit_resident_between_dates",
+   "data": {
+    "resident": "Jessica",
+    "limit": 6,
+    "start": "2026-07-06",
+    "end": "2026-08-16",
+    "enabled": 1
+   }
   }
  ],
  "objectives": [

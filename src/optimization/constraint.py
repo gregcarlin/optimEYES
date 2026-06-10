@@ -1,6 +1,7 @@
 import math
 from typing import override, Any, Generic, TypeVar
 from abc import ABC, abstractmethod
+from datetime import date
 
 import pulp as pulp
 
@@ -14,6 +15,7 @@ from structs.field import (
     StringField,
     LimitedStringField,
     MultiCheckField,
+    DateField,
 )
 from structs.project_info import ProjectInfo
 from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
@@ -916,6 +918,89 @@ class LimitPGY23GapConstraint(SerializableConstraint):
         return [max_2 - min_3 <= self.limit]
 
 
+class LimitResidentBetweenDatesConstraint(SerializableConstraint):
+    def __init__(
+        self, resident: str, limit: int, start: date, end: date, enabled: bool = True
+    ) -> None:
+        self.resident = resident
+        self.limit = limit
+        self.start = start
+        self.end = end
+        self.enabled = enabled
+
+    @staticmethod
+    @override
+    def get_name() -> str:
+        return "limit_resident_between_dates"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Limit calls for a resident between two dates"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return LimitResidentBetweenDatesConstraint(
+            project.get_residents()[0], 5, project.get_start(), project.get_end()
+        )
+
+    @staticmethod
+    @override
+    def deserialize(data: dict[str, Any]) -> Constraint:
+        resident = data["resident"]
+        limit = int(data["limit"])
+        start = date.fromisoformat(data["start"])
+        end = date.fromisoformat(data["end"])
+        enabled = bool(data["enabled"])
+        return LimitResidentBetweenDatesConstraint(resident, limit, start, end, enabled)
+
+    @override
+    def serialize(self) -> dict[str, Any]:
+        return {
+            "resident": self.resident,
+            "limit": self.limit,
+            "start": f"{self.start:%Y-%m-%d}",
+            "end": f"{self.end:%Y-%m-%d}",
+            "enabled": 1 if self.enabled else 0,
+        }
+
+    @override
+    def fields(
+        self, project: ProjectInfo
+    ) -> tuple[LimitedStringField, IntField, DateField, DateField]:
+        return (
+            LimitedStringField(self.resident, "Resident", project.get_residents()),
+            IntField(self.limit, "Limit"),
+            DateField(self.start, "Start", project.get_start(), project.get_end()),
+            DateField(self.end, "End", project.get_start(), project.get_end()),
+        )
+
+    @override
+    @staticmethod
+    def from_fields(
+        fields: tuple[LimitedStringField, IntField, DateField, DateField],
+    ) -> SerializableConstraint:
+        return LimitResidentBetweenDatesConstraint(
+            fields[0].value, fields[1].value, fields[2].value, fields[3].value
+        )
+
+    @override
+    def description(self) -> str:
+        return f"Limit calls for {self.resident} to {self.limit} between {self.start:%Y-%m-%d} and {self.end:%Y-%m-%d}"
+
+    @override
+    def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
+        start_index = (self.start - builder.get_start_date()).days
+        end_index = (self.end - builder.get_start_date()).days
+        assert start_index >= 0
+        assert end_index >= 0
+        assert end_index >= start_index
+
+        vs = builder.get_day_vars()[self.resident][start_index : end_index + 1]
+        return [var_sum(vs) <= self.limit]
+
+
 class ConstraintRegistry:
     def __init__(self) -> None:
         self.constraints = {
@@ -933,6 +1018,7 @@ class ConstraintRegistry:
                 LimitQ2sConstraint,
                 LimitTotalQ2sConstraint,
                 LimitPGY23GapConstraint,
+                LimitResidentBetweenDatesConstraint,
             ]
         }
 

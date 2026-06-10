@@ -1,4 +1,5 @@
-from typing import override
+from typing import override, cast
+from datetime import date
 
 from PySide6 import QtWidgets, QtGui, QtCore
 
@@ -8,6 +9,7 @@ from structs.field import (
     TextInputField,
     IntermediateSentinel,
     WeekdayListField,
+    DateField,
 )
 from gui.common import TableBackedWidget
 
@@ -172,3 +174,34 @@ class MultiCheckEdit(TableBackedWidget):
             assert isinstance(widget, QtWidgets.QCheckBox)
             data[self.keys[i]] = widget.isChecked()
         return data
+
+
+class DateEdit(QtWidgets.QDateEdit):
+    def __init__(self, field: DateField, save_button: QtWidgets.QPushButton) -> None:
+        super().__init__(
+            QtCore.QDate(field.value.year, field.value.month, field.value.day)
+        )
+
+        self.field = field
+        self.save_button = save_button
+
+        self.setMinimumDate(
+            QtCore.QDate(field.min_date.year, field.min_date.month, field.min_date.day)
+        )
+        self.setMaximumDate(
+            QtCore.QDate(field.max_date.year, field.max_date.month, field.max_date.day)
+        )
+        self.setCalendarPopup(True)
+        self.userDateChanged.connect(self.check_state)
+
+    def check_state(self, new_date: QtCore.QDate) -> None:
+        new_date_py = cast(date, new_date.toPython())
+        if new_date_py >= self.field.min_date and new_date_py <= self.field.max_date:
+            self.save_button.setEnabled(True)
+            color = QtGui.QColor(255, 255, 255)
+        else:
+            self.save_button.setEnabled(False)
+            color = QtGui.QColor(255, 100, 100)
+        p = self.palette()
+        p.setColor(QtGui.QPalette.ColorRole.Base, color)
+        self.setPalette(p)

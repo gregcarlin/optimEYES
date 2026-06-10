@@ -1,5 +1,6 @@
 from typing import Generic, TypeVar, override, Self
 from dataclasses import dataclass
+from datetime import date
 from abc import ABC, abstractmethod
 from enum import IntEnum
 
@@ -117,3 +118,14 @@ class DictIntIntField(Field[dict[int, int]]):
 class MultiCheckField(Field[dict[str, bool]]):
     def parse(self, data: dict[str, bool]) -> "MultiCheckField":
         return MultiCheckField(data, self.name)
+
+
+@dataclass
+class DateField(Field[date]):
+    min_date: date
+    max_date: date
+
+    def parse(self, value: date) -> "DateField | None":
+        if value < self.min_date or value > self.max_date:
+            return None
+        return DateField(value, self.name, self.min_date, self.max_date)

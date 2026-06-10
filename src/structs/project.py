@@ -32,6 +32,14 @@ class Project(ProjectInfo):
     def get_max_pgy(self) -> int:
         return max(r.pgy for r in self.availability)
 
+    @override
+    def get_start(self) -> date:
+        return self.start_date
+
+    @override
+    def get_end(self) -> date:
+        return self.end_date
+
     @staticmethod
     def deserialize(data: dict[str, Any]) -> "Project":
         start_date = date.fromisoformat(data["start_date"])
