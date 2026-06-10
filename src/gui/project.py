@@ -4,7 +4,7 @@ from functools import partial
 from dataclasses import dataclass
 from datetime import timedelta, datetime
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets, QtGui
 
 from structs.project import Project
 from structs.field import (
@@ -420,8 +420,18 @@ class ResultDetail(QtWidgets.QTableWidget):
 
         assignments = solution.get_assignments()
         metric_vals = [m.detail_metric(assignments) for m in metrics]
-        for i, assigned in enumerate(solution.get_assignments()):
+        for i, assigned in enumerate(assignments):
             assignment_widget = QtWidgets.QLabel(", ".join(sorted(assigned)))
+            if (i >= 2 and assignments[i - 2] == assigned) or (
+                i < len(assignments) - 2 and assignments[i + 2] == assigned
+            ):
+                # Highlight Q2s in red
+                palette = assignment_widget.palette()
+                palette.setColor(
+                    QtGui.QPalette.ColorRole.Base, QtGui.QColor(255, 100, 100)
+                )
+                assignment_widget.setAutoFillBackground(True)
+                assignment_widget.setPalette(palette)
             self.setCellWidget(i, 0, assignment_widget)
             coverage_widget = QtWidgets.QLabel(solution.coverage[i])
             coverage_widget.setToolTip(solution.coverage[i])
