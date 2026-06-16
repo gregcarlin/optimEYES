@@ -21,6 +21,12 @@ autoflake --remove-all-unused-imports --ignore-pass-statements -i src/**/*
 Run code:
 ```
 python3 optimeyes.py
+python3 gui.py
+```
+
+Run unit tests (from src directory):
+```
+python3 -m unittest
 ```
 
 Build standalone app:
