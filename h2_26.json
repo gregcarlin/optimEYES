@@ -4381,6 +4381,12 @@
     },
     "enabled": 0
    }
+  },
+  {
+   "name": "distribute_pgy",
+   "data": {
+    "enabled": 1
+   }
   }
  ],
  "objectives": [

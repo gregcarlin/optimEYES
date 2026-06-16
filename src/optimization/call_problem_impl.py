@@ -62,7 +62,6 @@ class CallProblemBuilderImpl(CallProblemBuilder):
             lower = self.problem.min_of(
                 calls_per_resident, self.num_days, f"min_calls_pgy{year}"
             )
-            self.problem.add_constraint(upper - lower <= 1)
             self.maxs_by_year[year] = upper
             self.mins_by_year[year] = lower
 

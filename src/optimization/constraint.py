@@ -71,6 +71,68 @@ class SerializableConstraint(Constraint, Generic[TFields]):
         pass
 
 
+class DistributeWithinPGYConstraint(SerializableConstraint[tuple[()]]):
+    def __init__(
+        self,
+        enabled: bool = True,
+    ) -> None:
+        self.enabled = enabled
+
+    @staticmethod
+    @override
+    def get_name() -> str:
+        return "distribute_pgy"
+
+    @staticmethod
+    @override
+    def human_name() -> str:
+        return "Ensure a max difference of 1 within a PGY"
+
+    @staticmethod
+    @override
+    def default(project: ProjectInfo) -> Constraint:
+        return DistributeWithinPGYConstraint()
+
+    @staticmethod
+    @override
+    def deserialize(data: dict[str, Any]) -> Constraint:
+        enabled = bool(data["enabled"])
+        return DistributeWithinPGYConstraint(enabled)
+
+    @override
+    def serialize(self) -> dict[str, Any]:
+        return {
+            "enabled": 1 if self.enabled else 0,
+        }
+
+    @override
+    def fields(self, project: ProjectInfo) -> tuple[()]:
+        return ()
+
+    @override
+    @staticmethod
+    def from_fields(
+        fields: tuple[()],
+    ) -> SerializableConstraint:
+        return DistributeWithinPGYConstraint()
+
+    @override
+    def description(self) -> str:
+        return DistributeWithinPGYConstraint.human_name()
+
+    @override
+    def get_constraints(self, builder: CallProblemBuilder) -> list[pulp.LpConstraint]:
+        years = [r.pgy for r in builder.get_residents().values()]
+        min_pgy = min(years)
+        max_pgy = max(years)
+        result = []
+        for pgy in range(min_pgy, max_pgy + 1):
+            min_var = builder.get_min_by_year(pgy)
+            max_var = builder.get_max_by_year(pgy)
+            result.append(max_var - min_var <= 1)
+        return result
+
+
 class DistributeDayOfWeekConstraint(
     SerializableConstraint[tuple[WeekdayField, MultiCheckField, IntField]]
 ):
@@ -1006,6 +1068,7 @@ class ConstraintRegistry:
         self.constraints = {
             c.get_name(): c
             for c in [
+                DistributeWithinPGYConstraint,
                 DistributeDayOfWeekConstraint,
                 DistributeWeekendsConstraint,
                 ConstrainWeekdayConstraint,
