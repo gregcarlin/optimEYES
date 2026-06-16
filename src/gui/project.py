@@ -213,7 +213,18 @@ class ObjectivesWidget(TableWidget):
             self.setRow(
                 i, objective.description(), objective.fields(self.project) != ()
             )
-            # TODO add buttons to reorder objectives
+            up_button = QtWidgets.QPushButton("↑")
+            up_button.setFixedHeight(40)
+            up_button.clicked.connect(partial(self.up_clicked, index=i))
+            if i == 0:
+                up_button.setEnabled(False)
+            self.setCellWidget(i, self.col_offset + 3, up_button)
+            down_button = QtWidgets.QPushButton("↓")
+            down_button.setFixedHeight(40)
+            down_button.clicked.connect(partial(self.down_clicked, index=i))
+            if i == len(project.objectives) - 1:
+                down_button.setEnabled(False)
+            self.setCellWidget(i, self.col_offset + 4, down_button)
 
     @override
     def edit_clicked(self, index: int) -> None:
@@ -225,6 +236,16 @@ class ObjectivesWidget(TableWidget):
     @override
     def delete_clicked(self, index: int) -> None:
         self.project.objectives.pop(index)
+        self.edit_parent.refresh_project()
+
+    def up_clicked(self, index: int) -> None:
+        objective = self.project.objectives.pop(index)
+        self.project.objectives.insert(index - 1, objective)
+        self.edit_parent.refresh_project()
+
+    def down_clicked(self, index: int) -> None:
+        objective = self.project.objectives.pop(index)
+        self.project.objectives.insert(index + 1, objective)
         self.edit_parent.refresh_project()
 
 
