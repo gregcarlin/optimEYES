@@ -10,6 +10,13 @@ from optimization.constraint import (
     LimitWeekdayForResidentConstraint,
     SetMinimumForDaysOfWeekForResidentConstraint,
     NoAdjacentWeekendsConstraint,
+    ConstrainPGYConstraint,
+    LimitVACoverageConstraint,
+    DistributeQ2sConstraint,
+    LimitQ2sConstraint,
+    LimitTotalQ2sConstraint,
+    LimitPGY23GapConstraint,
+    LimitResidentBetweenDatesConstraint,
 )
 from optimization.objective import ChangesFromPreviousSolutionObjective
 from optimization.call_problem_impl import CallProblemBuilderImpl
@@ -44,20 +51,23 @@ class ConstraintTest(unittest.TestCase):
         return result
 
     def _get_resident(
-        self, name: str, pgy: int, availability: list[list[str]]
+        self, name: str, pgy: int, availability: list[list[str]], va: list[list[str]]
     ) -> Resident:
         return Resident(
             name,
             pgy,
             [1 if name[0] in d else 0 for d in availability],
-            [0] * len(availability),
+            [1 if name[0] in d else 0 for d in va],
         )
 
-    def _get_builder(self, spec: str) -> CallProblemBuilderImpl:
+    def _get_builder(
+        self, spec: str, va_spec: str | None = None
+    ) -> CallProblemBuilderImpl:
         availability = ConstraintTest._parse_spec(spec)
         start_date = date(2026, 1, 1)
         num_days = len(availability)
         end_date = start_date + timedelta(days=num_days)
+        va = ConstraintTest._parse_spec(va_spec) if va_spec else [[]] * num_days
         project = Project(
             start_date=start_date,
             end_date=end_date,
@@ -67,21 +77,25 @@ class ConstraintTest(unittest.TestCase):
                     "Barnaby",
                     2,
                     availability,
+                    va,
                 ),
                 self._get_resident(
                     "Sprocket",
                     2,
                     availability,
+                    va,
                 ),
                 self._get_resident(
                     "Pippin",
                     3,
                     availability,
+                    va,
                 ),
                 self._get_resident(
                     "Kevin",
                     3,
                     availability,
+                    va,
                 ),
             ],
             coverage=[""] * num_days,
@@ -247,3 +261,115 @@ class ConstraintTest(unittest.TestCase):
                 )
                 solution = builder.solve()
                 self.assert_solution(solution, expected)
+
+    def test_constrain_pgy(self):
+        # Constrain PGY3 (Kevin) to have exactly 1 call, must be put in
+        builder = self._get_builder("[BK]P")
+        builder.apply_constraints([ConstrainPGYConstraint(3, 1, 1)])
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("BP", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "KP")
+
+    def test_limit_va(self):
+        # Barnaby is at the VA, use Kevin
+        builder = self._get_builder("[BK]", va_spec="B")
+        builder.apply_constraints([LimitVACoverageConstraint(0)])
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("B", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "K")
+
+    def test_distribute_q2s(self):
+        # Use Kevin to avoid Q2 for Barnaby
+        builder = self._get_builder("BS[BK]")
+        builder.apply_constraints([DistributeQ2sConstraint(0)])
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("BSB", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "BSK")
+
+    def test_limit_q2s(self):
+        # Use Kevin to avoid Q2 for Barnaby
+        builder = self._get_builder("BS[BK]")
+        builder.apply_constraints([LimitQ2sConstraint(0)])
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("BSB", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "BSK")
+
+    def test_limit_total_q2s(self):
+        # Use Kevin to avoid Q2 for Barnaby
+        builder = self._get_builder("BS[BK]")
+        builder.apply_constraints([LimitTotalQ2sConstraint(0)])
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("BSB", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "BSK")
+
+    def test_limit_pgy_23_gap(self):
+        # Barnaby is the PGY2 with the most call (1), Pippin (PGY3) already has
+        # 1, but this constraint requires Kevin (PGY3) to also be assigned
+        builder = self._get_builder("PB[PK]")
+        builder.apply_constraints([LimitPGY23GapConstraint(0)])
+        builder.set_objectives(
+            [
+                # Try to put Pippin in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("PBP", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "PBK")
+
+    def test_limit_between_dates(self):
+        # Limit Barnaby to 0, must use Kevin
+        builder = self._get_builder("[BK]")
+        builder.apply_constraints(
+            [
+                LimitResidentBetweenDatesConstraint(
+                    "Barnaby", 0, date(2026, 1, 1), date(2026, 1, 1)
+                )
+            ]
+        )
+        builder.set_objectives(
+            [
+                # Try to put Barnaby in that day
+                ChangesFromPreviousSolutionObjective(
+                    "fake", ConstraintTest._parse_spec("B", names=NAMES)
+                )
+            ]
+        )
+        solution = builder.solve()
+        self.assert_solution(solution, "K")
