@@ -45,3 +45,7 @@ class Resident:
     @override
     def __hash__(self) -> int:
         return hash(self.name)
+
+    @override
+    def __repr__(self) -> str:
+        return f"Resident(name={self.name!r}, pgy={self.pgy!r}, availability={self.availability!r}, va={self.va!r})"
