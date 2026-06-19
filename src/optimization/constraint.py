@@ -639,7 +639,7 @@ class NoAdjacentWeekendsConstraint(SerializableConstraint):
                 weekends_worked.append(worked)
 
             # For a sliding window of our limit + 1, ensure the total number of weekends worked is within the limit
-            for i in range(len(weekends_worked) - self.num - 1):
+            for i in range(len(weekends_worked) - self.num):
                 constraints.append(
                     var_sum(weekends_worked[i : i + self.num + 1]) <= self.num
                 )
