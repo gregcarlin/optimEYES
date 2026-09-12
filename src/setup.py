@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ["gui.py"]
+APP = ["src/gui.py"]
 DATA_FILES = []
 OPTIONS = {}
 

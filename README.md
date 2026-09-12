@@ -31,7 +31,7 @@ python3 -m unittest
 
 Build standalone app:
 ```
-python3 setup.py py2app
+python3 src/setup.py py2app
 ```
 
 Links:
