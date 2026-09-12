@@ -1,4 +1,3 @@
-import math
 from typing import override, Any, Generic, TypeVar
 from abc import ABC, abstractmethod
 from datetime import date
@@ -12,13 +11,12 @@ from structs.field import (
     WeekdayField,
     WeekdayListField,
     IntField,
-    StringField,
     LimitedStringField,
     MultiCheckField,
     DateField,
 )
 from structs.project_info import ProjectInfo
-from dateutil import days_until_next_weekday, num_weekdays_in_time_period, Weekday
+from dateutil import days_until_next_weekday, Weekday
 
 
 class Constraint(ABC):

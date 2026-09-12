@@ -1,7 +1,6 @@
 from typing import override, cast
 from datetime import date, timedelta
 from dataclasses import dataclass
-from collections import defaultdict
 import random
 
 from PySide6.QtWidgets import (

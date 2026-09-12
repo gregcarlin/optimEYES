@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 from PySide6 import QtWidgets
 
-from structs.project import Project
-
 
 class AbstractQWidgetMeta(type(ABC), type(QtWidgets.QWidget)):
     pass

@@ -9,7 +9,6 @@ from optimization.call_problem import CallProblemBuilder
 from optimization.metric import SummaryMetric, ResidentMetric, DetailMetric
 from structs.field import (
     Field,
-    StringField,
     FileField,
     DictIntIntField,
 )
