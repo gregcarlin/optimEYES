@@ -3,6 +3,7 @@ from typing import override
 from functools import partial
 from dataclasses import dataclass
 from datetime import timedelta, datetime
+from sys import platform
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -436,7 +437,16 @@ class ResultDetail(QtWidgets.QTableWidget):
             solution.start_date + timedelta(days=day)
             for day in range(solution.num_days)
         ]
-        self.setVerticalHeaderLabels([f"{date:%a %-m/%d/%y}" for date in dates])
+        self.setVerticalHeaderLabels(
+            [
+                (
+                    f"{date:%a %#m/%d/%y}"
+                    if platform == "win32"
+                    else f"{date:%a %-m/%d/%y}"
+                )
+                for date in dates
+            ]
+        )
         self.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Fixed
         )
