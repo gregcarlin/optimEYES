@@ -34,6 +34,11 @@ Build standalone app:
 python3 src/setup.py py2app
 ```
 
+Build standalone exe (windows):
+```
+pyinstaller src/gui.py --add-data "C:\Users\songg\AppData\Local\Programs\Python\Python313\Lib\site-packages\pulp:pulp" --onefile --noconsole --name "optimEYES"
+```
+
 Links:
 
 - [Pulp documentation](https://coin-or.github.io/pulp/index.html)
