@@ -8,7 +8,7 @@ Usage:
 from setuptools import setup
 
 APP = ["src/gui.py"]
-DATA_FILES = []
+DATA_FILES = ["eye-drawing-35.jpg"]
 OPTIONS = {}
 
 setup(
