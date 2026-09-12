@@ -9,7 +9,9 @@ from setuptools import setup
 
 APP = ["src/gui.py"]
 DATA_FILES = ["eye-drawing-35.jpg"]
-OPTIONS = {}
+OPTIONS = {
+    "iconfile": "eyecon.icns",
+}
 
 setup(
     app=APP,
